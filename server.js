@@ -307,12 +307,71 @@ const api = {
   },
 
   // blocked numbers
-  'GET /api/blocked': (req, res, user) => json(res, 200, { blocked: db.prepare('SELECT * FROM blocked_numbers WHERE store_id = ? ORDER BY id DESC').all(getStoreForUser(user).id) }),
+  'GET /api/blocked': (req, res, user, p, url) => {
+    const kind = url.searchParams.get('kind');
+    const rows = kind
+      ? db.prepare('SELECT * FROM blocked_numbers WHERE store_id = ? AND kind = ? ORDER BY id DESC').all(getStoreForUser(user).id, kind)
+      : db.prepare('SELECT * FROM blocked_numbers WHERE store_id = ? ORDER BY id DESC').all(getStoreForUser(user).id);
+    json(res, 200, { blocked: rows });
+  },
   'POST /api/blocked': async (req, res, user) => {
     const b = await readJSON(req); const phone = normalizePhone(b && b.phone);
     if (!EG_PHONE.test(phone)) return json(res, 400, { error: 'رقم غير صالح' });
-    db.prepare('INSERT OR IGNORE INTO blocked_numbers (store_id, phone, reason) VALUES (?, ?, ?)').run(getStoreForUser(user).id, phone, b.reason || '');
+    const kind = b.kind === 'otp' ? 'otp' : 'order';
+    db.prepare('INSERT OR IGNORE INTO blocked_numbers (store_id, phone, reason, kind) VALUES (?, ?, ?, ?)').run(getStoreForUser(user).id, phone, b.reason || '', kind);
     json(res, 201, { ok: true });
+  },
+
+  // newsletter
+  'GET /api/newsletter': (req, res, user) => json(res, 200, { subscribers: db.prepare('SELECT * FROM newsletter_subscribers WHERE store_id = ? ORDER BY id DESC').all(getStoreForUser(user).id) }),
+  'DELETE /api/newsletter/:id': (req, res, user, p) => {
+    db.prepare('DELETE FROM newsletter_subscribers WHERE id = ? AND store_id = ?').run(p.id, getStoreForUser(user).id);
+    json(res, 200, { ok: true });
+  },
+  'POST /api/public/:slug/newsletter': async (req, res, user, p) => {
+    const b = await readJSON(req); const email = String((b && b.email) || '').trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json(res, 400, { error: 'بريد إلكتروني غير صالح' });
+    const store = db.prepare('SELECT * FROM stores WHERE slug = ?').get(p.slug);
+    if (!store) return json(res, 404, { error: 'المتجر غير موجود' });
+    db.prepare('INSERT OR IGNORE INTO newsletter_subscribers (store_id, email) VALUES (?, ?)').run(store.id, email);
+    json(res, 201, { ok: true });
+  },
+
+  // merchant manual order (dashboard "أنشاء طلب")
+  'POST /api/orders': async (req, res, user) => {
+    const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
+    const store = getStoreForUser(user);
+    const phone = normalizePhone(b.phone);
+    if (!b.name || !EG_PHONE.test(phone) || !b.address) return json(res, 400, { error: 'تأكد من الاسم ورقم الهاتف المصري والعنوان' });
+    if (!Array.isArray(b.items) || !b.items.length) return json(res, 400, { error: 'اختر منتجاً واحداً على الأقل' });
+    const lineItems = [];
+    for (const it of b.items) {
+      const prod = db.prepare('SELECT * FROM products WHERE id = ? AND store_id = ?').get(it.product_id, store.id);
+      if (!prod) return json(res, 400, { error: 'منتج غير موجود' });
+      const qty = Math.max(1, Math.min(parseInt(it.qty) || 1, 99));
+      if (prod.stock < qty) return json(res, 400, { error: `الكمية غير متوفرة من "${prod.name}"` });
+      lineItems.push({ prod, qty });
+    }
+    const subtotal = lineItems.reduce((s, li) => s + li.prod.price * li.qty, 0);
+    let shipping = 0;
+    const zones = db.prepare('SELECT * FROM shipping_zones WHERE store_id = ?').all(store.id);
+    const zone = zones.find(z => (z.governorates || '').split(',').map(x => x.trim()).includes(b.governorate)) || zones[0];
+    if (zone) shipping = (zone.free_over && subtotal >= zone.free_over) ? 0 : zone.price * (zone.per_item ? lineItems.reduce((s, li) => s + li.qty, 0) : 1);
+    if (store.free_shipping_over && subtotal >= store.free_shipping_over) shipping = 0;
+    const total = Math.max(0, subtotal + shipping);
+    const count = db.prepare('SELECT COUNT(*) c FROM orders WHERE store_id = ?').get(store.id).c;
+    const number = `${store.slug.slice(0, 2).toUpperCase()}-${1021 + count}`;
+    const r = db.prepare(`INSERT INTO orders (store_id, number, customer_name, customer_phone, customer_address, governorate, notes, subtotal, shipping, discount, total, source)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 'dashboard')`)
+      .run(store.id, number, b.name.trim(), phone, b.address.trim(), b.governorate || '', (b.notes || '').trim(), subtotal, shipping, total);
+    const oid = r.lastInsertRowid;
+    const itemStmt = db.prepare('INSERT INTO order_items (order_id, product_id, name, price, qty, image) VALUES (?, ?, ?, ?, ?, ?)');
+    for (const li of lineItems) {
+      itemStmt.run(oid, li.prod.id, li.prod.name, li.prod.price, li.qty, JSON.parse(li.prod.images)[0] || '');
+      db.prepare('UPDATE products SET stock = stock - ? WHERE id = ?').run(li.qty, li.prod.id);
+    }
+    db.prepare('INSERT INTO order_status_history (order_id, status) VALUES (?, ?)').run(oid, 'new');
+    json(res, 201, { ok: true, id: oid, number });
   },
   'DELETE /api/blocked/:id': (req, res, user, p) => {
     db.prepare('DELETE FROM blocked_numbers WHERE id = ? AND store_id = ?').run(p.id, getStoreForUser(user).id);

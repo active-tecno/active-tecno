@@ -228,6 +228,122 @@ const migrations = [
     UPDATE stores SET name = REPLACE(name, 'اكتف تكنو', 'اكتف اوردر'), description = REPLACE(description, 'اكتف تكنو', 'اكتف اوردر');
     UPDATE themes SET name_ar = REPLACE(name_ar, 'اكتف تكنو', 'اكتف اوردر');
     `
+  },
+  {
+    id: '006_stage_f_dashboard',
+    sql: `
+    ALTER TABLE blocked_numbers ADD COLUMN kind TEXT NOT NULL DEFAULT 'order'; -- order | otp
+    CREATE TABLE newsletter_subscribers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      store_id INTEGER NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+      email TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(store_id, email)
+    );
+    CREATE TABLE categories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      store_id INTEGER NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      priority INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(store_id, name)
+    );
+    CREATE TABLE reviews (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      store_id INTEGER NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+      product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      customer_name TEXT NOT NULL,
+      rating INTEGER NOT NULL DEFAULT 5,
+      text TEXT DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'pending', -- pending | published | hidden
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE funnels (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      store_id INTEGER NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      product_id INTEGER REFERENCES products(id) ON DELETE SET NULL,
+      status TEXT NOT NULL DEFAULT 'active', -- active | paused
+      views INTEGER NOT NULL DEFAULT 0,
+      orders INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE ab_tests (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      store_id INTEGER NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
+      variant_a TEXT NOT NULL DEFAULT '',
+      variant_b TEXT NOT NULL DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'running', -- running | stopped
+      views_a INTEGER NOT NULL DEFAULT 0,
+      views_b INTEGER NOT NULL DEFAULT 0,
+      orders_a INTEGER NOT NULL DEFAULT 0,
+      orders_b INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE blog_categories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      store_id INTEGER NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(store_id, name)
+    );
+    CREATE TABLE blog_posts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      store_id INTEGER NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+      category_id INTEGER REFERENCES blog_categories(id) ON DELETE SET NULL,
+      title TEXT NOT NULL,
+      slug TEXT NOT NULL,
+      body TEXT NOT NULL DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'draft', -- draft | published
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(store_id, slug)
+    );
+    CREATE TABLE cross_sells (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      store_id INTEGER NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+      product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      related_product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(store_id, product_id, related_product_id)
+    );
+    CREATE TABLE store_settings (
+      store_id INTEGER NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+      key TEXT NOT NULL,
+      value TEXT NOT NULL DEFAULT '',
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (store_id, key)
+    );
+    CREATE TABLE referrals (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      referrer_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      referred_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      commission REAL NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'pending', -- pending | credited | paid
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(referred_user_id)
+    );
+    CREATE TABLE withdrawal_requests (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      amount REAL NOT NULL,
+      method TEXT NOT NULL,
+      account TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending', -- pending | paid | rejected
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE dev_requests (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      details TEXT NOT NULL DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'new', -- new | reviewing | planned | done
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    ALTER TABLE users ADD COLUMN referral_code TEXT;
+    CREATE INDEX idx_reviews_product ON reviews(product_id, status);
+    `
   }
 ];
 

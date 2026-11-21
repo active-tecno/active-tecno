@@ -175,3 +175,16 @@ document.addEventListener('submit', async e => {
 });
 
 renderCartUI();
+
+// newsletter signup
+document.addEventListener('submit', async e => {
+  if (e.target.id !== 'nlForm') return;
+  e.preventDefault();
+  const msg = document.getElementById('nlMsg');
+  const email = document.getElementById('nlEmail').value.trim();
+  const r = await fetch(`/api/public/${SLUG}/newsletter`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+  const d = await r.json().catch(() => ({}));
+  msg.textContent = r.ok ? 'تم الاشتراك بنجاح — شكراً لك' : (d.error || 'حدث خطأ، حاول مرة أخرى');
+  msg.style.color = r.ok ? '#27cd27' : '#f87171';
+  if (r.ok) document.getElementById('nlEmail').value = '';
+});
