@@ -28,7 +28,7 @@ const THEMES = [
         { key: 'trust_line', label: 'سطر الثقة أعلى الفوتر', kind: 'text' },
       ] } },
   { id: 'eo-sphinx', name_ar: 'سفينكس', category: 'عام', is_premium: 0, price: 0,
-    config: { primary: '#141924', accent: '#111111', bg: '#FFFFFF', surface: '#F3F4F6', radius: 10, header: 'eo', card: 'flat', font: 'IBM Plex Sans Arabic', announce_bg: '#FFEA00', announce_color: '#141924' } },
+    config: { primary: '#141924', accent: '#111111', bg: '#FFFFFF', surface: '#F3F4F6', radius: 10, header: 'eo', card: 'flat', font: 'IBM Plex Sans Arabic', announce_bg: '#0E7A3D', announce_color: '#FFFFFF', header_bg: '#0E7A3D', header_color: '#FFFFFF' } },
   { id: 'eo-fasty', name_ar: 'فاستي', category: 'عام', is_premium: 0, price: 0,
     config: { primary: '#141924', accent: '#E63946', bg: '#FFFFFF', surface: '#F3F4F6', radius: 10, header: 'eo', card: 'flat', font: 'IBM Plex Sans Arabic', announce_bg: '#111111', announce_color: '#FFFFFF' } },
   { id: 'eo-luxify', name_ar: 'لوكسيفاي', category: 'متاجر فاخرة', is_premium: 0, price: 0,
@@ -90,7 +90,7 @@ function seed() {
     'eo-phoenix': ['متجر عام', 'ملابس وأزياء'], 'eo-shine': ['مستحضرات تجميل'], 'eo-clear': ['متجر عام']
   };
   const HERO_CARD = {
-    'eo-default': ['classic', 'flat', 'pills'], 'eo-sphinx': ['photo', 'shadow', 'cards'], 'eo-fasty': ['classic', 'flat', 'icons'], 'eo-luxify': ['photo', 'shadow', 'pills'], 'eo-nue': ['promo', 'brutal', 'circles'],
+    'eo-default': ['classic', 'flat', 'pills'], 'eo-sphinx': ['photo', 'shadow', 'cards'], 'eo-fasty': ['none', 'bordered', 'icons'], 'eo-luxify': ['photo', 'shadow', 'pills'], 'eo-nue': ['promo', 'brutal', 'circles'],
     'eo-void': ['photo', 'shadow', 'circles'], 'eo-nature': ['split', 'flat', 'cards'], 'eo-blast': ['photo', 'pill', 'icons'], 'eo-hype': ['photo', 'bordered', 'cards'],
     'eo-vantage-el': ['minimal', 'bordered', 'pills'], 'eo-vantage-cos': ['split', 'shadow', 'circles'], 'eo-trendy': ['photo', 'bordered', 'circles'], 'eo-elegance': ['banner', 'shadow', 'circles'],
     'eo-phoenix': ['photo', 'flat', 'cards'], 'eo-shine': ['banner', 'pill', 'circles'], 'eo-clear': ['minimal', 'bordered', 'pills']

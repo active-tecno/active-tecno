@@ -959,6 +959,7 @@ function renderSection(store, s, ctx) {
       const title = esc(st.title || store.name), sub = esc(st.subtitle || '');
       const cta = st.cta_text ? `<a class="s-btn" href="${escAttr(st.cta_link || '#products')}">${esc(st.cta_text)}</a>` : '';
       const bg = st.img ? ` style="background-image:url('${escAttr(st.img)}');background-size:cover;background-position:center"` : '';
+      if (hv === 'none') return '';
       if (hv === 'minimal') { const bgm = st.img ? bg : (themeHeroImg(lay) ? ` style="background-image:linear-gradient(to top, color-mix(in srgb, var(--sp) 58%, transparent), color-mix(in srgb, var(--sp) 10%, transparent)), url('${themeHeroImg(lay)}');background-size:cover;background-position:center"` : bg); return `<section class="s-hero hv-minimal"${bgm}><div class="hv-m-in"><h1>${title}</h1><p>${sub}</p><div class="s-hero-cta">${cta}</div></div></section>`; }
       if (hv === 'split') {
         const img0 = st.img || themeHeroImg(lay) || (products[0] ? (JSON.parse(products[0].images || '[]')[0] || '') : '');
