@@ -10,6 +10,7 @@ const integ = require('./integrations');
 
 seed();
 
+const REFERRAL_PROGRAM_ENABLED = false; // referral accruals + payouts paused pending owner terms (reversible)
 const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const UPLOAD_DIR = path.join(__dirname, 'data', 'uploads');
@@ -739,6 +740,7 @@ const api = {
     json(res, 200, { code: user.referral_code, referrals: rows, balance: credited, paid, withdrawals });
   },
   'POST /api/withdrawals': async (req, res, user) => {
+    if (!REFERRAL_PROGRAM_ENABLED) return json(res, 403, { error: 'برنامج الإحالة غير مفعّل حالياً — ستتوفر السحوبات عند تفعيله' });
     const b = await readJSON(req); if (!b || !(+b.amount > 0) || !String(b.account || '').trim()) return json(res, 400, { error: 'المبلغ والحساب مطلوبان' });
     const bal = db.prepare(`SELECT COALESCE(SUM(commission),0) s FROM referrals WHERE referrer_user_id = ? AND status = 'credited'`).get(user.id).s;
     if (+b.amount > bal) return json(res, 400, { error: `رصيدك المتاح للسحب ${bal} ج.م فقط` });
@@ -1063,8 +1065,9 @@ const api = {
     const until = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
     db.prepare(`UPDATE activation_requests SET status = 'approved', reviewed_at = datetime('now') WHERE id = ?`).run(p.id);
     db.prepare('UPDATE stores SET is_published = 1, published_until = ? WHERE id = ?').run(until, r.store_id);
-    // affiliate commission: 20% of the activation amount goes to the referrer, once per referred user
-    try {
+    // affiliate commission: DISABLED pending owner-approved referral terms (no user evidence for any rate).
+    // Flip REFERRAL_PROGRAM_ENABLED to re-enable; attribution rows keep recording while disabled.
+    if (REFERRAL_PROGRAM_ENABLED) try {
       const ref = db.prepare(`SELECT * FROM referrals WHERE referred_user_id = ? AND status = 'pending'`).get(r.user_id);
       if (ref) db.prepare(`UPDATE referrals SET commission = ?, status = 'credited' WHERE id = ?`).run(r.amount * 0.2, ref.id);
     } catch (e) {}

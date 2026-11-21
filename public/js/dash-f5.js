@@ -201,39 +201,29 @@ registerView('referral', async () => {
   const wSt = { pending: '<span class="chip st-new">قيد المراجعة</span>', paid: '<span class="chip st-delivered">تم الدفع</span>', rejected: '<span class="chip st-cancelled">مرفوض</span>' };
   return `
   <div class="d-page">
-    ${topBar('اربح معنا بالتسويق بالعمولة', 'شارك رابط المنصة مع التجار واحصل على عمولة نقدية عن كل تاجر يشترك من خلالك', '')}
+    ${topBar('نظام التسويق بالعمولة', 'برنامج الإحالة الخاص بالمنصة', '')}
+    <div class="d-card">
+      <div class="d-note"><span class="n-ic">${I('eye')}</span><div><b>البرنامج غير مفعّل بعد</b><p class="muted" style="margin:2px 0 0">سيتم تفعيل برنامج الإحالة بشروط العمولة والسحب التي يعتمدها صاحب المنصة. أي عمولات مسجلة أدناه محفوظة ولن تتأثر.</p></div></div>
+    </div>
     <div class="d-card ref-earn">
       <span class="ref-ic">${I('wallet')}</span>
-      <div><span class="muted small">عمولتك</span><b class="ref-amt">${egp(d.balance)}</b></div>
+      <div><span class="muted small">عمولاتك المسجلة</span><b class="ref-amt">${egp(d.balance)}</b></div>
+      <div style="margin-inline-start:auto;text-align:start"><span class="muted small">تم سحبه</span><b class="ref-amt">${egp(d.paid)}</b></div>
+      <div style="text-align:start"><span class="muted small">تسجيلات عبر رابطك</span><b class="ref-amt">${d.referrals.length}</b></div>
     </div>
     <div class="d-card">
-      <p style="font-weight:700;line-height:2">انسخ رابط الإحالة الخاص بك وشاركه مع أي تاجر — عندما يسجل ويدفع أول اشتراك تحصل على عمولة 20% (10 ج.م) نقدًا. تُسحب العمولة إلى حساب بنكي أو فودافون كاش عبر الدعم.</p>
-      <div class="d-note"><span class="n-ic">${I('eye')}</span><div><b>ملاحظة</b><p class="muted" style="margin:2px 0 0">يمكنك سحب أي مبلغ حتى رصيد عمولاتك المكتسبة، ويراجع الفريق كل طلب قبل التحويل.</p></div></div>
-      <label class="d-label" style="margin-top:14px">الرابط الخاص بك</label>
-      <input class="d-input ltr" readonly value="${link}" id="refPlatLink" onclick="this.select()">
+      <label class="d-label">رابط الإحالة الخاص بك</label>
+      <input class="d-input ltr" readonly value="${link}" onclick="this.select()">
+      <p class="muted small" style="margin-top:8px">التسجيلات عبر الرابط تُحفظ وتظهر أدناه؛ لا تُحتسب أي عمولة حالياً لحين تفعيل البرنامج.</p>
     </div>
     ${d.referrals.length ? `<div class="d-card"><h3>التسجيلات عبر رابطك</h3>
       <table class="d-table"><thead><tr><th>التاجر</th><th>العمولة</th><th>الحالة</th><th>التاريخ</th></tr></thead><tbody>
-      ${d.referrals.map(r => `<tr><td><b>${esc(r.referred_name)}</b></td><td>${egp(r.commission)}</td><td>${r.status === 'pending' ? '<span class="chip">لم يشترك بعد</span>' : r.status === 'credited' ? '<span class="chip st-delivered">مضافة لرصيدك</span>' : '<span class="chip st-shipped">مدفوعة</span>'}</td><td class="muted small ltr">${fmtDateNum(r.created_at)}</td></tr>`).join('')}</tbody></table></div>` : ''}
-    <div class="d-card">
-      <h3>${I('wallet')} سحب العمولة</h3>
-      <p class="muted">اسحب رصيدك عبر InstaPay أو Vodafone Cash — يراجع الفريق الطلب ويحوّل خلال أيام عمل.</p>
-      <div class="form-grid">
-        <div><label class="d-label">المبلغ (ج.م)</label><input id="wdAmount" type="number" min="1" class="d-input ltr" placeholder="100"></div>
-        <div><label class="d-label">وسيلة السحب</label><select id="wdMethod" class="d-input"><option value="instapay">InstaPay</option><option value="vodafone_cash">Vodafone Cash</option></select></div>
-        <div><label class="d-label">حسابك / رقمك</label><input id="wdAccount" class="d-input ltr" placeholder="name@instapay أو 01xxxxxxxxx"></div>
-      </div>
-      <button class="btn primary" style="margin-top:14px" onclick="wdSave()">طلب سحب</button>
-      ${d.withdrawals.length ? `<table class="d-table" style="margin-top:14px"><thead><tr><th>المبلغ</th><th>الوسيلة</th><th>الحالة</th><th>التاريخ</th></tr></thead><tbody>
-        ${d.withdrawals.map(w => `<tr><td>${egp(w.amount)}</td><td>${w.method === 'instapay' ? 'InstaPay' : 'Vodafone Cash'}</td><td>${wSt[w.status] || w.status}</td><td class="muted small ltr">${fmtDateNum(w.created_at)}</td></tr>`).join('')}</tbody></table>` : ''}
-    </div>
+      ${d.referrals.map(r => `<tr><td><b>${esc(r.referred_name)}</b></td><td>${egp(r.commission)}</td><td>${r.status === 'pending' ? '<span class="chip">مسجّلة</span>' : r.status === 'credited' ? '<span class="chip st-delivered">مضافة لرصيدك</span>' : '<span class="chip st-shipped">مدفوعة</span>'}</td><td class="muted small ltr">${fmtDateNum(r.created_at)}</td></tr>`).join('')}</tbody></table></div>` : ''}
+    ${d.withdrawals.length ? `<div class="d-card"><h3>طلبات السحب السابقة</h3>
+      <table class="d-table"><thead><tr><th>المبلغ</th><th>الوسيلة</th><th>الحالة</th><th>التاريخ</th></tr></thead><tbody>
+      ${d.withdrawals.map(w => `<tr><td>${egp(w.amount)}</td><td>${w.method === 'instapay' ? 'InstaPay' : 'Vodafone Cash'}</td><td>${wSt[w.status] || w.status}</td><td class="muted small ltr">${fmtDateNum(w.created_at)}</td></tr>`).join('')}</tbody></table></div>` : ''}
   </div>`;
 });
-async function wdSave() {
-  const r = await api('/api/withdrawals', { method: 'POST', body: { amount: +$('#wdAmount').value, method: $('#wdMethod').value, account: $('#wdAccount').value.trim() } });
-  if (r.error) return toast(r.error, 'err');
-  toast('تم إرسال طلب السحب'); rerender();
-}
 
 // ---------- dev requests (طلب تطويرات) ----------
 registerView('dev-requests', async () => {
