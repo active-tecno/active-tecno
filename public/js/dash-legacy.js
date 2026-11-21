@@ -24,13 +24,13 @@ async function viewOrders() {
     `<a class="btn btn-soft btn-sm" href="/api/orders-export.csv${ordersStatusFilter ? '?status=' + ordersStatusFilter : ''}" download>${I('download')} تصدير</a>
      <div class="pill-tabs"><button class="${ordersView === 'list' ? 'on' : ''}" onclick="ordersView='list';route()">قائمة</button><button class="${ordersView === 'board' ? 'on' : ''}" onclick="ordersView='board';route()">لوحة</button></div>`) +
     `<div class="ord-tabs" id="ordTabs">${renderOrderTabs(d.orders)}</div>
-     <div class="frow ord-filter-row" id="ordFilterRow"><input type="search" id="ordQ" placeholder="ابحث برقم الطلب، الاسم أو الهاتف…" oninput="filterOrders(this.value)"></div>
+     <div class="ord-filters" id="ordFilters">${ORDER_FILTER_FIELDS.filter(f => orderFilters[f.key] != null).map(renderOrderFilterRow).join('')}</div>
      <div id="ordersWrap">${renderOrders(d.orders)}</div>`);
 }
 function renderOrderTabs(all) {
   const counts = {}; all.forEach(o => counts[o.status] = (counts[o.status] || 0) + 1);
   const tab = (key, label, n) => `<button class="ord-tab ${ordersStatusFilter === key ? 'on' : ''}" onclick="ordersStatusFilter='${key}';route()">${label}${n != null ? ` <span class="n">${n}</span>` : ''}</button>`;
-  return `<button class="ord-tab ord-filter-btn" onclick="const r=$('#ordFilterRow');r.classList.toggle('show');this.classList.toggle('on')">${I('filter') || ''} إضافة فلتر</button>`
+  return `<span class="ord-filter-anchor"><button class="ord-tab ord-filter-btn" onclick="toggleFilterMenu(event)">${I('filter') || ''} إضافة فلتر</button></span>`
     + tab('', 'كل الطلبات', all.length) + Object.keys(STATUS).map(s => tab(s, STATUS[s].ar, counts[s] || 0)).join('');
 }
 function renderOrders(orders, all) {
@@ -77,6 +77,66 @@ async function filterOrders(q) {
   const d = await api('/api/orders' + (q ? `?q=${encodeURIComponent(q)}` : ''));
   ordersCache = d.orders;
   $('#ordersWrap').innerHTML = renderOrders(d.orders, ordersCache);
+}
+
+// ---------- EO-style per-field order filters ----------
+const ORDER_FILTER_FIELDS = [
+  { key: 'f_number', label: 'المعرّف', type: 'text' },
+  { key: 'f_name', label: 'اسم العميل', type: 'text' },
+  { key: 'f_phone', label: 'رقم هاتف العميل', type: 'text' },
+  { key: 'f_address', label: 'عنوان العميل', type: 'text' },
+  { key: 'f_from', label: 'بداية التاريخ', type: 'date' },
+  { key: 'f_to', label: 'نهاية التاريخ', type: 'date' },
+  { key: 'f_utm_source', label: 'مصدر الحملة', type: 'text' },
+  { key: 'f_utm_campaign', label: 'اسم الحملة', type: 'text' },
+  { key: 'f_coupon', label: 'الكوبون', type: 'text' },
+  { key: 'f_product', label: 'المنتج', type: 'text' },
+];
+let orderFilters = {};
+function toggleFilterMenu(ev) {
+  ev.stopPropagation();
+  const old = $('#ordFilterMenu'); if (old) { old.remove(); return; }
+  const anchor = ev.currentTarget.closest('.ord-filter-anchor');
+  const menu = document.createElement('div');
+  menu.id = 'ordFilterMenu'; menu.className = 'ord-filter-menu';
+  menu.innerHTML = ORDER_FILTER_FIELDS.map(f => `
+    <label class="ord-filter-item ${orderFilters[f.key] != null ? 'on' : ''}">
+      <input type="checkbox" ${orderFilters[f.key] != null ? 'checked' : ''} onchange="toggleOrderFilter('${f.key}', this.checked)">
+      <span>${f.label}</span>
+    </label>`).join('');
+  anchor.appendChild(menu);
+  setTimeout(() => document.addEventListener('click', function h(e) { if (!menu.contains(e.target)) { menu.remove(); document.removeEventListener('click', h); } }), 0);
+}
+function toggleOrderFilter(key, on) {
+  if (on) orderFilters[key] = ''; else delete orderFilters[key];
+  const wrap = $('#ordFilters');
+  if (wrap) wrap.innerHTML = ORDER_FILTER_FIELDS.filter(f => orderFilters[f.key] != null).map(renderOrderFilterRow).join('');
+  const menu = $('#ordFilterMenu');
+  if (menu) menu.querySelectorAll('label').forEach(l => {
+    const cb = l.querySelector('input'); const f = ORDER_FILTER_FIELDS.find(x => x.key === cb.getAttribute('onchange').match(/'(f_\w+)'/)[1]);
+    cb.checked = orderFilters[f.key] != null; l.classList.toggle('on', cb.checked);
+  });
+  applyOrderFilters();
+}
+function renderOrderFilterRow(f) {
+  return `<div class="ord-filter-row2" data-key="${f.key}">
+    <span class="ord-filter-label">${f.label}</span>
+    <input type="${f.type}" value="${esc(orderFilters[f.key] || '')}" oninput="setOrderFilter('${f.key}', this.value)">
+    <button class="ord-filter-x" onclick="toggleOrderFilter('${f.key}', false)" title="إزالة">${I('x') || '×'}</button>
+  </div>`;
+}
+let orderFilterTimer = null;
+function setOrderFilter(key, val) {
+  orderFilters[key] = val;
+  clearTimeout(orderFilterTimer);
+  orderFilterTimer = setTimeout(applyOrderFilters, 350);
+}
+async function applyOrderFilters() {
+  const ps = new URLSearchParams();
+  Object.entries(orderFilters).forEach(([k, v]) => { if (String(v).trim()) ps.set(k, String(v).trim()); });
+  const d = await api('/api/orders' + (ps.toString() ? '?' + ps : ''));
+  ordersCache = d.orders;
+  const w = $('#ordersWrap'); if (w) w.innerHTML = renderOrders(d.orders, ordersCache);
 }
 async function openOrder(id) {
   const o = ordersCache.find(x => x.id === id) || (await api('/api/orders')).orders.find(x => x.id === id);

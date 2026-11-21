@@ -278,6 +278,21 @@ const api = {
     const vals = [store.id];
     if (status) { sql += ' AND status = ?'; vals.push(status); }
     if (q) { sql += ' AND (customer_name LIKE ? OR customer_phone LIKE ? OR number LIKE ?)'; vals.push(`%${q}%`, `%${q}%`, `%${q}%`); }
+    // EO-style per-field filters (إضافة فلتر)
+    const like = (col, key) => { const v = (url.searchParams.get(key) || '').trim(); if (v) { sql += ` AND ${col} LIKE ?`; vals.push(`%${v}%`); } };
+    like('number', 'f_number');
+    like('customer_name', 'f_name');
+    like('customer_phone', 'f_phone');
+    like('customer_address', 'f_address');
+    like('utm_source', 'f_utm_source');
+    like('utm_campaign', 'f_utm_campaign');
+    like('coupon_code', 'f_coupon');
+    const from = (url.searchParams.get('f_from') || '').trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(from)) { sql += ` AND created_at >= ?`; vals.push(from + ' 00:00:00'); }
+    const to = (url.searchParams.get('f_to') || '').trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(to)) { sql += ` AND created_at <= ?`; vals.push(to + ' 23:59:59'); }
+    const prod = (url.searchParams.get('f_product') || '').trim();
+    if (prod) { sql += ' AND EXISTS (SELECT 1 FROM order_items oi WHERE oi.order_id = orders.id AND oi.name LIKE ?)'; vals.push(`%${prod}%`); }
     sql += ' ORDER BY created_at DESC LIMIT 500';
     const orders = db.prepare(sql).all(...vals);
     const itemsStmt = db.prepare('SELECT * FROM order_items WHERE order_id = ?');
