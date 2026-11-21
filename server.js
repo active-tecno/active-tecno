@@ -749,6 +749,71 @@ const api = {
   },
 
   // ---------- F5: dev requests (طلب تطويرات) ----------
+  // ---------- support tickets (merchant <-> platform admin) ----------
+  'GET /api/support': (req, res, user) => {
+    const store = getStoreForUser(user);
+    json(res, 200, { tickets: db.prepare(`SELECT t.*, (SELECT COUNT(*) FROM support_messages m WHERE m.ticket_id = t.id) messages_count,
+      (SELECT body FROM support_messages m WHERE m.ticket_id = t.id ORDER BY m.id DESC LIMIT 1) last_body
+      FROM support_tickets t WHERE t.store_id = ? ORDER BY t.updated_at DESC`).all(store.id) });
+  },
+  'POST /api/support': async (req, res, user) => {
+    const store = getStoreForUser(user);
+    const b = await readJSON(req);
+    const subject = String((b && b.subject) || '').trim(), body = String((b && b.body) || '').trim();
+    if (!subject || !body) return json(res, 400, { error: 'الموضوع والرسالة مطلوبان' });
+    const r = db.prepare('INSERT INTO support_tickets (store_id, user_id, subject) VALUES (?, ?, ?)').run(store.id, user.id, subject);
+    db.prepare('INSERT INTO support_messages (ticket_id, sender, body) VALUES (?, ?, ?)').run(r.lastInsertRowid, 'merchant', body);
+    json(res, 201, { id: r.lastInsertRowid });
+  },
+  'GET /api/support/:id': (req, res, user, p) => {
+    const store = getStoreForUser(user);
+    const t = db.prepare('SELECT * FROM support_tickets WHERE id = ? AND store_id = ?').get(p.id, store.id);
+    if (!t) return json(res, 404, { error: 'التذكرة غير موجودة' });
+    json(res, 200, { ticket: t, messages: db.prepare('SELECT * FROM support_messages WHERE ticket_id = ? ORDER BY id').all(t.id) });
+  },
+  'POST /api/support/:id/messages': async (req, res, user, p) => {
+    const store = getStoreForUser(user);
+    const t = db.prepare('SELECT * FROM support_tickets WHERE id = ? AND store_id = ?').get(p.id, store.id);
+    if (!t) return json(res, 404, { error: 'التذكرة غير موجودة' });
+    if (t.status === 'closed') return json(res, 400, { error: 'التذكرة مغلقة' });
+    const body = String(((await readJSON(req)) || {}).body || '').trim();
+    if (!body) return json(res, 400, { error: 'الرسالة فارغة' });
+    db.prepare('INSERT INTO support_messages (ticket_id, sender, body) VALUES (?, ?, ?)').run(t.id, 'merchant', body);
+    db.prepare(`UPDATE support_tickets SET status = 'open', updated_at = datetime('now') WHERE id = ?`).run(t.id);
+    json(res, 201, { ok: true });
+  },
+  'POST /api/support/:id/close': (req, res, user, p) => {
+    const store = getStoreForUser(user);
+    db.prepare(`UPDATE support_tickets SET status = 'closed', updated_at = datetime('now') WHERE id = ? AND store_id = ?`).run(p.id, store.id);
+    json(res, 200, { ok: true });
+  },
+  'GET /api/admin/support': (req, res, user) => {
+    json(res, 200, { tickets: db.prepare(`SELECT t.*, s.name store_name, u.email merchant_email,
+      (SELECT COUNT(*) FROM support_messages m WHERE m.ticket_id = t.id) messages_count,
+      (SELECT body FROM support_messages m WHERE m.ticket_id = t.id ORDER BY m.id DESC LIMIT 1) last_body
+      FROM support_tickets t JOIN stores s ON s.id = t.store_id JOIN users u ON u.id = t.user_id ORDER BY t.updated_at DESC`).all() });
+  },
+  'GET /api/admin/support/:id': (req, res, user, p) => {
+    const t = db.prepare(`SELECT t.*, s.name store_name, u.email merchant_email FROM support_tickets t JOIN stores s ON s.id = t.store_id JOIN users u ON u.id = t.user_id WHERE t.id = ?`).get(p.id);
+    if (!t) return json(res, 404, { error: 'التذكرة غير موجودة' });
+    json(res, 200, { ticket: t, messages: db.prepare('SELECT * FROM support_messages WHERE ticket_id = ? ORDER BY id').all(t.id) });
+  },
+  'POST /api/admin/support/:id/messages': async (req, res, user, p) => {
+    const t = db.prepare('SELECT * FROM support_tickets WHERE id = ?').get(p.id);
+    if (!t) return json(res, 404, { error: 'التذكرة غير موجودة' });
+    const body = String(((await readJSON(req)) || {}).body || '').trim();
+    if (!body) return json(res, 400, { error: 'الرسالة فارغة' });
+    db.prepare('INSERT INTO support_messages (ticket_id, sender, body) VALUES (?, ?, ?)').run(t.id, 'admin', body);
+    db.prepare(`UPDATE support_tickets SET status = 'answered', updated_at = datetime('now') WHERE id = ?`).run(t.id);
+    json(res, 201, { ok: true });
+  },
+  'PUT /api/admin/support/:id': async (req, res, user, p) => {
+    const b = (await readJSON(req)) || {};
+    if (!['open', 'answered', 'closed'].includes(b.status)) return json(res, 400, { error: 'حالة غير صحيحة' });
+    db.prepare(`UPDATE support_tickets SET status = ?, updated_at = datetime('now') WHERE id = ?`).run(b.status, p.id);
+    json(res, 200, { ok: true });
+  },
+
   'GET /api/dev-requests': (req, res, user) => json(res, 200, {
     requests: db.prepare('SELECT * FROM dev_requests WHERE user_id = ? ORDER BY id DESC').all(user.id)
   }),

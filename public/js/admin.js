@@ -37,7 +37,7 @@ const ICONS = {
 const I = k => ICONS[k] || ICONS.overview;
 
 const NAV = [
-  ['overview', 'overview', 'نظرة عامة'], ['activations', 'activations', 'طلبات التفعيل'], ['merchants', 'merchants', 'التجار'], ['stores', 'stores', 'المتاجر'], ['orders', 'orders', 'آخر الطلبات'], ['integrations', 'integrations', 'التكاملات']
+  ['overview', 'overview', 'نظرة عامة'], ['activations', 'activations', 'طلبات التفعيل'], ['merchants', 'merchants', 'التجار'], ['stores', 'stores', 'المتاجر'], ['orders', 'orders', 'آخر الطلبات'], ['support', 'shield', 'تذاكر الدعم'], ['integrations', 'integrations', 'التكاملات']
 ];
 function shell(content) {
   const hash = location.hash.replace('#/', '') || 'overview';
@@ -176,11 +176,49 @@ async function saveIntegKeys() {
   toast('تم حفظ المفاتيح — الخدمة تعمل الآن بالوضع الحقيقي'); route();
 }
 
-const VIEWS = { overview: viewOverview, integrations: viewIntegrations, activations: viewActivations, merchants: viewMerchants, stores: viewStores, orders: viewOrders };
+async function viewSupport() {
+  const { tickets } = await api('/api/admin/support');
+  const st = { open: '<span class="chip st-new">مفتوحة</span>', answered: '<span class="chip st-delivered">تم الرد</span>', closed: '<span class="chip">مغلقة</span>' };
+  return shell(`
+    ${topBar('تذاكر الدعم', 'رسائل التجار لفريق المنصة')}
+    ${tickets.length ? `<div class="d-card"><table class="d-table"><thead><tr><th>#</th><th>المتجر</th><th>الموضوع</th><th>آخر رسالة</th><th>الحالة</th><th>التحديث</th><th></th></tr></thead><tbody>
+      ${tickets.map(t => `<tr><td class="mono">${t.id}</td><td>${esc(t.store_name)}<div class="muted small">${esc(t.merchant_email)}</div></td><td><b>${esc(t.subject)}</b></td><td class="muted small">${esc((t.last_body || '').slice(0, 50))}</td><td>${st[t.status] || t.status}</td><td class="muted small">${fmtDate(t.updated_at)}</td><td><button class="btn sm" onclick="location.hash='#/support/${t.id}'">فتح</button></td></tr>`).join('')}</tbody></table></div>`
+    : `<div class="d-card empty"><h3>لا تذاكر دعم</h3><p class="muted">ستظهر هنا تذاكر التجار عند إرسالها.</p></div>`}`);
+}
+async function viewSupportThread(id) {
+  const { ticket: t, messages } = await api('/api/admin/support/' + id);
+  const st = { open: 'مفتوحة', answered: 'تم الرد', closed: 'مغلقة' };
+  return shell(`
+    ${topBar(`تذكرة #${t.id} — ${esc(t.subject)}`, `${esc(t.store_name)} · ${esc(t.merchant_email)} · الحالة: ${st[t.status] || t.status}`)}
+    <div class="d-card sup-thread">
+      ${messages.map(m => `<div class="ai-msg ${m.sender === 'admin' ? 'me' : 'bot'}"><div class="sup-meta muted small">${m.sender === 'admin' ? 'أنت (الدعم)' : 'التاجر'} · ${fmtDate(m.created_at)}</div>${esc(m.body)}</div>`).join('')}
+    </div>
+    <div class="d-card sup-reply">
+      <textarea id="aSupBody" class="d-input" rows="3" placeholder="اكتب ردك للتاجر…"></textarea>
+      <div style="display:flex;gap:8px">
+        <button class="btn primary" onclick="aSupReply(${t.id})">إرسال الرد</button>
+        <button class="btn" onclick="aSupStatus(${t.id}, 'open')">إعادة فتح</button>
+        <button class="btn danger" onclick="aSupStatus(${t.id}, 'closed')">إغلاق</button>
+      </div>
+    </div>`);
+}
+window.aSupReply = async (id) => {
+  const body = $('#aSupBody').value.trim(); if (!body) return;
+  await api('/api/admin/support/' + id + '/messages', { method: 'POST', body: { body } });
+  toast('تم إرسال الرد'); route();
+};
+window.aSupStatus = async (id, status) => {
+  await api('/api/admin/support/' + id, { method: 'PUT', body: { status } });
+  toast('تم تحديث الحالة'); route();
+};
+const VIEWS = { overview: viewOverview, integrations: viewIntegrations, activations: viewActivations, merchants: viewMerchants, stores: viewStores, orders: viewOrders, support: viewSupport };
 async function route() {
   const hash = location.hash.replace('#/', '') || 'overview';
   $('#root').innerHTML = '<div class="d-main"><div class="skel" style="height:200px;margin-bottom:14px"></div><div class="skel" style="height:300px"></div></div>';
-  try { $('#root').innerHTML = await (VIEWS[hash] || viewOverview)(); }
+  try {
+    const tm = hash.match(/^support\/(\d+)$/);
+    $('#root').innerHTML = tm ? await viewSupportThread(tm[1]) : await (VIEWS[hash] || viewOverview)();
+  }
   catch (e) { if (!['auth', 'forbidden', 'err'].includes(e.message)) $('#root').innerHTML = '<div class="d-main"><div class="card"><div class="empty"><b>حدث خطأ</b></div></div></div>'; }
   const tabs = $('#actTabs');
   if (tabs) tabs.addEventListener('click', async e => {

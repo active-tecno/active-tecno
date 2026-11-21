@@ -194,6 +194,7 @@ const NAV_GROUPS = [
     ['services', 'services', 'معرض الخدمات'],
     ['marketing-services', 'marketing', 'خدمات التسويق'],
     ['referral', 'percent', 'نظام التسويق بالعمولة'],
+    ['support', 'chat', 'الدعم'],
     ['dev-requests', 'code', 'طلب تطويرات'],
     ['settings', 'settings', 'الأعدادات'],
   ]},
@@ -440,13 +441,26 @@ function drawChart(daily) {
 async function route() {
   closeModal();
   const hash = currentRoute();
-  const view = VIEWS[hash] || VIEWS.overview;
+  let view = VIEWS[hash], params = {};
+  if (!view) {
+    for (const k in VIEWS) {
+      if (!k.includes('/:')) continue;
+      const kp = k.split('/'), hp = hash.split('/');
+      if (kp.length !== hp.length) continue;
+      if (kp.every((seg, i) => seg.startsWith(':') || seg === hp[i])) {
+        view = VIEWS[k];
+        kp.forEach((seg, i) => { if (seg.startsWith(':')) params[seg.slice(1)] = hp[i]; });
+        break;
+      }
+    }
+  }
+  view = view || VIEWS.overview;
   const c = $('#dContent');
   if (!c) return;
   c.innerHTML = '<div class="skel" style="height:120px;margin-bottom:14px"></div><div class="skel" style="height:300px"></div>';
   refreshSide();
   try {
-    const out = await view();
+    const out = await view(params);
     if (typeof out === 'string') { c.innerHTML = out; }
     else { c.innerHTML = out.html; out.after && out.after(); }
   } catch (e) { if (e.message !== 'auth' && e.message !== 'err') c.innerHTML = '<div class="card"><div class="empty"><b>حدث خطأ</b><p class="muted">حاول تحديث الصفحة</p></div></div>'; }

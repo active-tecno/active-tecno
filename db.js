@@ -417,6 +417,28 @@ const migrations = [
     `
   },
   {
+    id: '015_support_tickets',
+    sql: `
+    CREATE TABLE support_tickets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      store_id INTEGER NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id),
+      subject TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'open',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE support_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ticket_id INTEGER NOT NULL REFERENCES support_tickets(id) ON DELETE CASCADE,
+      sender TEXT NOT NULL,
+      body TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX idx_support_tickets_store ON support_tickets(store_id);
+    CREATE INDEX idx_support_messages_ticket ON support_messages(ticket_id);`
+  },
+  {
     id: '013_store_sections',
     sql: `
     CREATE TABLE IF NOT EXISTS store_sections (

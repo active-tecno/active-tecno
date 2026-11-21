@@ -235,6 +235,53 @@ async function srvSave(name) {
   closeModal(); toast('تم إرسال طلبك — سيتواصل معك فريق اكتف');
 }
 
+// ---------- support tickets (الدعم) ----------
+const SUP_ST = { open: '<span class="chip st-new">مفتوحة</span>', answered: '<span class="chip st-delivered">تم الرد</span>', closed: '<span class="chip">مغلقة</span>' };
+registerView('support', async () => {
+  const { tickets } = await api('/api/support');
+  return `
+  <div class="d-page">
+    ${topBar('الدعم', 'تواصل مع فريق المنصة — افتح تذكرة وتابع ردودها من هنا', `<button class="btn primary" onclick="supNew()">+ تذكرة جديدة</button>`)}
+    ${tickets.length ? `<div class="d-card"><table class="d-table"><thead><tr><th>#</th><th>الموضوع</th><th>آخر رد</th><th>الحالة</th><th>التاريخ</th><th></th></tr></thead><tbody>
+      ${tickets.map(t => `<tr><td class="mono">${t.id}</td><td><b>${esc(t.subject)}</b></td><td class="muted small">${esc((t.last_body || '').slice(0, 60))}${(t.last_body || '').length > 60 ? '…' : ''}</td><td>${SUP_ST[t.status] || t.status}</td><td class="muted small">${fmtDate(t.updated_at)}</td><td><button class="btn sm" onclick="go('support/' + ${t.id})">فتح</button></td></tr>`).join('')}</tbody></table></div>`
+    : `<div class="d-card empty"><div class="empty-ic">${I('chat')}</div><h3>لا تذاكر دعم بعد</h3><p class="muted">افتح تذكرة جديدة وسيرد عليك فريق المنصة هنا.</p><button class="btn primary" onclick="supNew()">+ تذكرة جديدة</button></div>`}
+  </div>`;
+});
+registerView('support/:id', async (p) => {
+  const { ticket: t, messages } = await api('/api/support/' + p.id);
+  return { html: `
+  <div class="d-page">
+    ${topBar('تذكرة #' + t.id + ' — ' + esc(t.subject), '', `<button class="btn" onclick="go('support')">→ كل التذاكر</button> ${t.status !== 'closed' ? `<button class="btn danger" onclick="supClose(${t.id})">إغلاق التذكرة</button>` : ''}`)}
+    <div class="d-card sup-thread">
+      ${messages.map(m => `<div class="ai-msg ${m.sender === 'merchant' ? 'me' : 'bot'}"><div class="sup-meta muted small">${m.sender === 'merchant' ? 'أنت' : 'فريق الدعم'} · ${fmtDate(m.created_at)}</div>${esc(m.body)}</div>`).join('')}
+    </div>
+    ${t.status !== 'closed' ? `<div class="d-card sup-reply"><textarea id="supBody" class="d-input" rows="3" placeholder="اكتب ردك…"></textarea><button class="btn primary" onclick="supReply(${t.id})">إرسال</button></div>`
+    : `<div class="d-card empty"><p class="muted">التذكرة مغلقة. افتح تذكرة جديدة إن احتجت مساعدة أخرى.</p></div>`}
+  </div>` };
+});
+function supNew() {
+  openModal('تذكرة دعم جديدة', `
+    <label class="d-label">الموضوع</label><input id="supSubject" class="d-input" placeholder="بم تساعدك؟">
+    <label class="d-label">الرسالة</label><textarea id="supFirstBody" class="d-input" rows="4" placeholder="اشرح طلبك بالتفصيل…"></textarea>
+    <button class="btn primary" onclick="supCreate()">إرسال التذكرة</button>`, () => {});
+}
+async function supCreate() {
+  const subject = $('#supSubject').value.trim(), body = $('#supFirstBody').value.trim();
+  if (!subject || !body) return toast('اكتب الموضوع والرسالة');
+  const r = await api('/api/support', { method: 'POST', body: { subject, body } });
+  closeModal(); toast('تم فتح التذكرة'); go('support/' + r.id);
+}
+async function supReply(id) {
+  const body = $('#supBody').value.trim(); if (!body) return;
+  await api('/api/support/' + id + '/messages', { method: 'POST', body: { body } });
+  toast('تم الإرسال'); rerender();
+}
+async function supClose(id) {
+  if (!confirm('إغلاق التذكرة؟')) return;
+  await api('/api/support/' + id + '/close', { method: 'POST' });
+  toast('تم الإغلاق'); go('support');
+}
+
 // ---------- platform referral (نظام التسويق بالعمولة) ----------
 registerView('referral', async () => {
   const d = await api('/api/referrals');
