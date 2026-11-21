@@ -369,6 +369,47 @@ const api = {
     json(res, 201, { ok: true });
   },
 
+  // ---------- H2: builder sections ----------
+  'GET /api/sections': (req, res, user) => {
+    const url = new URL(req.url, 'http://x'); const page = url.searchParams.get('page') || 'home';
+    const sections = db.prepare('SELECT * FROM store_sections WHERE store_id = ? AND page = ? ORDER BY position, id').all(getStoreForUser(user).id, page);
+    json(res, 200, { sections });
+  },
+  'POST /api/sections': async (req, res, user) => {
+    const b = await readJSON(req); if (!b || !b.type) return json(res, 400, { error: 'نوع القسم مطلوب' });
+    const store = getStoreForUser(user);
+    const page = String(b.page || 'home'); const zone = String(b.zone || 'content');
+    const max = db.prepare('SELECT COALESCE(MAX(position),0) m FROM store_sections WHERE store_id = ? AND page = ? AND zone = ?').get(store.id, page, zone).m;
+    const r = db.prepare('INSERT INTO store_sections (store_id, page, zone, position, type, settings) VALUES (?, ?, ?, ?, ?, ?)').run(store.id, page, zone, max + 1, String(b.type), JSON.stringify(b.settings || {}));
+    json(res, 201, { section: db.prepare('SELECT * FROM store_sections WHERE id = ?').get(r.lastInsertRowid) });
+  },
+  'PUT /api/sections/:id': async (req, res, user, p) => {
+    const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
+    const store = getStoreForUser(user);
+    const sets = [], vals = [];
+    if (b.settings !== undefined) { sets.push('settings = ?'); vals.push(JSON.stringify(b.settings)); }
+    if (b.enabled !== undefined) { sets.push('enabled = ?'); vals.push(b.enabled ? 1 : 0); }
+    if (b.zone !== undefined) { sets.push('zone = ?'); vals.push(String(b.zone)); }
+    if (sets.length) db.prepare(`UPDATE store_sections SET ${sets.join(', ')} WHERE id = ? AND store_id = ?`).run(...vals, p.id, store.id);
+    json(res, 200, { ok: true });
+  },
+  'POST /api/sections/:id/move': async (req, res, user, p) => {
+    const b = await readJSON(req); const dir = b && b.dir === 'down' ? 1 : -1;
+    const store = getStoreForUser(user);
+    const sec = db.prepare('SELECT * FROM store_sections WHERE id = ? AND store_id = ?').get(p.id, store.id);
+    if (!sec) return json(res, 404, { error: 'غير موجود' });
+    const sib = db.prepare(`SELECT * FROM store_sections WHERE store_id = ? AND page = ? AND zone = ? AND position ${dir === 1 ? '>' : '<'} ? ORDER BY position ${dir === 1 ? 'ASC' : 'DESC'} LIMIT 1`).get(store.id, sec.page, sec.zone, sec.position);
+    if (sib) {
+      db.prepare('UPDATE store_sections SET position = ? WHERE id = ?').run(sib.position, sec.id);
+      db.prepare('UPDATE store_sections SET position = ? WHERE id = ?').run(sec.position, sib.id);
+    }
+    json(res, 200, { ok: true });
+  },
+  'DELETE /api/sections/:id': (req, res, user, p) => {
+    db.prepare('DELETE FROM store_sections WHERE id = ? AND store_id = ?').run(p.id, getStoreForUser(user).id);
+    json(res, 200, { ok: true });
+  },
+
   // ---------- F2: products cluster ----------
   'GET /api/categories': (req, res, user) => json(res, 200, { categories: db.prepare('SELECT * FROM categories WHERE store_id = ? ORDER BY priority ASC, name').all(getStoreForUser(user).id) }),
   'POST /api/categories': async (req, res, user) => {

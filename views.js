@@ -708,7 +708,7 @@ function appShell() {
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Rubik:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/public/css/dashboard.css">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23141924'/%3E%3Cpath d='M9 20l7-11 7 11' stroke='%2327cd27' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-</head><body class="dash"><div id="root"></div><script src="/public/js/dash-core.js"></script><script src="/public/js/dash-legacy.js"></script><script src="/public/js/dash-home.js"></script><script src="/public/js/dash-orders.js"></script><script src="/public/js/dash-products.js"></script><script src="/public/js/dash-funnels.js"></script><script src="/public/js/dash-marketing.js"></script><script src="/public/js/dash-f5.js"></script><script src="/public/js/dash-f6.js"></script><script src="/public/js/dash-i18n.js"></script></body></html>`;
+</head><body class="dash"><div id="root"></div><script src="/public/js/dash-core.js"></script><script src="/public/js/dash-legacy.js"></script><script src="/public/js/dash-home.js"></script><script src="/public/js/dash-orders.js"></script><script src="/public/js/dash-products.js"></script><script src="/public/js/dash-funnels.js"></script><script src="/public/js/dash-marketing.js"></script><script src="/public/js/dash-f5.js"></script><script src="/public/js/dash-f6.js"></script><script src="/public/js/dash-builder.js"></script><script src="/public/js/dash-i18n.js"></script></body></html>`;
 }
 
 function adminShell() {
@@ -874,6 +874,104 @@ ${cartDrawer(store)}
 ${storeScripts(store)}
 </body></html>`;
 }
+
+// ---------- H2: sections engine (home builder) ----------
+const SECTION_DEFAULTS = {
+  hero: { title: '', subtitle: '', cta_text: 'تسوّق الآن', cta_link: '#products', img: '' },
+  slider: { slides: [] },
+  categories: { title: '' },
+  product_grid: { title: '', limit: 24, sort: 'newest' },
+  product_list: { title: 'احدث المنتجات', limit: 10 },
+  featured_products: { title: 'الأكثر مبيعاً', limit: 8 },
+  promo_banner: { text: '', bg: '#27cd27', color: '#ffffff', link: '' },
+  image: { img: '', link: '', alt: '' },
+  heading: { title: '', subtitle: '' },
+  rich_text: { html: '' },
+  html_code: { html: '' },
+  faq: { title: 'الأسئلة الشائعة', items: [] },
+  features: { title: '', items: [] },
+  newsletter: { title: 'اشترك في نشرتنا البريدية', desc: 'عروض ومنتجات جديدة على بريدك أولاً بأول' },
+  reviews: { title: 'آراء العملاء', limit: 6 },
+  blog: { title: 'من المدونة', limit: 3 },
+};
+const SECTION_NAMES = { hero: 'سلايدر', slider: 'سلايدر صور', categories: 'الفئات', product_grid: 'شبكة المنتجات', product_list: 'قائمة المنتجات', featured_products: 'المنتجات المميزة', promo_banner: 'لافتة ترويجية', image: 'صورة', heading: 'عنوان رئيسي وفرعي', rich_text: 'نص متقدم', html_code: 'كود HTML', faq: 'الأسئلة الشائعة', features: 'مميزات المتجر', newsletter: 'النشرة البريدية', reviews: 'التقييمات', blog: 'المدونة' };
+function seedHomeSections(store) {
+  const rows = [
+    ['below_header', 'hero', { title: store.name, subtitle: store.description }],
+    ['content', 'categories', {}],
+    ['content', 'product_grid', { limit: 24 }],
+    ['above_footer', 'newsletter', {}],
+  ];
+  rows.forEach(([zone, type, stg], i) => {
+    db.prepare('INSERT INTO store_sections (store_id, page, zone, position, type, settings) VALUES (?, ?, ?, ?, ?, ?)')
+      .run(store.id, 'home', zone, i + 1, type, JSON.stringify({ ...(SECTION_DEFAULTS[type] || {}), ...stg }));
+  });
+}
+function getSections(store, page) {
+  let rows = db.prepare('SELECT * FROM store_sections WHERE store_id = ? AND page = ? ORDER BY position, id').all(store.id, page);
+  if (!rows.length && page === 'home') { seedHomeSections(store); rows = db.prepare('SELECT * FROM store_sections WHERE store_id = ? AND page = ? ORDER BY position, id').all(store.id, page); }
+  return rows;
+}
+function sectionSettings(s) { try { return { ...(SECTION_DEFAULTS[s.type] || {}), ...JSON.parse(s.settings || '{}') }; } catch (e) { return { ...(SECTION_DEFAULTS[s.type] || {}) }; } }
+function renderSection(store, s, ctx) {
+  const st = sectionSettings(s);
+  const { products, cats, lay, t } = ctx;
+  const escAttr = esc;
+  switch (s.type) {
+    case 'hero': {
+      const bg = st.img ? ` style="background-image:url('${escAttr(st.img)}');background-size:cover;background-position:center"` : '';
+      return `<section class="s-hero"${bg}><h1>${esc(st.title || store.name)}</h1><p>${esc(st.subtitle || '')}</p>
+<div class="s-hero-cta">${st.cta_text ? `<a class="s-btn" href="${escAttr(st.cta_link || '#products')}">${esc(st.cta_text)}</a>` : ''}
+${store.whatsapp ? `<a class="s-btn ghost" href="https://wa.me/${escAttr(store.whatsapp)}" target="_blank" rel="noopener">تواصل واتساب</a>` : ''}</div></section>`;
+    }
+    case 'slider': {
+      const slides = (st.slides || []).filter(x => x.img);
+      if (!slides.length) return '';
+      return `<div class="s-slider">${slides.map((x, i) => `<a class="s-slide${i ? ' hidden' : ''}" href="${escAttr(x.link || '#')}" style="background-image:url('${escAttr(x.img)}')">${x.title ? `<span class="s-slide-cap"><b>${esc(x.title)}</b>${x.subtitle ? `<i>${esc(x.subtitle)}</i>` : ''}</span>` : ''}</a>`).join('')}${slides.length > 1 ? `<div class="s-slide-dots">${slides.map((x, i) => `<button data-slide="${i}" class="${i ? '' : 'on'}"></button>`).join('')}</div>` : ''}</div>`;
+    }
+    case 'categories': {
+      if (!cats.length) return '';
+      return `${st.title ? `<h2 class="s-sec-t">${esc(st.title)}</h2>` : ''}<nav class="s-cats" id="products">${['الكل', ...cats].map(c => `<button class="s-cat" data-cat="${escAttr(c)}">${esc(c)}</button>`).join('')}</nav>`;
+    }
+    case 'product_grid': {
+      let list = products; if (st.sort === 'price_asc') list = [...products].sort((a, b) => a.price - b.price); if (st.sort === 'price_desc') list = [...products].sort((a, b) => b.price - a.price);
+      list = list.slice(0, st.limit || 24);
+      return `${st.title ? `<h2 class="s-sec-t">${esc(st.title)}</h2>` : ''}<main class="s-grid">${list.map(p => productCardHTML(store, lay, p)).join('') || `<div class="s-empty">لا توجد منتجات بعد</div>`}</main>`;
+    }
+    case 'product_list': {
+      const list = products.slice(0, st.limit || 10);
+      return `<section class="s-plist">${st.title ? `<div class="s-plist-h"><h2>${esc(st.title)}</h2><a href="#products">عرض الكل</a></div>` : ''}<div class="s-plist-row">${list.map(p => productCardHTML(store, lay, p)).join('')}</div></section>`;
+    }
+    case 'featured_products': {
+      const list = products.filter(p => p.compare_at_price && p.compare_at_price > p.price).slice(0, st.limit || 8);
+      if (!list.length) return '';
+      return `<section class="s-plist"><div class="s-plist-h"><h2>${esc(st.title || 'الأكثر مبيعاً')}</h2></div><div class="s-plist-row">${list.map(p => productCardHTML(store, lay, p)).join('')}</div></section>`;
+    }
+    case 'promo_banner': return st.text ? `<a class="s-promo" href="${escAttr(st.link || '#')}" style="background:${escAttr(st.bg)};color:${escAttr(st.color)}">${esc(st.text)}</a>` : '';
+    case 'image': return st.img ? `<a class="s-image" href="${escAttr(st.link || '#')}"><img src="${escAttr(st.img)}" alt="${escAttr(st.alt || '')}" loading="lazy"></a>` : '';
+    case 'heading': return `<header class="s-heading"><h2>${esc(st.title || '')}</h2>${st.subtitle ? `<p>${esc(st.subtitle)}</p>` : ''}</header>`;
+    case 'rich_text': return `<div class="s-richtext">${st.html || ''}</div>`;
+    case 'html_code': return st.html || '';
+    case 'faq': return `${st.title ? `<h2 class="s-sec-t">${esc(st.title)}</h2>` : ''}<div class="s-faq">${(st.items || []).map(x => `<details><summary>${esc(x.q || '')}</summary><p>${esc(x.a || '')}</p></details>`).join('')}</div>`;
+    case 'features': return `${st.title ? `<h2 class="s-sec-t">${esc(st.title)}</h2>` : ''}<div class="s-features">${(st.items || []).map(x => `<div class="s-feat"><b>${esc(x.title || '')}</b><p>${esc(x.text || '')}</p></div>`).join('')}</div>`;
+    case 'newsletter': return `<section class="s-newsletter"><h3>${esc(st.title)}</h3><p>${esc(st.desc || '')}</p><form id="nlForm"><input type="email" id="nlEmail" placeholder="بريدك الإلكتروني" required dir="ltr"><button class="s-btn" type="submit">اشترك</button></form><div id="nlMsg"></div></section>`;
+    case 'reviews': {
+      const revs = db.prepare("SELECT customer_name, rating, text FROM reviews WHERE store_id = ? AND status = 'published' ORDER BY created_at DESC LIMIT ?").all(store.id, st.limit || 6);
+      if (!revs.length) return '';
+      return `<section class="s-revs"><h2 class="s-sec-t">${esc(st.title)}</h2><div class="s-revs-row">${revs.map(r => `<div class="s-rev"><div class="s-rev-stars">${'★'.repeat(r.rating || 5)}</div><p>${esc(r.text || '')}</p><b>${esc(r.customer_name || '')}</b></div>`).join('')}</div></section>`;
+    }
+    case 'blog': {
+      let posts = []; try { posts = db.prepare("SELECT title, slug, substr(body,1,120) excerpt FROM blog_posts WHERE store_id = ? AND status = 'published' ORDER BY created_at DESC LIMIT ?").all(store.id, st.limit || 3); } catch (e) {}
+      if (!posts.length) return '';
+      return `<section class="s-blog"><h2 class="s-sec-t">${esc(st.title)}</h2><div class="s-blog-row">${posts.map(p2 => `<a class="s-blog-card" href="/s/${escAttr(store.slug)}/blog/${escAttr(p2.slug)}"><b>${esc(p2.title)}</b>${p2.excerpt ? `<p>${esc(p2.excerpt)}</p>` : ''}</a>`).join('')}</div></section>`;
+    }
+    default: return '';
+  }
+}
+function renderZone(store, page, zone, ctx) {
+  return getSections(store, page).filter(s => s.zone === zone && s.enabled).map(s => renderSection(store, s, ctx)).join('');
+}
+
 function storefront(store, t, owner) {
   const lay = eoLayout(store);
   const products = db.prepare(`SELECT id, name, price, compare_at_price, stock, category, images FROM products WHERE store_id = ? AND status = 'active' AND COALESCE(json_extract(settings,'$.hidden_product'),0) = 0 ORDER BY created_at DESC`).all(store.id);
@@ -883,17 +981,19 @@ function storefront(store, t, owner) {
     : `<section class="s-hero"><h1>${esc(store.name)}</h1><p>${esc(store.description)}</p>
 <div class="s-hero-cta"><a class="s-btn" href="#products">تسوّق الآن</a>
 ${store.whatsapp ? `<a class="s-btn ghost" href="https://wa.me/${esc(store.whatsapp)}" target="_blank" rel="noopener">تواصل واتساب</a>` : ''}</div></section>`;
+  const ctx = { products, cats, lay, t };
   return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, store.name)}</head>
 <body class="store ${t.dark ? 'dark' : ''} t-${esc(store.theme_id)}">
 ${demoBar(store)}
 ${owner ? `<div class="s-ownerbar">وضع المعاينة — <a href="/app">العودة للوحة التحكم</a></div>` : ''}
+${renderZone(store, 'home', 'above_header', ctx)}
 ${storeHeader(store, t, cats)}
-${hero}
-${cats.length ? `<nav class="s-cats" id="products">${['الكل', ...cats].map(c => `<button class="s-cat" data-cat="${esc(c)}">${esc(c)}</button>`).join('')}</nav>` : '<div id="products"></div>'}
-<main class="s-grid">${cards || `<div class="s-empty">لا توجد منتجات بعد — تابعنا قريباً ✨</div>`}</main>
+${renderZone(store, 'home', 'below_header', ctx)}
+${renderZone(store, 'home', 'content', ctx)}
 ${store.free_shipping_over ? `<div class="s-freeship">${IC.truck}شحن مجاني للطلبات فوق ${egp(store.free_shipping_over)}</div>` : ''}
-<section class="s-newsletter"><h3>اشترك في نشرتنا البريدية</h3><p>عروض ومنتجات جديدة على بريدك أولاً بأول</p><form id="nlForm"><input type="email" id="nlEmail" placeholder="بريدك الإلكتروني" required dir="ltr"><button class="s-btn" type="submit">اشترك</button></form><div id="nlMsg"></div></section>
+${renderZone(store, 'home', 'above_footer', ctx)}
 <footer class="s-footer">${socialLinks(store)}<p>يعمل بواسطة <a href="/">اكتف اوردر</a> — الدفع عند الاستلام متاح</p></footer>
+${renderZone(store, 'home', 'below_footer', ctx)}
 ${cartDrawer(store)}
 ${storeScripts(store)}
 <script>track('page_view');</script>

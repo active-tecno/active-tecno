@@ -152,7 +152,10 @@ const NAV_GROUPS = [
     ['easy-catalog', null, 'اكتف كتالوج'],
     ['ab-tests', null, 'A/B Tests'],
   ]]},
-  { label: null, items: [['customize', 'customize', 'تصميم المتجر']] },
+  { label: null, items: [], group: ['design', 'customize', 'تصميم المتجر', [
+    ['customize', null, 'الثييمات'],
+    ['builder', null, 'تعديل الصفحة الرئيسية'],
+  ]]},
   { label: null, items: [['funnels', 'funnel', 'Funnels']] },
   { label: null, items: [], group: ['tracking', 'tracking', 'ادوات التتبع', [
     ['pixels-settings', null, 'اعدادات البيكسل'],

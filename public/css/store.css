@@ -452,3 +452,30 @@ body.dark .blog-card { background: #131a2b; border-color: #232c44; }
 .pd-sticky-info span { color: var(--acc, #16a34a); font-weight: 700; font-size: 14px; }
 .pd-sticky .s-btn { flex-shrink: 0; }
 body:has(.pd-sticky) main.pd { padding-bottom: 80px; }
+
+/* sections storefront additions */
+.s-sec-t { text-align: center; margin: 28px 0 12px; }
+.s-promo { display: block; text-align: center; padding: 10px; font-weight: 700; text-decoration: none; }
+.s-image img { width: 100%; display: block; border-radius: 12px; }
+.s-heading { text-align: center; margin: 28px 0 10px; }
+.s-heading p { color: var(--mut, #777); }
+.s-richtext { max-width: 760px; margin: 16px auto; line-height: 2; }
+.s-faq { max-width: 760px; margin: 0 auto; }
+.s-faq details { border: 1px solid var(--line, #e5e5e5); border-radius: 10px; padding: 10px 14px; margin-bottom: 8px; }
+.s-features { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 12px 0; }
+.s-feat { border: 1px solid var(--line, #e5e5e5); border-radius: 12px; padding: 16px; text-align: center; }
+.s-slider { position: relative; border-radius: 14px; overflow: hidden; margin: 10px 0; }
+.s-slide { display: block; min-height: 320px; background-size: cover; background-position: center; position: relative; }
+.s-slide.hidden { display: none; }
+.s-slide-cap { position: absolute; inset-inline: 0; bottom: 0; padding: 18px; color: #fff; background: linear-gradient(transparent, rgb(0 0 0 / .55)); display: flex; flex-direction: column; }
+.s-slide-dots { position: absolute; bottom: 10px; inset-inline: 0; display: flex; gap: 6px; justify-content: center; }
+.s-slide-dots button { width: 9px; height: 9px; border-radius: 50%; border: 0; background: rgb(255 255 255 / .5); cursor: pointer; }
+.s-slide-dots button.on { background: #fff; }
+.s-plist { margin: 18px 0; }
+.s-plist-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.s-plist-row { display: grid; grid-auto-flow: column; grid-auto-columns: 220px; gap: 12px; overflow-x: auto; padding-bottom: 8px; }
+.s-revs-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.s-rev { border: 1px solid var(--line, #e5e5e5); border-radius: 12px; padding: 14px; }
+.s-rev-stars { color: #f5a623; }
+.s-blog-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.s-blog-card { border: 1px solid var(--line, #e5e5e5); border-radius: 12px; padding: 14px; text-decoration: none; color: inherit; display: block; }

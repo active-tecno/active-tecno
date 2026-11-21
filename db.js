@@ -392,6 +392,22 @@ const migrations = [
     `
   },
   {
+    id: '013_store_sections',
+    sql: `
+    CREATE TABLE IF NOT EXISTS store_sections (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      store_id INTEGER NOT NULL,
+      page TEXT NOT NULL DEFAULT 'home',
+      zone TEXT NOT NULL DEFAULT 'content',
+      position INTEGER NOT NULL DEFAULT 0,
+      type TEXT NOT NULL,
+      settings TEXT NOT NULL DEFAULT '{}',
+      enabled INTEGER NOT NULL DEFAULT 1
+    );
+    CREATE INDEX IF NOT EXISTS idx_sections_store ON store_sections(store_id, page, zone, position);
+    `
+  },
+  {
     id: '012_product_advanced',
     sql: `
     ALTER TABLE products ADD COLUMN stock_tracking INTEGER NOT NULL DEFAULT 0;
