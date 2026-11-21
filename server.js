@@ -493,6 +493,45 @@ const api = {
     json(res, 200, { ok: true });
   },
 
+  // ---------- F6: settings tree ----------
+  'PUT /api/store/settings': async (req, res, user) => {
+    const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
+    const store = getStoreForUser(user);
+    const allowed = ['policies', 'head_code', 'seo', 'social', 'custom_domain', 'max_items', 'notify_email'];
+    const up = db.prepare('INSERT INTO store_settings (store_id, key, value, updated_at) VALUES (?, ?, ?, datetime(\'now\')) ON CONFLICT(store_id, key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at');
+    for (const k of allowed) if (k in b) up.run(store.id, k, typeof b[k] === 'string' ? b[k] : JSON.stringify(b[k]));
+    if ('phone' in b) db.prepare('UPDATE stores SET phone = ? WHERE id = ?').run(String(b.phone).trim(), store.id);
+    json(res, 200, { ok: true });
+  },
+  'GET /api/store/settings': (req, res, user) => {
+    const store = getStoreForUser(user);
+    const s = Object.fromEntries(db.prepare('SELECT key, value FROM store_settings WHERE store_id = ?').all(store.id).map(r => [r.key, r.value]));
+    json(res, 200, { settings: s, api_key: store.api_key || null });
+  },
+  'POST /api/store/api-key': (req, res, user) => {
+    const store = getStoreForUser(user);
+    const key = 'ak_' + crypto.randomBytes(20).toString('hex');
+    db.prepare('UPDATE stores SET api_key = ? WHERE id = ?').run(key, store.id);
+    json(res, 200, { api_key: key });
+  },
+  'GET /api/v1/:slug/orders': (req, res, user, p, url) => {
+    const store = db.prepare('SELECT * FROM stores WHERE slug = ?').get(p.slug);
+    if (!store || !store.api_key || url.searchParams.get('key') !== store.api_key) return json(res, 401, { error: 'invalid api key' });
+    const orders = db.prepare('SELECT number, customer_name, customer_phone, governorate, total, status, payment_status, created_at FROM orders WHERE store_id = ? ORDER BY id DESC LIMIT 100').all(store.id);
+    json(res, 200, { orders });
+  },
+  'GET /api/settings/sessions': (req, res, user) => {
+    const token = parseCookies(req).at_session || '';
+    const rows = db.prepare('SELECT token, created_at, expires_at FROM sessions WHERE user_id = ? ORDER BY created_at DESC LIMIT 20').all(user.id)
+      .map(r => ({ created_at: r.created_at, expires_at: r.expires_at, current: r.token === token, hint: r.token.slice(0, 6) }));
+    json(res, 200, { sessions: rows });
+  },
+  'POST /api/settings/sessions/revoke-others': (req, res, user) => {
+    const token = parseCookies(req).at_session || '';
+    db.prepare('DELETE FROM sessions WHERE user_id = ? AND token != ?').run(user.id, token);
+    json(res, 200, { ok: true });
+  },
+
   // ---------- F5: blogs ----------
   'GET /api/blog-categories': (req, res, user) => json(res, 200, {
     cats: db.prepare(`SELECT c.*, (SELECT COUNT(*) FROM blog_posts p WHERE p.category_id = c.id) AS posts FROM blog_categories c WHERE c.store_id = ? ORDER BY c.id DESC`).all(getStoreForUser(user).id)
@@ -1009,6 +1048,10 @@ const api = {
     // min order value (F4 marketing setting)
     const minOrder = +(db.prepare('SELECT value FROM store_settings WHERE store_id = ? AND key = \'min_order\'').get(store.id)?.value || 0);
     if (minOrder > 0 && total < minOrder) return json(res, 400, { error: `الحد الأدنى للطلب ${minOrder} ج.م — أضف منتجات بقيمة ${minOrder - total} ج.م على الأقل` });
+    // fake-order protection (F6): max items per order
+    const maxItems = +(db.prepare('SELECT value FROM store_settings WHERE store_id = ? AND key = \'max_items\'').get(store.id)?.value || 0);
+    const totalQty = lineItems.reduce((t, li) => t + li.qty, 0);
+    if (maxItems > 0 && totalQty > maxItems) return json(res, 400, { error: `الحد الأقصى لعناصر الطلب الواحد ${maxItems} — قسّم طلبك أو تواصل مع المتجر` });
     const count = db.prepare('SELECT COUNT(*) c FROM orders WHERE store_id = ?').get(store.id).c;
     const number = `${store.slug.slice(0, 2).toUpperCase()}-${1021 + count}`;
     const paymentsCfg = (JSON.parse(store.theme_settings || '{}').payments) || { cod: true, online: false };
@@ -1137,7 +1180,7 @@ const server = http.createServer(async (req, res) => {
       }
       if (!key) return json(res, 404, { error: 'Not found' });
       const isAdminRoute = key.includes('/api/admin/');
-      const isPublic = key.includes('/api/public/') || key.includes('/api/auth/') || key.includes('/api/webhooks/');
+      const isPublic = key.includes('/api/public/') || key.includes('/api/auth/') || key.includes('/api/webhooks/') || key.startsWith('GET /api/v1/');
       if (!isPublic && !user) return json(res, 401, { error: 'unauthenticated' });
       if (isAdminRoute && (!user || !user.is_admin)) return json(res, 403, { error: 'admin only' });
       if (!isPublic && !isAdminRoute && !getStoreForUser(user)) return json(res, 400, { error: 'لا يوجد متجر لهذا الحساب' });
@@ -1166,7 +1209,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (pathname === '/admin') return html(res, 200, views.adminShell());
 
-    const storeMatch = pathname.match(/^\/s\/([a-z0-9\u0600-\u06FF-]+)(\/p\/(\d+)|\/f\/(\d+)|\/checkout|\/verified|\/blog|\/blog\/([^\/]+)|\/order\/([A-Z0-9-]+))?\/?$/i);
+    const storeMatch = pathname.match(/^\/s\/([a-z0-9\u0600-\u06FF-]+)(\/p\/(\d+)|\/f\/(\d+)|\/checkout|\/verified|\/policies|\/blog|\/blog\/([^\/]+)|\/order\/([A-Z0-9-]+))?\/?$/i);
     if (storeMatch) {
       const [, slug, sub, productId, funnelId, , orderNumber] = storeMatch;
       const store = db.prepare('SELECT * FROM stores WHERE slug = ?').get(slug);
@@ -1197,6 +1240,7 @@ const server = http.createServer(async (req, res) => {
         if (!post) return html(res, 404, views.notFound());
         return html(res, 200, views.storeBlogPost(store, post, themeConfig));
       }
+      if (sub === '/policies') return html(res, 200, views.policiesPage(store, themeConfig));
       if (sub === '/verified') {
         const stats = db.prepare(`SELECT COUNT(*) c, COALESCE(SUM(total),0) t FROM orders WHERE store_id = ? AND status NOT IN ('cancelled','returned')`).get(store.id);
         return html(res, 200, views.verifiedPage(store, stats, themeConfig));

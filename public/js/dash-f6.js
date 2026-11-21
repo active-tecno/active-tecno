@@ -1,0 +1,169 @@
+// ==================== F6: settings tree (EasyOrders main-settings parity) ====================
+const SETTINGS_TABS = [
+  ['settings', 'إعدادات المتجر'],
+  ['settings/domain', 'الدومين'],
+  ['settings/policies', 'سياسات المتجر'],
+  ['settings/head', 'إضافة كود للهيد'],
+  ['settings/seo', 'إعدادات SEO'],
+  ['payments', 'بوابات الدفع'],
+  ['shipping', 'إعدادات الشحن'],
+  ['settings/social', 'روابط التواصل الاجتماعي'],
+  ['team', 'إعدادات المديرين'],
+  ['settings/api', 'Public API'],
+  ['settings/sessions', 'جلسات الدخول'],
+  ['settings/phone', 'رقم الهاتف'],
+];
+function settingsShell(active, title, sub, inner) {
+  const nav = SETTINGS_TABS.map(([k, label]) =>
+    `<button class="set-tab ${k === active ? 'on' : ''}" onclick="go('${k}')">${label}</button>`).join('');
+  return shell(topBar(title, sub) +
+    `<div class="set-wrap"><nav class="set-nav">${nav}</nav><div class="set-body">${inner}</div></div>`);
+}
+async function loadStoreSettings() {
+  const d = await api('/api/store/settings');
+  return d;
+}
+
+// ---- main store settings ----
+registerView('settings', async () => {
+  const { settings: s } = await loadStoreSettings();
+  return settingsShell('settings', 'إعدادات المتجر', 'البيانات الأساسية وحماية الطلبات', `
+    <div class="card"><h3>البيانات الأساسية</h3><div class="f-grid">
+      <div class="f-field"><label>اسم المتجر</label><input id="stName" value="${esc(STORE.name)}"></div>
+      <div class="f-field"><label>رابط المتجر</label><div style="display:flex;align-items:center;gap:6px"><span class="muted mono small">/s/</span><input id="stSlug" dir="ltr" value="${esc(STORE.slug)}"></div></div>
+      <div class="f-field full"><label>وصف المتجر</label><textarea id="stDesc" rows="2">${esc(STORE.description || '')}</textarea></div>
+      <div class="f-field"><label>هاتف المتجر</label><input id="stPhone" dir="ltr" value="${esc(STORE.phone || '')}"></div>
+      <div class="f-field"><label>رقم واتساب (بكود الدولة)</label><input id="stWa" dir="ltr" value="${esc(STORE.whatsapp || '')}" placeholder="2010xxxxxxxx"></div>
+    </div><div class="m-actions"><button class="btn btn-teal" onclick="saveSettings()">حفظ الإعدادات</button></div></div>
+    <div class="card"><h3>حماية الطلبات الوهمية</h3>
+      <p class="muted small">حدد أقصى عدد لعناصر الطلب الواحد — أي طلب يتجاوزه يُرفض تلقائياً برسالة للعميل. اتركه 0 لإيقاف الحماية.</p>
+      <div class="frow" style="margin-top:10px"><input id="stMaxItems" type="number" min="0" dir="ltr" style="max-width:140px" value="${esc(s.max_items || '0')}"><button class="btn btn-soft" onclick="saveStoreSetting('max_items', $('#stMaxItems').value)">حفظ</button></div>
+    </div>`);
+});
+async function saveStoreSetting(key, value) {
+  const b = {}; b[key] = value;
+  await api('/api/store/settings', { method: 'PUT', body: b });
+  toast('تم الحفظ');
+}
+
+// ---- domain ----
+registerView('settings/domain', async () => {
+  const { settings: s } = await loadStoreSettings();
+  const cur = s.custom_domain || '';
+  return settingsShell('settings/domain', 'الدومين', 'اربط نطاقك الخاص بمتجرك', `
+    <div class="card"><h3>ربط دومين خاص</h3>
+      <p class="muted small">اربط نطاقك الخاص (مثل store.com) بمتجرك لروابط أنظف وثقة أعلى. أضف سجل CNAME يشير إلى <span class="mono" dir="ltr">stores.activetecno.software</span> ثم أدخل النطاق — يتم الربط يدوياً من فريقنا خلال 24 ساعة وستصلك رسالة تأكيد.</p>
+      ${cur ? `<p class="small" style="margin:10px 0 0">النطاق الحالي: <b class="mono" dir="ltr">${esc(cur)}</b> <span class="chip st-pending">قيد الربط</span></p>` : ''}
+      <div class="frow" style="margin-top:10px"><input id="stDomain" placeholder="www.mystore.com" dir="ltr" value="${esc(cur)}"><button class="btn btn-teal" onclick="saveStoreSetting('custom_domain', $('#stDomain').value.trim()); route()">ربط النطاق</button></div>
+    </div>`);
+});
+
+// ---- policies ----
+registerView('settings/policies', async () => {
+  const { settings: s } = await loadStoreSettings();
+  let pol = {}; try { pol = JSON.parse(s.policies || '{}'); } catch (_) {}
+  const f = (k, label) => `<div class="f-field full"><label>${label}</label><textarea id="pol_${k}" rows="5">${esc(pol[k] || '')}</textarea></div>`;
+  return settingsShell('settings/policies', 'سياسات المتجر', 'تظهر للعملاء في صفحة السياسات بمتجرك', `
+    <div class="card"><div class="f-grid">
+      ${f('terms', 'شروط الاستخدام')}${f('privacy', 'سياسة الخصوصية')}
+      ${f('returns', 'سياسة الاستبدال والاسترجاع')}${f('shipping', 'سياسة الشحن والتوصيل')}
+    </div><div class="m-actions">
+      <a class="btn btn-soft" href="/s/${esc(STORE.slug)}/policies" target="_blank">معاينة صفحة السياسات</a>
+      <button class="btn btn-teal" onclick="savePolicies()">حفظ السياسات</button></div></div>`);
+});
+async function savePolicies() {
+  const pol = { terms: $('#pol_terms').value, privacy: $('#pol_privacy').value, returns: $('#pol_returns').value, shipping: $('#pol_shipping').value };
+  await api('/api/store/settings', { method: 'PUT', body: { policies: JSON.stringify(pol) } });
+  toast('تم حفظ السياسات');
+}
+
+// ---- head code ----
+registerView('settings/head', async () => {
+  const { settings: s } = await loadStoreSettings();
+  return settingsShell('settings/head', 'إضافة كود للهيد', 'كود مخصص يُحقن في head متجرك', `
+    <div class="card"><h3>كود الهيد</h3>
+      <p class="muted small">أي كود هنا يُضاف داخل وسم head في كل صفحات متجرك — مفيد لأكواد التحقق من محركات البحث أو أدوات التحليلات. لا يُحقن في النسخ التجريبية.</p>
+      <div class="f-field full" style="margin-top:10px"><textarea id="stHead" rows="8" dir="ltr" class="mono" placeholder='<meta name="google-site-verification" content="...">'>${esc(s.head_code || '')}</textarea></div>
+      <div class="m-actions"><button class="btn btn-teal" onclick="saveStoreSetting('head_code', $('#stHead').value)">حفظ الكود</button></div></div>`);
+});
+
+// ---- SEO ----
+registerView('settings/seo', async () => {
+  const { settings: s } = await loadStoreSettings();
+  let seo = {}; try { seo = JSON.parse(s.seo || '{}'); } catch (_) {}
+  return settingsShell('settings/seo', 'إعدادات SEO', 'تحكم في ظهور متجرك في محركات البحث', `
+    <div class="card"><div class="f-grid">
+      <div class="f-field full"><label>عنوان الصفحة (Meta Title)</label><input id="seoTitle" value="${esc(seo.title || '')}" placeholder="${esc(STORE.name)}"></div>
+      <div class="f-field full"><label>وصف الصفحة (Meta Description)</label><textarea id="seoDesc" rows="3">${esc(seo.desc || '')}</textarea></div>
+      <div class="f-field full"><label>الكلمات المفتاحية (افصل بينها بفاصلة)</label><input id="seoKeys" value="${esc(seo.keywords || '')}"></div>
+    </div><div class="m-actions"><button class="btn btn-teal" onclick="saveSeo()">حفظ إعدادات SEO</button></div></div>`);
+});
+async function saveSeo() {
+  const seo = { title: $('#seoTitle').value.trim(), desc: $('#seoDesc').value.trim(), keywords: $('#seoKeys').value.trim() };
+  await api('/api/store/settings', { method: 'PUT', body: { seo: JSON.stringify(seo) } });
+  toast('تم حفظ إعدادات SEO');
+}
+
+// ---- social links ----
+registerView('settings/social', async () => {
+  const { settings: s } = await loadStoreSettings();
+  let so = {}; try { so = JSON.parse(s.social || '{}'); } catch (_) {}
+  const f = (k, label, ph) => `<div class="f-field"><label>${label}</label><input id="so_${k}" dir="ltr" value="${esc(so[k] || '')}" placeholder="${ph}"></div>`;
+  return settingsShell('settings/social', 'روابط التواصل الاجتماعي', 'تظهر في تذييل متجرك', `
+    <div class="card"><div class="f-grid">
+      ${f('facebook', 'فيسبوك', 'https://facebook.com/...')}
+      ${f('instagram', 'انستجرام', 'https://instagram.com/...')}
+      ${f('tiktok', 'تيك توك', 'https://tiktok.com/@...')}
+    </div><p class="muted small">رابط واتساب يُضاف تلقائياً من رقم الواتساب في إعدادات المتجر.</p>
+    <div class="m-actions"><button class="btn btn-teal" onclick="saveSocial()">حفظ الروابط</button></div></div>`);
+});
+async function saveSocial() {
+  const so = { facebook: $('#so_facebook').value.trim(), instagram: $('#so_instagram').value.trim(), tiktok: $('#so_tiktok').value.trim() };
+  await api('/api/store/settings', { method: 'PUT', body: { social: JSON.stringify(so) } });
+  toast('تم حفظ الروابط');
+}
+
+// ---- public API ----
+registerView('settings/api', async () => {
+  const { api_key } = await loadStoreSettings();
+  return settingsShell('settings/api', 'Public API', 'وصول برمجي لطلبات متجرك', `
+    <div class="card"><h3>مفتاح API</h3>
+      ${api_key
+        ? `<p class="muted small">مفتاحك الحالي — احتفظ به سراً، وأعد توليده إذا تسرب:</p>
+           <div class="frow" style="margin-top:10px"><input class="mono" dir="ltr" readonly value="${esc(api_key)}" onclick="this.select()">
+           <button class="btn btn-danger-soft" onclick="regenApiKey()">إعادة توليد</button></div>`
+        : `<p class="muted small">لا يوجد مفتاح بعد. ولّد مفتاحاً لقراءة طلبات متجرك برمجياً.</p>
+           <div class="m-actions"><button class="btn btn-teal" onclick="regenApiKey()">توليد مفتاح</button></div>`}
+    </div>
+    ${api_key ? `<div class="card"><h3>مثال الاستخدام</h3>
+      <pre class="mono small" dir="ltr" style="background:var(--soft);padding:12px;border-radius:10px;overflow:auto">GET /api/v1/${esc(STORE.slug)}/orders?key=${esc(api_key)}</pre>
+      <p class="muted small">يرجع آخر 100 طلب بصيغة JSON: الرقم، العميل، المحافظة، الإجمالي، الحالة، التاريخ.</p></div>` : ''}`);
+});
+async function regenApiKey() {
+  if (!confirm('توليد مفتاح جديد؟ أي تكامل يعمل بالمفتاح القديم سيتوقف.')) return;
+  await api('/api/store/api-key', { method: 'POST' });
+  toast('تم توليد مفتاح جديد'); route();
+}
+
+// ---- sessions ----
+registerView('settings/sessions', async () => {
+  const { sessions } = await api('/api/settings/sessions');
+  const rows = sessions.map(x => `<div class="integ-row"><div class="integ-ic">${I('shield')}</div>
+    <div style="flex:1"><h3>جلسة <span class="mono small" dir="ltr">${esc(x.hint)}…</span> ${x.current ? '<span class="chip st-live">الجلسة الحالية</span>' : ''}</h3>
+    <p class="muted small">بدأت: ${esc((x.created_at || '').replace('T', ' ').slice(0, 16))} · تنتهي: ${esc((x.expires_at || '').slice(0, 10))}</p></div></div>`).join('');
+  return settingsShell('settings/sessions', 'جلسات الدخول', 'الأجهزة المتصلة بحسابك', `
+    <div class="card"><h3>الجلسات النشطة</h3>${rows || '<p class="muted small">لا توجد جلسات.</p>'}</div>
+    <div class="m-actions"><button class="btn btn-danger-soft" onclick="revokeOtherSessions()">إنهاء كل الجلسات الأخرى</button></div>`);
+});
+async function revokeOtherSessions() {
+  await api('/api/settings/sessions/revoke-others', { method: 'POST' });
+  toast('تم إنهاء الجلسات الأخرى'); route();
+}
+
+// ---- phone ----
+registerView('settings/phone', async () => {
+  return settingsShell('settings/phone', 'رقم الهاتف', 'هاتف المتجر الظاهر للعملاء', `
+    <div class="card"><div class="f-grid">
+      <div class="f-field"><label>رقم هاتف المتجر</label><input id="phStore" dir="ltr" value="${esc(STORE.phone || '')}"></div>
+    </div><div class="m-actions"><button class="btn btn-teal" onclick="saveStoreSetting('phone', $('#phStore').value.trim()); toast('تم حفظ رقم الهاتف')">حفظ</button></div></div>`);
+});

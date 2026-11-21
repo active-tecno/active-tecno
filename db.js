@@ -384,6 +384,12 @@ const migrations = [
     sql: `
     ALTER TABLE carts ADD COLUMN recovered_at TEXT;
     `
+  },
+  {
+    id: '011_store_api_key',
+    sql: `
+    ALTER TABLE stores ADD COLUMN api_key TEXT;
+    `
   }
 ];
 

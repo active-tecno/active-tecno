@@ -563,3 +563,12 @@ body.dash[data-theme="dark"] .act-banner.live .bn-ic svg { color: #4ade80; }
 .plan-feats li { display: flex; align-items: center; gap: 10px; font-size: 14.5px; }
 .plan-feats svg { width: 18px; height: 18px; color: var(--green); flex: none; }
 .switch-row { display: flex; align-items: center; gap: 8px; margin: 12px 0; font-size: 14px; cursor: pointer; }
+
+/* F6: settings tree sub-nav */
+.set-wrap{display:flex;gap:16px;align-items:flex-start}
+.set-nav{display:flex;flex-direction:column;gap:2px;min-width:190px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:8px;position:sticky;top:14px}
+.set-tab{display:block;text-align:right;padding:9px 12px;border:0;background:none;border-radius:8px;font:inherit;font-size:14px;color:var(--muted);cursor:pointer}
+.set-tab:hover{background:var(--soft)}
+.set-tab.on{background:var(--green-soft);color:var(--green);font-weight:600}
+.set-body{flex:1;min-width:0}
+@media(max-width:820px){.set-wrap{flex-direction:column}.set-nav{position:static;flex-direction:row;overflow-x:auto;min-width:0}}

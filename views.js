@@ -707,7 +707,7 @@ function appShell() {
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Rubik:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/public/css/dashboard.css">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23141924'/%3E%3Cpath d='M9 20l7-11 7 11' stroke='%2327cd27' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-</head><body class="dash"><div id="root"></div><script src="/public/js/dash-core.js"></script><script src="/public/js/dash-legacy.js"></script><script src="/public/js/dash-home.js"></script><script src="/public/js/dash-orders.js"></script><script src="/public/js/dash-products.js"></script><script src="/public/js/dash-funnels.js"></script><script src="/public/js/dash-marketing.js"></script><script src="/public/js/dash-f5.js"></script></body></html>`;
+</head><body class="dash"><div id="root"></div><script src="/public/js/dash-core.js"></script><script src="/public/js/dash-legacy.js"></script><script src="/public/js/dash-home.js"></script><script src="/public/js/dash-orders.js"></script><script src="/public/js/dash-products.js"></script><script src="/public/js/dash-funnels.js"></script><script src="/public/js/dash-marketing.js"></script><script src="/public/js/dash-f5.js"></script><script src="/public/js/dash-f6.js"></script></body></html>`;
 }
 
 function adminShell() {
@@ -746,13 +746,34 @@ function demoFormNotice(store) {
   return `<div class="demo-notice">طلب تجريبي: سيظهر الطلب في لوحة التحكم للتجربة فقط — لن يتم توصيله أو تحصيل أي مبلغ.</div>`;
 }
 
+function storeSettingsKV(store) {
+  return Object.fromEntries(db.prepare('SELECT key, value FROM store_settings WHERE store_id = ?').all(store.id).map(r => [r.key, r.value]));
+}
 function storeHead(store, t, title) {
+  const kv = storeSettingsKV(store);
+  let seo = {}; try { seo = JSON.parse(kv.seo || '{}'); } catch (_) {}
+  const meta = [
+    seo.desc ? `<meta name="description" content="${esc(seo.desc)}">` : '',
+    seo.keywords ? `<meta name="keywords" content="${esc(seo.keywords)}">` : '',
+    seo.title ? `<meta property="og:title" content="${esc(seo.title)}">` : '',
+  ].join('');
+  const headCode = kv.head_code && !isDemo(store) ? kv.head_code : '';
   return `<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>${esc(title)}</title>
+<title>${esc(seo.title || title)}</title>
+${meta}
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Rubik:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/public/css/store.css">
-<style>:root{${themeVars(t)}}</style>${isDemo(store) ? '' : pixelSnippets(store)}`;
+<style>:root{${themeVars(t)}}</style>${isDemo(store) ? '' : pixelSnippets(store)}${headCode}`;
+}
+function socialLinks(store) {
+  let s = {}; try { s = JSON.parse(storeSettingsKV(store).social || '{}'); } catch (_) {}
+  const links = [
+    ['facebook', 'فيسبوك'], ['instagram', 'انستجرام'], ['tiktok', 'تيك توك'],
+  ].filter(([k]) => s[k]).map(([k, label]) => `<a href="${esc(s[k])}" target="_blank" rel="noopener">${label}</a>`);
+  if (store.whatsapp) links.push(`<a href="https://wa.me/${esc(store.whatsapp)}" target="_blank" rel="noopener">واتساب</a>`);
+  if (!links.length) return '';
+  return `<p class="s-social">${links.join(' · ')} · <a href="/s/${esc(store.slug)}/policies">السياسات</a></p>`;
 }
 
 function storeHeader(store, t) {
@@ -790,7 +811,7 @@ ${cats.length ? `<nav class="s-cats" id="products">${['الكل', ...cats].map(c
 <main class="s-grid">${cards || `<div class="s-empty">لا توجد منتجات بعد — تابعنا قريباً ✨</div>`}</main>
 ${store.free_shipping_over ? `<div class="s-freeship">${IC.truck}شحن مجاني للطلبات فوق ${egp(store.free_shipping_over)}</div>` : ''}
 <section class="s-newsletter"><h3>اشترك في نشرتنا البريدية</h3><p>عروض ومنتجات جديدة على بريدك أولاً بأول</p><form id="nlForm"><input type="email" id="nlEmail" placeholder="بريدك الإلكتروني" required dir="ltr"><button class="s-btn" type="submit">اشترك</button></form><div id="nlMsg"></div></section>
-<footer class="s-footer"><p>يعمل بواسطة <a href="/">اكتف اوردر</a> — الدفع عند الاستلام متاح</p></footer>
+<footer class="s-footer">${socialLinks(store)}<p>يعمل بواسطة <a href="/">اكتف اوردر</a> — الدفع عند الاستلام متاح</p></footer>
 ${cartDrawer(store)}
 ${storeScripts(store)}
 <script>track('page_view');</script>
@@ -1338,4 +1359,22 @@ ${siteHeader('light')}
 ${siteFooter}`);
 }
 
-module.exports = { landing, login: loginPage, register: registerPage, appShell, adminShell, storefront, productPage, checkoutPage, funnelPage, orderPage, verifiedPage, storeBlogIndex, storeBlogPost, comingSoon, notFound, onboarding, egp, esc, pricingPage, themesPage, blogIndex, blogPostPage, blogStaticPage, BLOG_POSTS };
+function policiesPage(store, t) {
+  let pol = {}; try { pol = JSON.parse(storeSettingsKV(store).policies || '{}'); } catch (_) {}
+  const secs = [
+    ['terms', 'شروط الاستخدام'], ['privacy', 'سياسة الخصوصية'],
+    ['returns', 'سياسة الاستبدال والاسترجاع'], ['shipping', 'سياسة الشحن والتوصيل'],
+  ].filter(([k]) => (pol[k] || '').trim());
+  const body = secs.length
+    ? secs.map(([k, label]) => `<section class="card" style="margin-bottom:14px"><h2 style="font-size:18px;margin:0 0 8px">${label}</h2><p style="white-space:pre-wrap;line-height:1.9;margin:0">${esc(pol[k])}</p></section>`).join('')
+    : `<div class="s-empty">لم يضف المتجر سياسات بعد.</div>`;
+  return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, `السياسات | ${store.name}`)}</head>
+<body class="store ${t.dark ? 'dark' : ''}">
+${demoBar(store)}
+${storeHeader(store, t)}
+<main style="max-width:760px;margin:24px auto;padding:0 16px">${body}</main>
+<footer class="s-footer">${socialLinks(store)}<p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>
+</body></html>`;
+}
+
+module.exports = { landing, login: loginPage, register: registerPage, appShell, adminShell, storefront, productPage, checkoutPage, funnelPage, orderPage, verifiedPage, policiesPage, storeBlogIndex, storeBlogPost, comingSoon, notFound, onboarding, egp, esc, pricingPage, themesPage, blogIndex, blogPostPage, blogStaticPage, BLOG_POSTS };
