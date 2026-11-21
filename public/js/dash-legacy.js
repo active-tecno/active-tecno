@@ -279,16 +279,15 @@ async function viewCustomize() {
   return shell(topBar('الثييمات', 'اختار من مجموعة قوالب جاهزة لمتجرك') +
   `<div class="thc">
     <div class="thc-current card">
-      <div class="thc-cur-info"><div class="thc-cur-label">الثيم الحالي</div><div class="thc-cur-name">${esc(cur.name_ar)}</div>
+      <div class="thc-cur-info"><div><div class="thc-cur-label">الثيم الحالي</div><div class="thc-cur-name">${esc(cur.name_ar)}</div></div>
         <div class="thc-cur-thumb"><img src="/public/theme-previews/${cur.id}.png" alt="" onerror="this.parentNode.style.display='none'"></div></div>
       <div class="thc-cur-actions">
         <button type="button" class="thc-btn" onclick="thcPreview('${cur.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
         <a class="thc-btn thc-btn-dark" href="#/builder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> تخصيص الثيم</a>
       </div></div>
     <div class="card thc-rec">
-      <div class="thc-rec-head"><div><div class="thc-rec-title">الثيمات الحديثة <span class="thc-rec-sub">(مرشحة لك)</span></div>
-        <div class="thc-rec-desc">قوالب محدّثة باستمرار لتجربة بيع أسرع وأسهل لعملائك</div></div>
-        <div class="thc-rec-star"><svg viewBox="0 0 24 24" fill="#fff" width="22" height="22"><path d="M12 2l2.4 6.2 6.6.4-5.1 4.3 1.7 6.4L12 15.7 6.4 19.3l1.7-6.4L3 8.6l6.6-.4z"/></svg></div></div>
+      <div class="thc-rec-head"><div class="thc-rec-title-wrap"><div class="thc-rec-star"><svg viewBox="0 0 24 24" fill="#fff" width="16" height="16"><path d="M12 2l2.4 6.2 6.6.4-5.1 4.3 1.7 6.4L12 15.7 6.4 19.3l1.7-6.4L3 8.6l6.6-.4z"/></svg></div><div><div class="thc-rec-title">الثيمات الحديثة <span class="thc-rec-sub">(مرشحة لك)</span></div>
+        <div class="thc-rec-desc">قوالب محدّثة باستمرار لتجربة بيع أسرع وأسهل لعملائك</div></div></div></div>
       <div class="thc-filters"><div class="thc-price"><label>السعر</label>
           <select id="thcPrice" onchange="thcApply()"><option>الكل</option><option>مجاني</option></select>
           <button type="button" class="thc-btn" onclick="thcReset()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg> إعادة تعيين</button></div></div>

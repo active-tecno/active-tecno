@@ -848,7 +848,7 @@ function productCardHTML(store, lay, p, t) {
     : off ? (t.custom_badge_title ? `<span class="p-off"${badgeStyle}>${esc(t.custom_badge_title)}</span>`
     : (lay === 'fasty' || lay === 'luxify' ? `<span class="p-off"${badgeStyle}>تخفيضات</span>` : `<span class="p-off"${badgeStyle}>-${off}%</span>`)) : '';
   const cardBg = t.card_background_product ? ` style="background:${esc(t.card_background_product)};color:${esc(t.card_background_product_color || 'inherit')}"` : '';
-  return `<a class="p-card" data-cat="${esc(p.category)}" data-name="${esc(p.name)}" href="/s/${esc(store.slug)}/p/${p.id}"${cardBg}>
+  return `<a class="p-card pc-${esc(t.card || 'flat')}" data-cat="${esc(p.category)}" data-name="${esc(p.name)}" href="/s/${esc(store.slug)}/p/${p.id}"${cardBg}>
     ${badge}
     ${p.stock <= 0 ? `<span class="p-out">نفدت الكمية</span>` : ''}
     <div class="p-img"><img src="${esc(imgs[0] || ph(p.name))}" alt="${esc(p.name)}" loading="lazy"></div>
@@ -926,9 +926,22 @@ function renderSection(store, s, ctx) {
   const escAttr = esc;
   switch (s.type) {
     case 'hero': {
+      const hv = t.hero || 'classic';
+      const title = esc(st.title || store.name), sub = esc(st.subtitle || '');
+      const cta = st.cta_text ? `<a class="s-btn" href="${escAttr(st.cta_link || '#products')}">${esc(st.cta_text)}</a>` : '';
       const bg = st.img ? ` style="background-image:url('${escAttr(st.img)}');background-size:cover;background-position:center"` : '';
-      return `<section class="s-hero"${bg}><h1>${esc(st.title || store.name)}</h1><p>${esc(st.subtitle || '')}</p>
-<div class="s-hero-cta">${st.cta_text ? `<a class="s-btn" href="${escAttr(st.cta_link || '#products')}">${esc(st.cta_text)}</a>` : ''}
+      if (hv === 'minimal') return `<section class="s-hero hv-minimal"${bg}><div class="hv-m-in"><h1>${title}</h1><p>${sub}</p><div class="s-hero-cta">${cta}</div></div></section>`;
+      if (hv === 'split') {
+        const img0 = st.img || (products[0] ? (JSON.parse(products[0].images || '[]')[0] || '') : '');
+        return `<section class="s-hero hv-split"><div class="hv-s-text"><h1>${title}</h1><p>${sub}</p><div class="s-hero-cta">${cta}</div></div>${img0 ? `<div class="hv-s-img"><img src="${escAttr(img0)}" alt="" loading="lazy"></div>` : ''}</section>`;
+      }
+      if (hv === 'banner') return `<section class="s-hero hv-banner"${bg}><div class="hv-b-in"><span class="hv-b-kicker">${esc(store.name)}</span><h1>${title}</h1><p>${sub}</p><div class="s-hero-cta">${cta}</div></div></section>`;
+      if (hv === 'grid') {
+        const tiles = (cats || []).slice(0, 4).map(c => { const p = products.find(x => x.category === c); const im = p ? JSON.parse(p.images || '[]')[0] : ''; return `<a class="hv-g-t" href="/s/${escAttr(store.slug)}/cat/${encodeURIComponent(c)}">${im ? `<img src="${escAttr(im)}" alt="" loading="lazy">` : ''}<span>${esc(c)}</span></a>`; }).join('');
+        return `<section class="s-hero hv-grid"><div class="hv-g-head"><h1>${title}</h1><p>${sub}</p><div class="s-hero-cta">${cta}</div></div>${tiles ? `<div class="hv-g-tiles">${tiles}</div>` : ''}</section>`;
+      }
+      return `<section class="s-hero"${bg}><h1>${title}</h1><p>${sub}</p>
+<div class="s-hero-cta">${cta}
 ${store.whatsapp ? `<a class="s-btn ghost" href="https://wa.me/${escAttr(store.whatsapp)}" target="_blank" rel="noopener">تواصل واتساب</a>` : ''}</div></section>`;
     }
     case 'slider': {

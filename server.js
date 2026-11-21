@@ -199,7 +199,7 @@ const api = {
     json(res, 200, { ok: true, configured: ['PAYMOB_API_KEY', 'PAYMOB_INTEGRATION_ID', 'PAYMOB_IFRAME_ID'].every(k => ts.payments_config[k]) });
   },
   'GET /api/themes': (req, res, user) => {
-    json(res, 200, { themes: db.prepare('SELECT * FROM themes').all().map(t => ({ ...t, config: JSON.parse(t.config) })) });
+    json(res, 200, { themes: db.prepare("SELECT * FROM themes ORDER BY (id LIKE 'eo-%') DESC, rowid").all().map(t => ({ ...t, config: JSON.parse(t.config) })) });
   },
 
   // products
