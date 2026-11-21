@@ -279,6 +279,7 @@ const api = {
     const store = getStoreForUser(user);
     const order = db.prepare('SELECT * FROM orders WHERE id = ? AND store_id = ?').get(p.id, store.id);
     if (!order) return json(res, 404, { error: 'الطلب غير موجود' });
+    if (isDemoStore(store.id)) return json(res, 400, { error: 'إرسال واتساب معطّل في المتجر التجريبي — لا رسائل حقيقية من المتاجر التجريبية' });
     const sent = await integ.waSendTemplate({ to: order.customer_phone, storeName: store.name, orderNumber: order.number, totalText: `${order.total} ج.م` });
     db.prepare('UPDATE orders SET whatsapp_confirmed = 1 WHERE id = ?').run(order.id);
     json(res, 200, { ok: true, delivered: !sent.simulated && !sent.error, simulated: !!sent.simulated, error: sent.error || null });
@@ -483,6 +484,97 @@ const api = {
   'DELETE /api/funnels/:id': (req, res, user, p) => {
     db.prepare('DELETE FROM funnels WHERE id = ? AND store_id = ?').run(p.id, getStoreForUser(user).id);
     json(res, 200, { ok: true });
+  },
+
+  // ---------- F4: marketing tools ----------
+  'GET /api/marketing': (req, res, user) => {
+    const store = getStoreForUser(user);
+    const rows = db.prepare('SELECT key, value FROM store_settings WHERE store_id = ?').all(store.id);
+    const s = Object.fromEntries(rows.map(r => [r.key, r.value]));
+    json(res, 200, { settings: s });
+  },
+  'PUT /api/marketing': async (req, res, user) => {
+    const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
+    const store = getStoreForUser(user);
+    const allowed = ['min_order', 'sales_popup', 'downsell', 'wa_order_confirm', 'wa_cart_recovery', 'gmc_email', 'gmc_phone'];
+    const up = db.prepare('INSERT INTO store_settings (store_id, key, value, updated_at) VALUES (?, ?, ?, datetime(\'now\')) ON CONFLICT(store_id, key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at');
+    for (const k of allowed) if (k in b) up.run(store.id, k, typeof b[k] === 'string' ? b[k] : JSON.stringify(b[k]));
+    json(res, 200, { ok: true });
+  },
+
+  'GET /api/cross-sells': (req, res, user) => json(res, 200, {
+    items: db.prepare(`SELECT c.id, c.product_id, c.related_product_id, p.name AS product_name, r.name AS related_name, r.price AS related_price FROM cross_sells c JOIN products p ON p.id = c.product_id JOIN products r ON r.id = c.related_product_id WHERE c.store_id = ? ORDER BY c.id DESC`).all(getStoreForUser(user).id)
+  }),
+  'POST /api/cross-sells': async (req, res, user) => {
+    const b = await readJSON(req); if (!b || !b.product_id || !b.related_product_id) return json(res, 400, { error: 'اختر المنتج والمنتج المرتبط' });
+    if (b.product_id === b.related_product_id) return json(res, 400, { error: 'لا يمكن ربط المنتج بنفسه' });
+    const store = getStoreForUser(user);
+    try {
+      const r = db.prepare('INSERT INTO cross_sells (store_id, product_id, related_product_id) VALUES (?, ?, ?)').run(store.id, b.product_id, b.related_product_id);
+      json(res, 201, { id: r.lastInsertRowid });
+    } catch (e) { json(res, 409, { error: 'هذا الربط موجود بالفعل' }); }
+  },
+  'DELETE /api/cross-sells/:id': (req, res, user, p) => {
+    db.prepare('DELETE FROM cross_sells WHERE id = ? AND store_id = ?').run(p.id, getStoreForUser(user).id);
+    json(res, 200, { ok: true });
+  },
+
+  'GET /api/referral-links': (req, res, user) => json(res, 200, {
+    links: db.prepare('SELECT * FROM referral_links WHERE store_id = ? ORDER BY id DESC').all(getStoreForUser(user).id)
+  }),
+  'POST /api/referral-links': async (req, res, user) => {
+    const b = await readJSON(req); if (!b || !String(b.code || '').trim()) return json(res, 400, { error: 'كود الإحالة مطلوب' });
+    const code = String(b.code).trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+    if (!code) return json(res, 400, { error: 'الكود يجب أن يكون حروف إنجليزية أو أرقام' });
+    const store = getStoreForUser(user);
+    try {
+      const r = db.prepare('INSERT INTO referral_links (store_id, code, name) VALUES (?, ?, ?)').run(store.id, code, String(b.name || '').trim());
+      json(res, 201, { id: r.lastInsertRowid, code });
+    } catch (e) { json(res, 409, { error: 'هذا الكود مستخدم بالفعل' }); }
+  },
+  'DELETE /api/referral-links/:id': (req, res, user, p) => {
+    db.prepare('DELETE FROM referral_links WHERE id = ? AND store_id = ?').run(p.id, getStoreForUser(user).id);
+    json(res, 200, { ok: true });
+  },
+
+  // public: marketing config for storefront + recent orders for sales popup
+  'GET /api/public/:slug/marketing': (req, res, user, p) => {
+    const store = db.prepare('SELECT * FROM stores WHERE slug = ?').get(p.slug);
+    if (!store) return json(res, 404, { error: 'المتجر غير موجود' });
+    const s = Object.fromEntries(db.prepare('SELECT key, value FROM store_settings WHERE store_id = ?').all(store.id).map(r => [r.key, r.value]));
+    const crossSells = db.prepare(`SELECT c.product_id, r.id AS rel_id, r.name, r.price, r.compare_at_price, r.images FROM cross_sells c JOIN products r ON r.id = c.related_product_id AND r.status = 'active' AND r.stock > 0 WHERE c.store_id = ?`).all(store.id);
+    json(res, 200, {
+      min_order: +(s.min_order || 0), sales_popup: s.sales_popup === '1',
+      downsell: s.downsell ? JSON.parse(s.downsell) : null, cross_sells: crossSells
+    });
+  },
+  'GET /api/public/:slug/recent-orders': (req, res, user, p) => {
+    const store = db.prepare('SELECT * FROM stores WHERE slug = ?').get(p.slug);
+    if (!store) return json(res, 404, { error: 'المتجر غير موجود' });
+    const rows = db.prepare(`SELECT customer_name, governorate, created_at FROM orders WHERE store_id = ? ORDER BY id DESC LIMIT 10`).all(store.id);
+    json(res, 200, { orders: rows.map(r => ({ name: (r.customer_name || '').split(' ')[0], governorate: r.governorate, at: r.created_at })) });
+  },
+  // one-click downsell from the thank-you page: repeats customer data from the original order
+  'POST /api/public/:slug/orders/:number/downsell': async (req, res, user, p) => {
+    const b = await readJSON(req); if (!b || !b.product_id) return json(res, 400, { error: 'بيانات غير صالحة' });
+    const store = db.prepare('SELECT * FROM stores WHERE slug = ?').get(p.slug);
+    if (!store) return json(res, 404, { error: 'المتجر غير موجود' });
+    const orig = db.prepare('SELECT * FROM orders WHERE store_id = ? AND number = ?').get(store.id, p.number);
+    if (!orig) return json(res, 404, { error: 'الطلب غير موجود' });
+    const s = Object.fromEntries(db.prepare('SELECT key, value FROM store_settings WHERE store_id = ?').all(store.id).map(r => [r.key, r.value]));
+    const ds = s.downsell ? JSON.parse(s.downsell) : null;
+    if (!ds || ds.product_id !== b.product_id) return json(res, 400, { error: 'العرض غير متاح' });
+    const prod = db.prepare(`SELECT * FROM products WHERE id = ? AND store_id = ? AND status = 'active'`).get(b.product_id, store.id);
+    if (!prod || prod.stock < 1) return json(res, 400, { error: 'المنتج غير متاح' });
+    const price = Math.max(1, Math.round(prod.price * (100 - (ds.discount_pct || 0)) / 100));
+    const count = db.prepare('SELECT COUNT(*) c FROM orders WHERE store_id = ?').get(store.id).c;
+    const number = `${store.slug.slice(0, 2).toUpperCase()}-${1021 + count}`;
+    const r = db.prepare(`INSERT INTO orders (store_id, number, customer_name, customer_phone, customer_address, governorate, notes, subtotal, shipping, discount, total, coupon_code, payment_method)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, 'cod')`)
+      .run(store.id, number, orig.customer_name, orig.customer_phone, orig.customer_address, orig.governorate, 'عرض ما بعد الشراء', price, price, 'DOWNSELL');
+    db.prepare('INSERT INTO order_items (order_id, product_id, name, price, qty) VALUES (?, ?, ?, ?, 1)').run(r.lastInsertRowid, prod.id, prod.name, price);
+    db.prepare('UPDATE products SET stock = stock - 1 WHERE id = ?').run(prod.id);
+    json(res, 201, { number });
   },
 
   // merchant manual order (dashboard "أنشاء طلب")
@@ -826,6 +918,9 @@ const api = {
       }
     }
     const total = Math.max(0, subtotal + shipping - discount);
+    // min order value (F4 marketing setting)
+    const minOrder = +(db.prepare('SELECT value FROM store_settings WHERE store_id = ? AND key = \'min_order\'').get(store.id)?.value || 0);
+    if (minOrder > 0 && total < minOrder) return json(res, 400, { error: `الحد الأدنى للطلب ${minOrder} ج.م — أضف منتجات بقيمة ${minOrder - total} ج.م على الأقل` });
     const count = db.prepare('SELECT COUNT(*) c FROM orders WHERE store_id = ?').get(store.id).c;
     const number = `${store.slug.slice(0, 2).toUpperCase()}-${1021 + count}`;
     const paymentsCfg = (JSON.parse(store.theme_settings || '{}').payments) || { cod: true, online: false };
@@ -835,15 +930,20 @@ const api = {
       payMethod = 'online';
     }
 
-    const r = db.prepare(`INSERT INTO orders (store_id, number, customer_name, customer_phone, customer_address, governorate, notes, subtotal, shipping, discount, total, coupon_code, payment_method)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .run(store.id, number, b.name.trim(), phone, b.address.trim(), b.governorate || '', (b.notes || '').trim(), subtotal, shipping, discount, total, couponCode, payMethod);
+    const refCode = String(b.ref_code || '').trim().toLowerCase();
+    const isDemo = isDemoStore(store.id) ? 1 : 0;
+    const r = db.prepare(`INSERT INTO orders (store_id, number, customer_name, customer_phone, customer_address, governorate, notes, subtotal, shipping, discount, total, coupon_code, payment_method, utm_source, utm_medium, utm_campaign, ref_code, demo)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run(store.id, number, b.name.trim(), phone, b.address.trim(), b.governorate || '', (b.notes || '').trim(), subtotal, shipping, discount, total, couponCode, payMethod,
+        String(b.utm_source || '').slice(0, 100), String(b.utm_medium || '').slice(0, 100), String(b.utm_campaign || '').slice(0, 100), refCode, isDemo);
     // funnel attribution
     if (b.funnel_id) db.prepare('UPDATE funnels SET orders = orders + 1 WHERE id = ? AND store_id = ?').run(b.funnel_id | 0, store.id);
+    // referral attribution
+    if (refCode) db.prepare('UPDATE referral_links SET orders = orders + 1 WHERE store_id = ? AND code = ?').run(store.id, refCode);
     // Meta Conversion API (server-to-server), fire-and-forget
     try {
       const pxs = (JSON.parse(store.theme_settings || '{}').pixels) || {};
-      if (pxs.meta && pxs.capi) {
+      if (!isDemo && pxs.meta && pxs.capi) {
         const sha = s => crypto.createHash('sha256').update(String(s)).digest('hex');
         fetch(`https://graph.facebook.com/v19.0/${encodeURIComponent(pxs.meta)}/events?access_token=${encodeURIComponent(pxs.capi)}`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -882,6 +982,10 @@ const api = {
     json(res, 201, { ok: true, number, total, shipping, discount, payment_url: payment && payment.payment_url ? payment.payment_url : null });
   }
 };
+
+function isDemoStore(storeId) {
+  try { return (db.prepare("SELECT value FROM store_settings WHERE store_id = ? AND key = 'demo_mode'").get(storeId) || {}).value === '1'; } catch (e) { return false; }
+}
 
 // ---------- router ----------
 const server = http.createServer(async (req, res) => {
@@ -944,7 +1048,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (pathname === '/admin') return html(res, 200, views.adminShell());
 
-    const storeMatch = pathname.match(/^\/s\/([a-z0-9\u0600-\u06FF-]+)(\/p\/(\d+)|\/f\/(\d+)|\/checkout|\/order\/([A-Z0-9-]+))?\/?$/i);
+    const storeMatch = pathname.match(/^\/s\/([a-z0-9\u0600-\u06FF-]+)(\/p\/(\d+)|\/f\/(\d+)|\/checkout|\/verified|\/order\/([A-Z0-9-]+))?\/?$/i);
     if (storeMatch) {
       const [, slug, sub, productId, funnelId, orderNumber] = storeMatch;
       const store = db.prepare('SELECT * FROM stores WHERE slug = ?').get(slug);
@@ -968,6 +1072,10 @@ const server = http.createServer(async (req, res) => {
         if (!store.is_published && !owner) return html(res, 200, views.comingSoon(store));
         db.prepare('UPDATE funnels SET views = views + 1 WHERE id = ?').run(funnel.id);
         return html(res, 200, views.funnelPage(store, funnel, product, themeConfig, owner));
+      }
+      if (sub === '/verified') {
+        const stats = db.prepare(`SELECT COUNT(*) c, COALESCE(SUM(total),0) t FROM orders WHERE store_id = ? AND status NOT IN ('cancelled','returned')`).get(store.id);
+        return html(res, 200, views.verifiedPage(store, stats, themeConfig));
       }
       if (sub === '/checkout') return html(res, 200, views.checkoutPage(store, themeConfig, owner));
       if (sub && sub.startsWith('/order/')) {

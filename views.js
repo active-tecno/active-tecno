@@ -733,13 +733,25 @@ function pixelSnippets(store) {
   if (out) out += `<script>function pxPurchase(value){try{if(window.fbq)fbq('track','Purchase',{value:value,currency:'EGP'});if(window.ttq)ttq.track('CompletePayment',{value:value,currency:'EGP'});if(window.snaptr)snaptr('track','PURCHASE',{price:value,currency:'EGP'});if(window.gtag)gtag('event','purchase',{value:value,currency:'EGP'});}catch(e){}}<\/script>`;
   return out;
 }
+function isDemo(store) {
+  try { return (db.prepare("SELECT value FROM store_settings WHERE store_id = ? AND key = 'demo_mode'").get(store.id) || {}).value === '1'; } catch (e) { return false; }
+}
+function demoBar(store) {
+  if (!isDemo(store)) return '';
+  return `<div class="demo-bar">نسخة تجريبية — متجر للعرض فقط · الطلبات هنا تجريبية ولن يتم شحنها</div>`;
+}
+function demoFormNotice(store) {
+  if (!isDemo(store)) return '';
+  return `<div class="demo-notice">طلب تجريبي: سيظهر الطلب في لوحة التحكم للتجربة فقط — لن يتم توصيله أو تحصيل أي مبلغ.</div>`;
+}
+
 function storeHead(store, t, title) {
   return `<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${esc(title)}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Rubik:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/public/css/store.css">
-<style>:root{${themeVars(t)}}</style>${pixelSnippets(store)}`;
+<style>:root{${themeVars(t)}}</style>${isDemo(store) ? '' : pixelSnippets(store)}`;
 }
 
 function storeHeader(store, t) {
@@ -767,6 +779,7 @@ function storefront(store, t, owner) {
   }).join('');
   return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, store.name)}</head>
 <body class="store ${t.dark ? 'dark' : ''}">
+${demoBar(store)}
 ${owner ? `<div class="s-ownerbar">وضع المعاينة — <a href="/app">العودة للوحة التحكم</a></div>` : ''}
 ${storeHeader(store, t)}
 <section class="s-hero"><h1>${esc(store.name)}</h1><p>${esc(store.description)}</p>
@@ -789,6 +802,7 @@ function productPage(store, p, t, owner) {
   const off = p.compare_at_price && p.compare_at_price > p.price ? Math.round(100 - p.price * 100 / p.compare_at_price) : 0;
   return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, `${p.name} | ${store.name}`)}</head>
 <body class="store ${t.dark ? 'dark' : ''}">
+${demoBar(store)}
 ${owner ? `<div class="s-ownerbar">وضع المعاينة — <a href="/app">العودة للوحة التحكم</a></div>` : ''}
 ${storeHeader(store, t)}
 <main class="pd">
@@ -819,6 +833,7 @@ function checkoutPage(store, t, owner) {
   const govs = ['القاهرة', 'الجيزة', 'الإسكندرية', 'الدقهلية', 'الشرقية', 'الغربية', 'المنوفية', 'القليوبية', 'البحيرة', 'كفر الشيخ', 'دمياط', 'بورسعيد', 'الإسماعيلية', 'السويس', 'الفيوم', 'بني سويف', 'المنيا', 'أسيوط', 'سوهاج', 'قنا', 'الأقصر', 'أسوان', 'البحر الأحمر', 'مطروح', 'شمال سيناء', 'جنوب سيناء', 'طنطا', 'المنصورة', 'الزقازيق'];
   return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, `إتمام الطلب | ${store.name}`)}</head>
 <body class="store ${t.dark ? 'dark' : ''}">
+${demoBar(store)}
 ${storeHeader(store, t)}
 <main class="co">
 <h1>إتمام الطلب</h1>
@@ -839,6 +854,7 @@ ${storeHeader(store, t)}
 </div>
 <div class="co-coupon"><input name="coupon" placeholder="كود الخصم" dir="ltr"><button type="button" onclick="applyCoupon()">تطبيق</button></div>
 <div class="auth-err" id="coErr"></div>
+${demoFormNotice(store)}
 <button type="submit" class="s-btn btn-lg full buy" id="coSubmit">تأكيد الطلب — دفع عند الاستلام</button>
 <div class="co-trust"><span>${IC.lock}بياناتك آمنة ومشفّرة</span><span>${IC.truck}توصيل سريع</span><span>${IC.ret}إرجاع سهل</span></div>
 </form>
@@ -857,6 +873,7 @@ function funnelPage(store, funnel, p, t, owner) {
   const out = p.stock <= 0;
   return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, `${p.name} | ${store.name}`)}</head>
 <body class="store funnel ${t.dark ? 'dark' : ''}">
+${demoBar(store)}
 ${owner ? `<div class="s-ownerbar">وضع المعاينة — <a href="/app#/funnels">العودة للوحة التحكم</a></div>` : ''}
 <header class="fn-brand"><span class="s-logo">${esc((store.logo_text || store.name).trim().charAt(0))}</span><b>${esc(store.name)}</b></header>
 <main class="fn">
@@ -881,6 +898,7 @@ ${owner ? `<div class="s-ownerbar">وضع المعاينة — <a href="/app#/fu
     <label>العنوان بالتفصيل<textarea name="address" required placeholder="الشارع، رقم العمارة، الدور، الشقة، علامة مميزة"></textarea></label>
     <label>ملاحظات (اختياري)<input name="notes" placeholder="أي تفاصيل إضافية"></label>
     <div class="auth-err" id="fnErr"></div>
+    ${demoFormNotice(store)}
     <button type="submit" class="s-btn btn-lg full buy" id="fnSubmit">تأكيد الطلب — ${egp(p.price)} <span id="fnTotal"></span></button>
     <div class="co-trust"><span>${IC.lock}بياناتك آمنة</span><span>${IC.truck}توصيل سريع</span><span>${IC.ret}إرجاع سهل</span></div>
   </form>`}
@@ -909,12 +927,54 @@ document.getElementById('fnForm')?.addEventListener('submit', async e => {
 </body></html>`;
 }
 
+function verifiedPage(store, stats, t) {
+  return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, `طلبات موثقة | ${store.name}`)}</head>
+<body class="store ${t.dark ? 'dark' : ''}">
+${demoBar(store)}
+<main class="done">
+<div class="done-card">
+<div class="done-check">${IC.check}</div>
+<h1>${esc(store.name)}</h1>
+<p>متجر موثّق على منصة اكتف اوردر</p>
+<div class="done-items">
+<div class="done-item total"><span>طلبات مكتملة موثقة</span><b>${Number(stats.c).toLocaleString('ar-EG')}</b></div>
+<div class="done-item dim"><span>إجمالي قيمة الطلبات</span><b>${egp(stats.t)}</b></div></div>
+<p style="font-size:13px;color:#777;margin-top:14px">هذه الأرقام محسوبة لحظياً من سجلات الطلبات الفعلية على المنصة، ولا يمكن للمتجر تعديلها.</p>
+<a class="s-btn" href="/s/${esc(store.slug)}">تصفح المتجر</a>
+</div></main>
+<footer class="s-footer"><p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>
+</body></html>`;
+}
+
 function orderPage(store, o, t) {
   const items = db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(o.id);
+  // F4: one-click downsell card
+  let downsellCard = '';
+  try {
+    const s = Object.fromEntries(db.prepare('SELECT key, value FROM store_settings WHERE store_id = ?').all(store.id).map(r => [r.key, r.value]));
+    const ds = s.downsell ? JSON.parse(s.downsell) : null;
+    if (ds && ds.product_id) {
+      const dp = db.prepare(`SELECT * FROM products WHERE id = ? AND store_id = ? AND status = 'active' AND stock > 0`).get(ds.product_id, store.id);
+      if (dp && !items.some(i => i.product_id === dp.id)) {
+        const dPrice = Math.max(1, Math.round(dp.price * (100 - (ds.discount_pct || 0)) / 100));
+        const dImg = JSON.parse(dp.images || '[]')[0] || ph(dp.name);
+        downsellCard = `<div class="dsell-card">
+          <h3>عرض خاص لك فقط — خصم ${ds.discount_pct}%</h3>
+          <div class="dsell-body"><img src="${esc(dImg)}" alt="${esc(dp.name)}">
+          <div><b>${esc(dp.name)}</b><div class="pd-price"><b>${egp(dPrice)}</b><s>${egp(dp.price)}</s></div>
+          <p style="font-size:12.5px;color:#777">أضِفه لطلبك الآن بضغطة واحدة — نفس بياناتك وعنوانك، والدفع عند الاستلام.</p>
+          <button class="s-btn" onclick="dsellBuy(this, ${dp.id}, '${esc(o.number)}')">أضِفه لطلبي بـ ${egp(dPrice)}</button>
+          <div class="auth-err" id="dsellErr"></div></div></div>
+        </div>
+        <script>async function dsellBuy(btn, pid, num){btn.disabled=true;btn.textContent='جاري الإضافة…';const r=await fetch('/api/public/${esc(store.slug)}/orders/'+num+'/downsell',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product_id:pid})});const d=await r.json();if(!r.ok){document.getElementById('dsellErr').textContent=d.error||'حدث خطأ';btn.disabled=false;btn.textContent='حاول مرة أخرى';return;}location.href='/s/${esc(store.slug)}/order/'+d.number;}</script>`;
+      }
+    }
+  } catch (e) {}
   const waMsg = encodeURIComponent(`أهلاً ${o.customer_name} 👋\nتم استلام طلبك رقم ${o.number} من ${store.name} بنجاح ✅\nالإجمالي: ${egp(o.total)} — الدفع عند الاستلام\nسنتواصل معك قريباً لتأكيد الشحن 🚚`);
   const waLink = store.whatsapp ? `https://wa.me/${store.whatsapp}?text=${encodeURIComponent(`أهلاً، أريد الاستفسار عن طلبي رقم ${o.number}`)}` : null;
   return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, `طلبك ${o.number} | ${store.name}`)}</head>
 <body class="store ${t.dark ? 'dark' : ''}">
+${demoBar(store)}
 <main class="done">
 <div class="done-card">
 <div class="done-check">${IC.check}</div>
@@ -927,7 +987,8 @@ ${o.discount ? `<div class="done-item dim"><span>الخصم${o.coupon_code ? ` (
 <div class="done-actions">
 ${waLink ? `<a class="s-btn" href="${waLink}" target="_blank" rel="noopener">تواصل معنا واتساب</a>` : ''}
 <a class="s-btn ghost" href="/s/${esc(store.slug)}">متابعة التسوق</a></div>
-</div></main>
+</div>
+${downsellCard}</main>
 <footer class="s-footer"><p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>
 <script>if(window.pxPurchase)pxPurchase(${Number(o.total) || 0});</script>
 </body></html>`;
@@ -1238,4 +1299,4 @@ ${siteHeader('light')}
 ${siteFooter}`);
 }
 
-module.exports = { landing, login: loginPage, register: registerPage, appShell, adminShell, storefront, productPage, checkoutPage, funnelPage, orderPage, comingSoon, notFound, onboarding, egp, esc, pricingPage, themesPage, blogIndex, blogPostPage, blogStaticPage, BLOG_POSTS };
+module.exports = { landing, login: loginPage, register: registerPage, appShell, adminShell, storefront, productPage, checkoutPage, funnelPage, orderPage, verifiedPage, comingSoon, notFound, onboarding, egp, esc, pricingPage, themesPage, blogIndex, blogPostPage, blogStaticPage, BLOG_POSTS };

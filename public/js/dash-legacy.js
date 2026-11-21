@@ -13,14 +13,14 @@ function renderOrders(orders) {
   if (!orders.length) return `<div class="card"><div class="empty"><div class="big">${ICONS.orders}</div><b>لا توجد طلبات بعد</b><p>شارك رابط متجرك وستظهر الطلبات هنا فوراً</p><a class="btn btn-teal" href="/s/${esc(STORE.slug)}" target="_blank">افتح متجرك</a></div></div>`;
   if (ordersView === 'list') {
     return `<div class="card tbl-wrap"><table class="tbl"><thead><tr><th>الطلب</th><th>العميل</th><th>الهاتف</th><th>الإجمالي</th><th>الحالة</th><th>التاريخ</th><th></th></tr></thead><tbody>
-      ${orders.map(o => `<tr><td class="mono">${esc(o.number)}</td><td><b>${esc(o.customer_name)}</b></td><td class="mono">${esc(o.customer_phone)}</td><td><b>${egp(o.total)}</b></td><td>${stChip(o.status)}</td><td class="muted small">${fmtDate(o.created_at)}</td><td><button class="btn btn-soft btn-sm" onclick="openOrder(${o.id})">التفاصيل</button></td></tr>`).join('')}</tbody></table></div>`;
+      ${orders.map(o => `<tr><td class="mono">${esc(o.number)}${o.demo ? ' <span class="chip-demo">تجريبي</span>' : ''}</td><td><b>${esc(o.customer_name)}</b></td><td class="mono">${esc(o.customer_phone)}</td><td><b>${egp(o.total)}</b></td><td>${stChip(o.status)}</td><td class="muted small">${fmtDate(o.created_at)}</td><td><button class="btn btn-soft btn-sm" onclick="openOrder(${o.id})">التفاصيل</button></td></tr>`).join('')}</tbody></table></div>`;
   }
   const cols = ['new', 'confirmed', 'shipped', 'delivered', 'cancelled'];
   return `<div class="kb">${cols.map(s => {
     const list = orders.filter(o => o.status === s);
     return `<div class="kb-col"><div class="kb-col-head"><span>${STATUS[s].ar}</span><span class="n">${list.length}</span></div><div class="kb-cards">
       ${list.map(o => `<div class="kb-card" onclick="openOrder(${o.id})">
-        <div class="num mono">${esc(o.number)}</div><div class="who">${esc(o.customer_name)} ${o.whatsapp_confirmed ? '<span class="wa-ok">· مؤكد واتساب</span>' : ''}</div>
+        <div class="num mono">${esc(o.number)}${o.demo ? ' <span class="chip-demo">تجريبي</span>' : ''}</div><div class="who">${esc(o.customer_name)} ${o.whatsapp_confirmed ? '<span class="wa-ok">· مؤكد واتساب</span>' : ''}</div>
         <div class="what">${esc(o.items.map(i => `${i.name} ×${i.qty}`).join('، ').slice(0, 60))}</div>
         <div class="amt">${egp(o.total)}</div>
         <div class="kb-move" onclick="event.stopPropagation()">${nextStatuses(s).map(n => `<button onclick="moveOrder(${o.id},'${n}')">${STATUS[n].ar}</button>`).join('')}</div>

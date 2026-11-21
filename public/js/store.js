@@ -17,6 +17,82 @@ function track(type, productId) {
   } catch { fetch(`/api/public/${SLUG}/track`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, session_id: sid(), product_id: productId || null }) }).catch(() => {}); }
 }
 function getCart() { try { return JSON.parse(localStorage.getItem(CART_KEY)) || []; } catch { return []; } }
+
+// UTM + referral capture (persist for the session, sent with the order)
+(function captureAttribution() {
+  try {
+    const q = new URLSearchParams(location.search);
+    ['utm_source', 'utm_medium', 'utm_campaign'].forEach(k => { if (q.get(k)) sessionStorage.setItem('at_' + k, q.get(k).slice(0, 100)); });
+    if (q.get('ref')) sessionStorage.setItem('at_ref', q.get('ref').slice(0, 60));
+  } catch (e) {}
+})();
+function attribution() {
+  return {
+    utm_source: sessionStorage.getItem('at_utm_source') || '',
+    utm_medium: sessionStorage.getItem('at_utm_medium') || '',
+    utm_campaign: sessionStorage.getItem('at_utm_campaign') || '',
+    ref_code: sessionStorage.getItem('at_ref') || ''
+  };
+}
+
+// sales popup (recent-orders social proof) + checkout cross-sell
+async function initMarketing() {
+  try {
+    const m = await (await fetch('/api/public/' + SLUG + '/marketing')).json();
+    if (m.sales_popup && m.sales_popup.enabled) {
+      const ro = await (await fetch('/api/public/' + SLUG + '/recent-orders')).json();
+      const orders = ro.orders || [];
+      if (orders.length) {
+        let i = 0;
+        const show = () => {
+          if (document.getElementById('salesPop')) return;
+          const o = orders[i++ % orders.length];
+          const el = document.createElement('div');
+          el.id = 'salesPop'; el.className = 'sales-pop';
+          el.innerHTML = '<div class="sp-dot"></div><div><b>' + esc(o.name) + (o.governorate ? ' — ' + esc(o.governorate) : '') + '</b><span>اشترى ' + esc(o.product) + '</span></div><button class="sp-x" aria-label="إغلاق">×</button>';
+          el.querySelector('.sp-x').onclick = () => el.remove();
+          document.body.appendChild(el);
+          setTimeout(() => el.classList.add('show'), 50);
+          setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 400); }, 5000);
+        };
+        setTimeout(show, 6000);
+        setInterval(show, 25000);
+      }
+    }
+    // cross-sell add-on card on checkout page
+    const summary = document.querySelector('.co-summary') || document.getElementById('coForm');
+    if (summary && m.cross_sells && m.cross_sells.length) {
+      const inCart = new Set(getCart().map(i => i.id));
+      const offers = m.cross_sells.filter(c => !inCart.has(c.offer_product_id));
+      if (offers.length) {
+        const box = document.createElement('div');
+        box.className = 'xsell-box';
+        box.innerHTML = '<h4>أضف لطلبك بخصم خاص</h4>' + offers.map(c => {
+          const dp = Math.max(1, Math.round(c.price * (100 - (c.discount_pct || 0)) / 100));
+          return '<div class="xsell-row" data-id="' + c.offer_product_id + '" data-name="' + esc(c.name) + '" data-price="' + dp + '">' +
+            '<img src="' + esc(c.image || '') + '" alt="" onerror="this.style.display=\'none\'">' +
+            '<div class="xsell-info"><b>' + esc(c.name) + '</b><span>' + dp + ' ج.م <s>' + c.price + ' ج.م</s></span></div>' +
+            '<button type="button" class="xsell-add">أضف</button></div>';
+        }).join('');
+        const coForm = document.getElementById('coForm');
+        if (coForm && coForm.parentElement) coForm.parentElement.insertBefore(box, coForm);
+        else summary.appendChild(box);
+        box.addEventListener('click', e => {
+          const btn = e.target.closest('.xsell-add');
+          if (!btn) return;
+          const row = btn.closest('.xsell-row');
+          const cart = getCart();
+          cart.push({ id: +row.dataset.id, name: row.dataset.name, price: +row.dataset.price, qty: 1 });
+          localStorage.setItem(CART_KEY, JSON.stringify(cart));
+          btn.textContent = 'تمت الإضافة ✓'; btn.disabled = true;
+          if (typeof drawSummary === 'function') drawSummary();
+          if (typeof toast === 'function') toast('أُضيف لطلبك');
+        });
+      }
+    }
+  } catch (e) {}
+}
+document.addEventListener('DOMContentLoaded', initMarketing);
 function setCart(items) {
   localStorage.setItem(CART_KEY, JSON.stringify(items));
   renderCartUI();
@@ -154,6 +230,7 @@ document.addEventListener('submit', async e => {
   const body = Object.fromEntries(f.entries());
   body.coupon = coState.coupon || null;
   body.session_id = sid();
+  Object.assign(body, attribution());
   body.items = getCart().map(i => ({ product_id: i.id, name: i.name, qty: i.qty }));
   // save phone for abandoned-cart recovery if order fails
   fetch(`/api/public/${SLUG}/cart`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: sid(), customer_phone: body.phone, items: body.items.map(i => ({ product_id: i.product_id, name: i.name, price: 0, qty: i.qty })) }) }).catch(() => {});

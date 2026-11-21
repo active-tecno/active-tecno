@@ -354,6 +354,30 @@ const migrations = [
     ALTER TABLE products ADD COLUMN variants TEXT NOT NULL DEFAULT '[]';
     CREATE INDEX idx_products_store_priority ON products(store_id, priority DESC);
     `
+  },
+  {
+    id: '008_stage_f_marketing',
+    sql: `
+    ALTER TABLE orders ADD COLUMN utm_source TEXT NOT NULL DEFAULT '';
+    ALTER TABLE orders ADD COLUMN utm_medium TEXT NOT NULL DEFAULT '';
+    ALTER TABLE orders ADD COLUMN utm_campaign TEXT NOT NULL DEFAULT '';
+    ALTER TABLE orders ADD COLUMN ref_code TEXT NOT NULL DEFAULT '';
+    CREATE TABLE referral_links (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      store_id INTEGER NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+      code TEXT NOT NULL,
+      name TEXT NOT NULL DEFAULT '',
+      orders INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(store_id, code)
+    );
+    `
+  },
+  {
+    id: '009_demo_guardrail',
+    sql: `
+    ALTER TABLE orders ADD COLUMN demo INTEGER NOT NULL DEFAULT 0;
+    `
   }
 ];
 
