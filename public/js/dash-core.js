@@ -239,18 +239,46 @@ function topbarHtml() {
     <a class="tb-btn" href="/s/${esc(STORE.slug)}" target="_blank" title="مشاهدة المتجر">${I('eye')}</a>
   </div>`;
 }
-function notifCount() { return (ME?.newOrders || 0) + ((ME?.activations || []).some(a => a.status === 'pending') ? 1 : 0); }
-function toggleNotifs(e) {
+function notifPrefs() {
+  let n = {};
+  try { n = JSON.parse((window.SETTINGS || {}).notifications || '{}'); } catch (_) {}
+  return { enabled: n.enabled !== false, new_order: n.new_order !== false, low_stock: n.low_stock !== false, carts: n.carts === true };
+}
+function notifCount() {
+  const p = notifPrefs();
+  return (p.enabled && p.new_order ? (ME?.newOrders || 0) : 0) + ((ME?.activations || []).some(a => a.status === 'pending') ? 1 : 0);
+}
+async function toggleNotifs(e) {
   e.stopPropagation();
   const dd = $('#notifDd');
   if (dd.style.display === 'block') { dd.style.display = 'none'; return; }
+  const p = notifPrefs();
   const items = [];
-  if (ME.newOrders) items.push({ ic: 'orders', t: `لديك ${ME.newOrders} طلب جديد بانتظار التأكيد`, a: "go('orders')" });
+  if (p.enabled && p.new_order && ME.newOrders) items.push({ ic: 'orders', t: `لديك ${ME.newOrders} طلب جديد بانتظار التأكيد`, a: "go('orders')" });
   if ((ME.activations || []).some(a => a.status === 'pending')) items.push({ ic: 'cash', t: 'طلب التفعيل قيد المراجعة من فريقنا', a: "go('overview')" });
-  if (!items.length) { dd.innerHTML = '<div class="notif-empty">لا اشعارات جديدة</div>'; }
-  else dd.innerHTML = `<h4>الاشعارات</h4>` + items.map(n => `<button class="notif-item" style="width:100%;background:transparent;border:0;text-align:start;cursor:pointer" onclick="document.getElementById('notifDd').style.display='none';${n.a}"><span class="n-ic">${I(n.ic)}</span><span>${n.t}</span></button>`).join('');
+  const render = () => {
+    if (!items.length) { dd.innerHTML = '<div class="notif-empty">لا اشعارات جديدة</div>'; return; }
+    dd.innerHTML = `<h4>الاشعارات</h4>` + items.map(n => `<button class="notif-item" style="width:100%;background:transparent;border:0;text-align:start;cursor:pointer" onclick="document.getElementById('notifDd').style.display='none';${n.a}"><span class="n-ic">${I(n.ic)}</span><span>${n.t}</span></button>`).join('');
+  };
+  if (!p.enabled) dd.innerHTML = `<div class="notif-empty">إشعارات الطلبات موقوفة — <a href="#/settings/notifications" style="color:var(--green-400)">إعادة التفعيل</a></div>`;
+  else render();
   dd.style.display = 'block';
   setTimeout(() => document.addEventListener('click', () => { dd.style.display = 'none'; }, { once: true }), 10);
+  if (p.enabled && (p.low_stock || p.carts)) {
+    try {
+      if (p.low_stock) {
+        const prods = await api('/api/products');
+        const low = (prods.products || []).filter(x => x.status === 'active' && x.stock <= x.low_stock_threshold);
+        if (low.length) items.push({ ic: 'products', t: `تنبيه مخزون: ${low.length} منتج منخفض أو نافد`, a: "go('products')" });
+      }
+      if (p.carts) {
+        const c = await api('/api/carts');
+        const n2 = (c.carts || []).filter(x => (x.items || []).length).length;
+        if (n2) items.push({ ic: 'mincart', t: `لديك ${n2} سلة متروكة بانتظار المتابعة`, a: "go('carts')" });
+      }
+      render();
+    } catch (_) {}
+  }
 }
 function toggleTheme() {
   const next = document.body.dataset.theme === 'dark' ? '' : 'dark';
@@ -417,6 +445,7 @@ async function boot() {
     ME = me; STORE = me.store;
     const acts = await api('/api/activation'); ME.activations = acts.requests;
     const newOrders = await api('/api/orders?status=new'); ME.newOrders = newOrders.orders.length;
+    try { const s = await api('/api/store/settings'); window.SETTINGS = s.settings || {}; } catch (_) { window.SETTINGS = {}; }
   } catch { return; }
   renderChrome();
   window.addEventListener('hashchange', route);

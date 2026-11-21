@@ -6,6 +6,7 @@ const SETTINGS_TABS = [
   ['settings/head', 'إضافة كود للهيد'],
   ['settings/seo', 'إعدادات SEO'],
   ['payments', 'بوابات الدفع'],
+  ['settings/notifications', 'إشعارات الطلبات'],
   ['shipping', 'إعدادات الشحن'],
   ['settings/social', 'روابط التواصل الاجتماعي'],
   ['team', 'إعدادات المديرين'],
@@ -44,6 +45,33 @@ async function saveStoreSetting(key, value) {
   const b = {}; b[key] = value;
   await api('/api/store/settings', { method: 'PUT', body: b });
   toast('تم الحفظ');
+}
+
+// ---- order notifications ----
+registerView('settings/notifications', async () => {
+  const { settings: s } = await loadStoreSettings();
+  let n = { enabled: true, new_order: true, low_stock: true, carts: false, email_on: false, email: '' };
+  try { n = { ...n, ...JSON.parse(s.notifications || '{}') }; } catch (_) {}
+  const chk = (id, label, hint, on) => `<label class="notif-row"><span class="nr-txt"><b>${label}</b><small class="muted">${hint}</small></span><input type="checkbox" id="${id}" ${on ? 'checked' : ''}></label>`;
+  return settingsShell('settings/notifications', 'إشعارات الطلبات', 'تحكم في التنبيهات التي تصلك عن نشاط متجرك', `
+    <div class="card"><h3>إشعارات داخل لوحة التحكم</h3>
+      ${chk('ntEnabled', 'تفعيل الإشعارات', 'الإيقاف يخفي كل تنبيهات الطلبات من الجرس', n.enabled)}
+      ${chk('ntNew', 'طلب جديد', 'تنبيه فوري مع عدّاد على جرس الإشعارات عند وصول طلب', n.new_order)}
+      ${chk('ntLow', 'تنبيه المخزون', 'إشعار عند انخفاض مخزون منتج نشط أو نفاده', n.low_stock)}
+      ${chk('ntCarts', 'السلات المتروكة', 'إشعار عند وجود سلات جديدة لم تُكمل الشراء', n.carts)}
+    </div>
+    <div class="card"><h3>إشعار بريدي عند كل طلب جديد</h3>
+      ${chk('ntEmailOn', 'تفعيل الإشعار البريدي', 'يصلك بريد بملخص كل طلب جديد فور وصوله', n.email_on)}
+      <div class="f-field" style="margin-top:8px"><label>البريد الذي تصلك عليه الإشعارات</label><input id="ntEmail" dir="ltr" type="email" value="${esc(n.email)}" placeholder="you@store.com"></div>
+      <p class="muted small" style="margin-top:6px">تُرسل الرسائل عبر بريد المنصة عند تفعيله، وتُسجَّل حالة كل رسالة في سجل التكاملات.</p>
+    </div>
+    <div class="m-actions"><button class="btn btn-teal" onclick="saveNotifSettings()">حفظ الإشعارات</button></div>`);
+});
+async function saveNotifSettings() {
+  const n = { enabled: $('#ntEnabled').checked, new_order: $('#ntNew').checked, low_stock: $('#ntLow').checked, carts: $('#ntCarts').checked, email_on: $('#ntEmailOn').checked, email: $('#ntEmail').value.trim() };
+  await api('/api/store/settings', { method: 'PUT', body: { notifications: JSON.stringify(n) } });
+  window.SETTINGS = { ...(window.SETTINGS || {}), notifications: JSON.stringify(n) };
+  toast('تم حفظ الإشعارات');
 }
 
 // ---- domain ----

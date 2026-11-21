@@ -179,4 +179,26 @@ async function waSendCartRecovery({ to, storeName, storeUrl }) {
   }
 }
 
-module.exports = { PROVIDERS, getSetting, setSetting, configured, paymobCreatePayment, waSendTemplate, waSendCartRecovery, sendVerificationEmail, status };
+// ---------- Merchant order-alert email (order-notifications settings) ----------
+async function sendMerchantOrderEmail({ to, storeName, orderNumber, totalText, customerName }) {
+  const E = PROVIDERS.email;
+  if (!configured('email')) {
+    logEvent('email', 'merchant_order_alert', { to, orderNumber }, 'simulated', true, 'no credentials — email not sent');
+    return { simulated: true };
+  }
+  try {
+    const r = await postJSON(`${E.base}/emails`, {
+      from: cred('EMAIL_FROM'), to: [to],
+      subject: `طلب جديد ${orderNumber} — ${storeName}`,
+      html: `<div dir="rtl" style="font-family:sans-serif;padding:24px"><h2>طلب جديد في ${storeName}</h2><p>رقم الطلب: <b>${orderNumber}</b></p><p>العميل: ${customerName}</p><p>الإجمالي: <b>${totalText}</b></p><p>راجع التفاصيل الكاملة من لوحة التحكم.</p></div>`,
+    }, { Authorization: `Bearer ${cred('RESEND_API_KEY')}` });
+    if (!r.ok) throw new Error(`send failed (${r.status})`);
+    logEvent('email', 'merchant_order_alert', { to, orderNumber }, 'ok', false);
+    return { ok: true };
+  } catch (e) {
+    logEvent('email', 'merchant_order_alert', { to, orderNumber }, 'error', false, e.message);
+    return { error: e.message };
+  }
+}
+
+module.exports = { PROVIDERS, getSetting, setSetting, configured, paymobCreatePayment, waSendTemplate, waSendCartRecovery, sendVerificationEmail, sendMerchantOrderEmail, status };

@@ -497,7 +497,7 @@ const api = {
   'PUT /api/store/settings': async (req, res, user) => {
     const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
     const store = getStoreForUser(user);
-    const allowed = ['policies', 'head_code', 'seo', 'social', 'custom_domain', 'max_items', 'notify_email'];
+    const allowed = ['policies', 'head_code', 'seo', 'social', 'custom_domain', 'max_items', 'notify_email', 'notifications'];
     const up = db.prepare('INSERT INTO store_settings (store_id, key, value, updated_at) VALUES (?, ?, ?, datetime(\'now\')) ON CONFLICT(store_id, key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at');
     for (const k of allowed) if (k in b) up.run(store.id, k, typeof b[k] === 'string' ? b[k] : JSON.stringify(b[k]));
     if ('phone' in b) db.prepare('UPDATE stores SET phone = ? WHERE id = ?').run(String(b.phone).trim(), store.id);
@@ -1082,6 +1082,15 @@ const api = {
         }
       } catch (e) { /* confirmation must never break checkout */ }
     }
+    // Merchant order notifications (F6): email alert on new order when enabled + platform email configured
+    try {
+      if (!isDemo) {
+        const n = JSON.parse((db.prepare("SELECT value FROM store_settings WHERE store_id = ? AND key = 'notifications'").get(store.id) || {}).value || '{}');
+        if (n.enabled !== false && n.new_order !== false && n.email_on && n.email && integ.configured('email')) {
+          integ.sendMerchantOrderEmail({ to: String(n.email).slice(0, 200), storeName: store.name, orderNumber: number, totalText: `${total} ج.م`, customerName: b.name.trim() }).catch(() => {});
+        }
+      }
+    } catch (e) { /* notifications must never break checkout */ }
     // Meta Conversion API (server-to-server), fire-and-forget
     try {
       const pxs = (JSON.parse(store.theme_settings || '{}').pixels) || {};

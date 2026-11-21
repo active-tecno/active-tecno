@@ -579,3 +579,9 @@ body.dash[data-theme="dark"] .act-banner.live .bn-ic svg { color: #4ade80; }
 [dir=ltr] .hello{text-align:left}
 [dir=ltr] .d-group-label{text-align:left}
 [dir=ltr] .set-tab{text-align:left}
+
+/* F6: order notifications settings rows */
+.notif-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 2px;border-bottom:1px solid var(--line,#E6ECF5);cursor:pointer}
+.notif-row:last-child{border-bottom:0}
+.notif-row .nr-txt{display:grid;gap:2px}
+.notif-row input[type=checkbox]{width:18px;height:18px;accent-color:#27cd27;flex-shrink:0}
