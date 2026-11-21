@@ -2,6 +2,12 @@
 const { db } = require('./db');
 const fs = require('fs');
 const path = require('path');
+function supportWA() {
+  try {
+    const row = db.prepare("SELECT value FROM settings WHERE key = 'SUPPORT_WHATSAPP_NUMBER'").get();
+    return row && row.value ? row.value : '';
+  } catch { return ''; }
+}
 function themeHeroImg(lay) { if (!lay) return ''; const p = path.join(__dirname, 'public', 'theme-heroes', `eo-${lay}.jpg`); return fs.existsSync(p) ? `/public/theme-heroes/eo-${lay}.jpg` : ''; }
 
 
@@ -129,7 +135,7 @@ const siteFooter = `
   </div>
   <div class="mt-12 pt-6 border-t border-night-border flex flex-wrap items-center justify-between gap-3 text-[12.5px] text-night-muted"><span>اكتف اوردر © 2026 — جميع الحقوق محفوظة</span><span>صُنعت في القاهرة</span></div>
 </div></footer>
-<a href="https://wa.me/201011206670" target="_blank" rel="noopener" aria-label="تواصل معنا واتساب" class="fixed bottom-6 right-6 z-50 grid place-items-center w-14 h-14 rounded-full bg-brand text-night shadow-[0_8px_30px_-6px_var(--color-brand)] transition-transform duration-200 hover:scale-110 animate__animated animate__fadeInUp"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.5 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.4-.7-2.9-1.2-4.7-4.1-4.9-4.3-.1-.2-1.1-1.5-1.1-2.9s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .6l-.4.6c-.2.2-.4.4-.2.8.2.4 1 1.7 2.2 2.7 1.5 1.3 2.7 1.7 3.1 1.9.4.2.6.1.8-.1l1-1.2c.2-.3.4-.2.7-.1l2 1c.3.1.5.2.6.4 0 .1 0 .7-.3 1.1z"/></svg></a>`;
+${supportWA() ? `<a href="https://wa.me/${esc(supportWA())}" target="_blank" rel="noopener" aria-label="تواصل معنا واتساب" class="fixed bottom-6 right-6 z-50 grid place-items-center w-14 h-14 rounded-full bg-brand text-night shadow-[0_8px_30px_-6px_var(--color-brand)] transition-transform duration-200 hover:scale-110 animate__animated animate__fadeInUp"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.5 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.4-.7-2.9-1.2-4.7-4.1-4.9-4.3-.1-.2-1.1-1.5-1.1-2.9s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .6l-.4.6c-.2.2-.4.4-.2.8.2.4 1 1.7 2.2 2.7 1.5 1.3 2.7 1.7 3.1 1.9.4.2.6.1.8-.1l1-1.2c.2-.3.4-.2.7-.1l2 1c.3.1.5.2.6.4 0 .1 0 .7-.3 1.1z"/></svg></a>` : ''}`;
 
 // ---------- landing ----------
 function landing() {
@@ -472,7 +478,7 @@ ${activeConfirmSection()}
   <div class="mt-10 rounded-3xl border border-border bg-card p-8 text-center shadow-soft" data-reveal="fade-up">
     <h3 class="text-[20px] font-bold">وإن لم تجد سؤالك هنا؟</h3>
     <p class="mt-2 text-[14px] text-muted-foreground">فريق الدعم في انتظارك… 24/7</p>
-    <a class="mt-5 inline-flex items-center gap-2 rounded-full bg-brand px-7 py-3 text-[14px] font-bold text-night transition-all duration-200 hover:bg-brand-bright" href="https://wa.me/201011206670" target="_blank" rel="noopener">تحدّث مع فريق الدعم</a>
+    ${supportWA() ? `<a class="mt-5 inline-flex items-center gap-2 rounded-full bg-brand px-7 py-3 text-[14px] font-bold text-night transition-all duration-200 hover:bg-brand-bright" href="https://wa.me/${esc(supportWA())}" target="_blank" rel="noopener">تحدّث مع فريق الدعم</a>` : ''}
   </div>
 </div></section>
 
@@ -620,7 +626,7 @@ function loginPage() {
             <button type="button" onclick="const i=document.getElementById('loginPw');i.type=i.type==='password'?'text':'password'" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" aria-label="إظهار كلمة المرور"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>
           </span>
         </label>
-        <a class="inline-block text-[13px] font-bold text-brand-foreground hover:underline" href="https://wa.me/201011206670" target="_blank" rel="noopener">نسيت كلمة المرور؟</a>
+        ${supportWA() ? `<a class="inline-block text-[13px] font-bold text-brand-foreground hover:underline" href="https://wa.me/${esc(supportWA())}" target="_blank" rel="noopener">نسيت كلمة المرور؟</a>` : ''}
         <div class="text-[13px] font-medium text-red-600 min-h-[18px]" id="loginErr"></div>
         <button class="w-full rounded-xl bg-night py-3.5 text-[15px] font-bold text-white transition-all duration-200 hover:opacity-90" type="submit">تسجيل الدخول</button>
       </form>
@@ -1550,7 +1556,7 @@ ${siteHeader('light')}
     <div class="mt-10 rounded-3xl border border-border bg-card p-8 text-center shadow-soft" data-reveal="fade-up">
       <h3 class="text-[20px] font-bold">وإن لم تجد سؤالك هنا؟</h3>
       <p class="mt-2 text-[14px] text-muted-foreground">فريق الدعم في انتظارك… 24/7</p>
-      <a class="mt-5 inline-flex items-center gap-2 rounded-full bg-brand px-7 py-3 text-[14px] font-bold text-night transition-all duration-200 hover:bg-brand-bright" href="https://wa.me/201011206670" target="_blank" rel="noopener">تحدّث مع فريق الدعم</a>
+      ${supportWA() ? `<a class="mt-5 inline-flex items-center gap-2 rounded-full bg-brand px-7 py-3 text-[14px] font-bold text-night transition-all duration-200 hover:bg-brand-bright" href="https://wa.me/${esc(supportWA())}" target="_blank" rel="noopener">تحدّث مع فريق الدعم</a>` : ''}
     </div>
   </div>
 </div></section>
@@ -1757,7 +1763,7 @@ ${siteHeader('light')}
 <div class="pt-32 pb-20 bg-background"><div class="mx-auto max-w-2xl px-4 sm:px-8">
   <h1 class="text-[30px] sm:text-[38px] font-bold tracking-tight" data-reveal="fade-up">${p.title}</h1>
   <div class="mt-8 space-y-5">${p.body.map(par => `<p class="text-[15.5px] leading-8 text-foreground/80" data-reveal="fade-up">${par}</p>`).join('')}</div>
-  <a class="mt-10 inline-flex items-center gap-2 rounded-full bg-brand px-7 py-3 text-[14px] font-bold text-night transition-all duration-200 hover:bg-brand-bright" href="https://wa.me/201011206670" target="_blank" rel="noopener">تواصل معنا واتساب</a>
+  ${supportWA() ? `<a class="mt-10 inline-flex items-center gap-2 rounded-full bg-brand px-7 py-3 text-[14px] font-bold text-night transition-all duration-200 hover:bg-brand-bright" href="https://wa.me/${esc(supportWA())}" target="_blank" rel="noopener">تواصل معنا واتساب</a>` : ''}
 </div></div>
 ${siteFooter}`);
 }

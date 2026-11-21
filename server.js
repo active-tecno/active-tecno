@@ -1179,11 +1179,17 @@ const api = {
   'GET /api/activation': (req, res, user) => {
     const store = getStoreForUser(user);
     if (!store) return json(res, 200, { requests: [] });
-    json(res, 200, { requests: db.prepare('SELECT * FROM activation_requests WHERE store_id = ? ORDER BY id DESC').all(store.id) });
+    const payment = {
+      instapay: integ.getSetting('PAYMENT_INSTAPAY_HANDLE') || process.env.PAYMENT_INSTAPAY_HANDLE || '',
+      vodafone_cash: integ.getSetting('PAYMENT_VODAFONE_CASH_NUMBER') || process.env.PAYMENT_VODAFONE_CASH_NUMBER || '',
+    };
+    json(res, 200, { requests: db.prepare('SELECT * FROM activation_requests WHERE store_id = ? ORDER BY id DESC').all(store.id), payment });
   },
   'POST /api/activation': async (req, res, user) => {
     const b = await readJSON(req);
     if (!b || !['instapay', 'vodafone_cash'].includes(b.method) || !b.reference) return json(res, 400, { error: 'اختر طريقة الدفع وأدخل رقم المرجع' });
+    const chanKey = b.method === 'instapay' ? 'PAYMENT_INSTAPAY_HANDLE' : 'PAYMENT_VODAFONE_CASH_NUMBER';
+    if (!integ.getSetting(chanKey) && !process.env[chanKey]) return json(res, 503, { error: 'قناة التحويل غير مضبوطة بعد — تُدار من لوحة الإدارة', code: 'payment_not_configured' });
     const store = getStoreForUser(user);
     const pending = db.prepare(`SELECT id FROM activation_requests WHERE store_id = ? AND status = 'pending'`).get(store.id);
     if (pending) return json(res, 409, { error: 'لديك طلب تفعيل قيد المراجعة بالفعل' });

@@ -408,7 +408,20 @@ function activationBanner() {
     <p style="margin-top:6px">رابط متجرك: <span class="mono">${storeUrl}</span></p></div>
   <button class="btn btn-navy" onclick="openActivation()">فعّل متجرك<div style="font-size:10.5px;font-weight:400;opacity:.8">يبدأ من 50 ج.م فقط</div></button></div>`;
 }
-function openActivation() {
+function payChannels(pay) {
+  const ch = [];
+  if (pay && pay.instapay) ch.push({ value: 'instapay', label: 'InstaPay — ' + pay.instapay });
+  if (pay && pay.vodafone_cash) ch.push({ value: 'vodafone_cash', label: 'Vodafone Cash — ' + pay.vodafone_cash });
+  return ch;
+}
+const paySetupNotice = () => `<div class="card" style="background:var(--bg)">
+    <b>تحصيل الاشتراكات غير مضبوط بعد</b>
+    <p class="muted small" style="margin-top:6px">لم يضبط مالك المنصة قنوات استلام التحويلات بعد، لذلك لا يمكن إرسال طلب تفعيل حالياً. تُضبط القنوات من لوحة الإدارة ← الإضافات والتكامل ← قنوات المنصة، وتظهر هنا فور ضبطها.</p>
+  </div>`;
+async function openActivation() {
+  const d = await api('/api/activation');
+  const chans = payChannels(d.payment);
+  if (!chans.length) return openModal('تفعيل نشر المتجر', paySetupNotice());
   openModal('تفعيل نشر المتجر', `
     <div class="card" style="background:var(--bg);margin-bottom:16px">
       <b>خطة النشر الشهرية — 50 ج.م / 30 يوم</b>
@@ -416,7 +429,7 @@ function openActivation() {
     </div>
     <div class="f-grid">
       <div class="f-field full"><label>طريقة الدفع</label>
-        <select id="actMethod"><option value="instapay">InstaPay — activetecno@instapay</option><option value="vodafone_cash">Vodafone Cash — 01011206670</option></select></div>
+        <select id="actMethod">${chans.map(c => `<option value="${c.value}">${esc(c.label)}</option>`).join('')}</select></div>
       <div class="f-field full"><label>رقم المرجع / آخر 4 أرقام من رقم التحويل</label><input id="actRef" placeholder="مثال: INSTA-99213" dir="ltr"></div>
     </div>
     <div class="m-actions"><button class="btn btn-teal" onclick="submitActivation()">إرسال طلب التفعيل</button></div>`);

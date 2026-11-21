@@ -21,6 +21,11 @@ const PROVIDERS = {
     keys: ['RESEND_API_KEY', 'EMAIL_FROM'],
     base: 'https://api.resend.com',
   },
+  platform: {
+    label: 'قنوات المنصة — تحصيل الاشتراكات والدعم الخارجي',
+    keys: ['PAYMENT_INSTAPAY_HANDLE', 'PAYMENT_VODAFONE_CASH_NUMBER', 'SUPPORT_WHATSAPP_NUMBER'],
+    base: '',
+  },
 };
 
 function getSetting(key) {

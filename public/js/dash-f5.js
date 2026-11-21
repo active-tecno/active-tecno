@@ -14,16 +14,18 @@ registerView('top-up', async () => {
       <div class="stat"><div class="stat-ic">${I('percent')}</div><div><b>0%</b><span>عمولة على الطلبات</span></div></div>
     </div>
     ${pending ? `<div class="d-card warn"><h3>${I('cash')} طلبك قيد المراجعة</h3><p class="muted">استلمنا طلبك (${pending.method === 'instapay' ? 'InstaPay' : 'Vodafone Cash'} — مرجع ${esc(pending.reference)}) وسيتم التفعيل خلال ساعات.</p></div>`
-    : `<div class="d-card">
+    : (() => { const chans = payChannels(d.payment);
+      if (!chans.length) return `<div class="d-card"><h3>${I('cash')} خطة النشر — 50 ج.م / 30 يوم</h3>${paySetupNotice()}</div>`;
+      return `<div class="d-card">
       <h3>${I('cash')} خطة النشر — 50 ج.م / 30 يوم</h3>
       <p class="muted" style="line-height:1.9">حوّل 50 ج.م إلى حساب اكتف اوردر ثم أدخل رقم المرجع. يراجع فريقنا الطلب ويفعّل النشر خلال ساعات.</p>
       <div class="form-grid">
         <div><label class="d-label">وسيلة التحويل</label>
-        <select id="topupMethod" class="d-input"><option value="instapay">InstaPay — activetecno@instapay</option><option value="vodafone_cash">Vodafone Cash — 01011206670</option></select></div>
+        <select id="topupMethod" class="d-input">${chans.map(c => `<option value="${c.value}">${esc(c.label)}</option>`).join('')}</select></div>
         <div><label class="d-label">رقم المرجع / الإيصال</label><input id="topupRef" class="d-input ltr" placeholder="مثال: 304455667788"></div>
       </div>
       <button class="btn primary" style="margin-top:14px" onclick="submitTopup()">إرسال طلب التفعيل</button>
-    </div>`}
+    </div>`; })()}
   </div>`;
 });
 async function submitTopup() {
