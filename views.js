@@ -1697,6 +1697,12 @@ function builderRender(store, t, page) {
     vars: themeVars(t),
     dark: !!t.dark,
     themeId: store.theme_id || '',
+    theme: {
+      primary: t.primary || '#141924', accent: t.accent || '#27cd27', bg: t.bg || '#ffffff', surface: t.surface || '#F6F8FC',
+      radius: t.radius ?? 16, announce_bg: t.announce_bg || t.accent || '#27cd27', announce_color: t.announce_color || '#ffffff',
+      header: t.header || '', footer_text: t.footer_text || '', hide_announcement: !!t.hide_announcement,
+    },
+    announcement: store.announcement || '',
     header: storeHeader(store, t, cats),
     footer: `<footer class="s-footer">${socialLinks(store)}${t.footer_text ? `<p>${esc(t.footer_text)}</p>` : ''}<p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>`,
     fixed, fixedLabel,

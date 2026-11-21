@@ -232,23 +232,24 @@ function bCloseDrawer() {
 // ---------- theme settings drawer ----------
 function bThemeDrawer() {
   B_DRAWER = 'theme'; B_SEL = null;
-  let ts = {}; try { ts = JSON.parse(JSON.stringify(STORE.theme_settings || {})); } catch (e) {}
+  const eff = (B_DATA && B_DATA.theme) || {};
   const dr = document.getElementById('b2Drawer');
   dr.innerHTML = `
     <div class="b2-drawer-h"><b>إعدادات الثيم</b><button class="b2-x" onclick="bCloseDrawer()">✕</button></div>
     ${B_THEME_GROUPS.map(([g, fields]) => `<details class="b2-tgroup" open><summary>${esc(g)}</summary>${fields.map(([k, label, kind, def]) => {
-      if (kind === 'check') return `<label class="b2-check"><input type="checkbox" id="bt-${k}" ${ts[k] ? 'checked' : ''}> ${label}</label>`;
-      if (kind === 'store_text') return `<label class="b2-label">${label}</label><input id="bt-${k}" class="b2-input" value="${esc(STORE.announcement || '')}">`;
-      if (kind === 'select') return `<label class="b2-label">${label}</label><select id="bt-${k}" class="b2-input">${def.map(([v, l]) => `<option value="${v}" ${String(ts[k] || '') === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
-      if (kind === 'color') return `<label class="b2-label">${label}</label><input id="bt-${k}" type="color" class="b2-color" value="${esc(ts[k] || def)}">`;
-      if (kind === 'number') return `<label class="b2-label">${label}</label><input id="bt-${k}" type="number" class="b2-input" value="${esc(String(ts[k] ?? def))}">`;
-      return `<label class="b2-label">${label}</label><input id="bt-${k}" class="b2-input" value="${esc(ts[k] || '')}">`;
+      const cur = k in eff ? eff[k] : def;
+      if (kind === 'check') return `<label class="b2-check"><input type="checkbox" id="bt-${k}" ${cur ? 'checked' : ''}> ${label}</label>`;
+      if (kind === 'store_text') return `<label class="b2-label">${label}</label><input id="bt-${k}" class="b2-input" value="${esc((B_DATA && B_DATA.announcement) || '')}">`;
+      if (kind === 'select') return `<label class="b2-label">${label}</label><select id="bt-${k}" class="b2-input">${def.map(([v, l]) => `<option value="${v}" ${String(cur || '') === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
+      if (kind === 'color') return `<label class="b2-label">${label}</label><input id="bt-${k}" type="color" class="b2-color" value="${esc(cur || def)}">`;
+      if (kind === 'number') return `<label class="b2-label">${label}</label><input id="bt-${k}" type="number" class="b2-input" value="${esc(String(cur ?? def))}">`;
+      return `<label class="b2-label">${label}</label><input id="bt-${k}" class="b2-input" value="${esc(cur || '')}">`;
     }).join('')}</details>`).join('')}
     <button class="b2-save" onclick="bSaveTheme()">حفظ إعدادات الثيم</button>`;
 }
 
 async function bSaveTheme() {
-  let ts = {}; try { ts = JSON.parse(JSON.stringify(STORE.theme_settings || {})); } catch (e) {}
+  let ts = {}; try { ts = typeof STORE.theme_settings === 'string' ? JSON.parse(STORE.theme_settings || '{}') : JSON.parse(JSON.stringify(STORE.theme_settings || {})); } catch (e) { ts = {}; }
   let announcement = STORE.announcement || '';
   for (const [, fields] of B_THEME_GROUPS) {
     for (const [k, , kind] of fields) {
