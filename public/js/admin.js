@@ -146,9 +146,11 @@ async function viewIntegrations() {
   const { providers } = await api('/api/admin/integrations');
   const { events } = await api('/api/admin/integration-events');
   const provCard = p => {
-    const badge = p.configured
-      ? `<span class="chip st-live">متصل — وضع حقيقي (${p.source === 'env' ? 'من متغيرات البيئة' : 'من الإعدادات'})</span>`
-      : '<span class="chip st-sim">وضع المحاكاة — لا تُرسل طلبات فعلية</span>';
+    const badge = p.id === 'platform'
+      ? (p.keys.some(k => k.set) ? '<span class="chip st-live">مضبوط</span>' : '<span class="chip st-sim">غير مضبوط — تظهر إشعارات الإعداد للتجار</span>')
+      : p.configured
+        ? `<span class="chip st-live">متصل — وضع حقيقي (${p.source === 'env' ? 'من متغيرات البيئة' : 'من الإعدادات'})</span>`
+        : '<span class="chip st-sim">وضع المحاكاة — لا تُرسل طلبات فعلية</span>';
     const rows = p.keys.map(k => `<div class="integ-key-row"><code>${k.key}</code>
       <span class="src" style="color:${k.set ? 'var(--green)' : 'var(--faint)'}">${k.set ? (k.from === 'env' ? '✓ من البيئة' : '✓ محفوظ') : 'غير مضبوط'}</span></div>`).join('');
     return `<div class="card">
@@ -159,7 +161,7 @@ async function viewIntegrations() {
             ${p.keys.map(k => `<div class="f-field"><label>${k.key}</label><input data-integ-key="${k.key}" dir="ltr" placeholder="${k.set ? '•••••••• (محفوظ — أدخل قيمة جديدة للتغيير)' : 'الصق القيمة هنا'}" autocomplete="off"></div>`).join('')}
           </div>
           <div class="m-actions" style="margin-top:14px"><button class="btn btn-teal" onclick="saveIntegKeys()">حفظ المفاتيح</button></div>
-          ${p.last_event ? `<p class="muted small" style="margin-top:10px">آخر نشاط: ${esc(p.last_event.kind)} — ${p.last_event.status === 'ok' ? 'ناجح' : p.last_event.status === 'simulated' ? 'محاكاة' : 'خطأ'} — ${fmtDate(p.last_event.created_at)}</p>` : '<p class="muted small" style="margin-top:10px">لا يوجد نشاط بعد.</p>'}
+          ${p.id === 'platform' ? '<p class="muted small" style="margin-top:10px">تُستخدم هذه القيم في صفحات التفعيل والدعم فور حفظها.</p>' : p.last_event ? `<p class="muted small" style="margin-top:10px">آخر نشاط: ${esc(p.last_event.kind)} — ${p.last_event.status === 'ok' ? 'ناجح' : p.last_event.status === 'simulated' ? 'محاكاة' : 'خطأ'} — ${fmtDate(p.last_event.created_at)}</p>` : '<p class="muted small" style="margin-top:10px">لا يوجد نشاط بعد.</p>'}
         </div>
       </div>
     </div>`;
