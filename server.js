@@ -461,6 +461,30 @@ const api = {
     json(res, 201, { added });
   },
 
+  // ---------- F3: funnels ----------
+  'GET /api/funnels': (req, res, user) => json(res, 200, {
+    funnels: db.prepare(`SELECT f.*, p.name AS product_name FROM funnels f LEFT JOIN products p ON p.id = f.product_id WHERE f.store_id = ? ORDER BY f.id DESC`).all(getStoreForUser(user).id)
+  }),
+  'POST /api/funnels': async (req, res, user) => {
+    const b = await readJSON(req); if (!b || !String(b.name || '').trim()) return json(res, 400, { error: 'اسم الـ Funnel مطلوب' });
+    const store = getStoreForUser(user);
+    if (b.product_id && !db.prepare('SELECT id FROM products WHERE id = ? AND store_id = ?').get(b.product_id, store.id)) return json(res, 400, { error: 'المنتج غير موجود' });
+    const r = db.prepare('INSERT INTO funnels (store_id, name, product_id) VALUES (?, ?, ?)').run(store.id, String(b.name).trim(), b.product_id || null);
+    json(res, 201, { funnel: db.prepare('SELECT * FROM funnels WHERE id = ?').get(r.lastInsertRowid) });
+  },
+  'PUT /api/funnels/:id': async (req, res, user, p) => {
+    const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
+    const store = getStoreForUser(user);
+    if (b.name !== undefined) db.prepare('UPDATE funnels SET name = ? WHERE id = ? AND store_id = ?').run(String(b.name).trim(), p.id, store.id);
+    if (b.product_id !== undefined) db.prepare('UPDATE funnels SET product_id = ? WHERE id = ? AND store_id = ?').run(b.product_id || null, p.id, store.id);
+    if (b.status && ['active', 'paused'].includes(b.status)) db.prepare('UPDATE funnels SET status = ? WHERE id = ? AND store_id = ?').run(b.status, p.id, store.id);
+    json(res, 200, { ok: true });
+  },
+  'DELETE /api/funnels/:id': (req, res, user, p) => {
+    db.prepare('DELETE FROM funnels WHERE id = ? AND store_id = ?').run(p.id, getStoreForUser(user).id);
+    json(res, 200, { ok: true });
+  },
+
   // merchant manual order (dashboard "أنشاء طلب")
   'POST /api/orders': async (req, res, user) => {
     const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
