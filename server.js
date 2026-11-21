@@ -6,6 +6,7 @@ const path = require('path');
 const { db } = require('./db');
 const { seed, hashPassword } = require('./seed');
 const views = require('./views');
+const integ = require('./integrations');
 
 seed();
 
@@ -92,7 +93,7 @@ function serveStatic(res, filePath) {
 }
 
 // ---------- API ----------
-const verifyCodes = new Map(); // email -> { code, userId, expires } (محاكاة إرسال بريد التحقق)
+const verifyCodes = new Map(); // email -> { code, userId, expires } — code is emailed when the email provider is configured; otherwise returned for the on-screen verifier
 const api = {
   // auth
   'POST /api/auth/register': async (req, res) => {
@@ -110,7 +111,8 @@ const api = {
       .run(db.prepare('SELECT id FROM stores WHERE slug = ?').get(finalSlug).id, email.toLowerCase(), name, 'owner');
     const code = String(Math.floor(100000 + Math.random() * 900000));
     verifyCodes.set(email.toLowerCase(), { code, userId: u.lastInsertRowid, expires: Date.now() + 10 * 60000 });
-    json(res, 201, { ok: true, slug: finalSlug, needs_verification: true, dev_code: code });
+    const mail = await integ.sendVerificationEmail({ to: email.toLowerCase(), code });
+    json(res, 201, { ok: true, slug: finalSlug, needs_verification: true, email_sent: !mail.simulated, dev_code: mail.simulated ? code : undefined });
   },
   'POST /api/auth/verify': async (req, res) => {
     const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
@@ -152,6 +154,28 @@ const api = {
     }
     if (sets.length) db.prepare(`UPDATE stores SET ${sets.join(', ')} WHERE id = ?`).run(...vals, store.id);
     json(res, 200, { store: getStoreForUser(user) });
+  },
+  // merchant integration status + payment keys
+  'GET /api/store/integrations': (req, res, user) => {
+    const store = getStoreForUser(user);
+    const ts = JSON.parse(store.theme_settings || '{}');
+    const pc = ts.payments_config || {};
+    const storePaymob = ['PAYMOB_API_KEY', 'PAYMOB_INTEGRATION_ID', 'PAYMOB_IFRAME_ID'].every(k => pc[k]);
+    json(res, 200, {
+      paymob: { configured: storePaymob || integ.configured('paymob'), own_keys: storePaymob, live: storePaymob || integ.configured('paymob') },
+      whatsapp: { configured: integ.configured('whatsapp') },
+      email: { configured: integ.configured('email') },
+    });
+  },
+  'PUT /api/store/payments-config': async (req, res, user) => {
+    const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
+    const store = getStoreForUser(user);
+    const ts = JSON.parse(store.theme_settings || '{}');
+    const allowed = ['PAYMOB_API_KEY', 'PAYMOB_INTEGRATION_ID', 'PAYMOB_IFRAME_ID'];
+    ts.payments_config = ts.payments_config || {};
+    for (const k of allowed) if (k in b) { const v = String(b[k] || '').trim(); if (v) ts.payments_config[k] = v; else delete ts.payments_config[k]; }
+    db.prepare('UPDATE stores SET theme_settings = ? WHERE id = ?').run(JSON.stringify(ts), store.id);
+    json(res, 200, { ok: true, configured: ['PAYMOB_API_KEY', 'PAYMOB_INTEGRATION_ID', 'PAYMOB_IFRAME_ID'].every(k => ts.payments_config[k]) });
   },
   'GET /api/themes': (req, res, user) => {
     json(res, 200, { themes: db.prepare('SELECT * FROM themes').all().map(t => ({ ...t, config: JSON.parse(t.config) })) });
@@ -236,10 +260,13 @@ const api = {
     db.prepare('INSERT OR IGNORE INTO blocked_numbers (store_id, phone, reason) VALUES (?, ?, ?)').run(store.id, order.customer_phone, `محظور من الطلب ${order.number}`);
     json(res, 200, { ok: true });
   },
-  'PUT /api/orders/:id/whatsapp': (req, res, user, p) => {
+  'PUT /api/orders/:id/whatsapp': async (req, res, user, p) => {
     const store = getStoreForUser(user);
-    db.prepare('UPDATE orders SET whatsapp_confirmed = 1 WHERE id = ? AND store_id = ?').run(p.id, store.id);
-    json(res, 200, { ok: true });
+    const order = db.prepare('SELECT * FROM orders WHERE id = ? AND store_id = ?').get(p.id, store.id);
+    if (!order) return json(res, 404, { error: 'الطلب غير موجود' });
+    const sent = await integ.waSendTemplate({ to: order.customer_phone, storeName: store.name, orderNumber: order.number, totalText: `${order.total} ج.م` });
+    db.prepare('UPDATE orders SET whatsapp_confirmed = 1 WHERE id = ?').run(order.id);
+    json(res, 200, { ok: true, delivered: !sent.simulated && !sent.error, simulated: !!sent.simulated, error: sent.error || null });
   },
   'GET /api/orders-export.csv': (req, res, user, p, url) => {
     const store = getStoreForUser(user);
@@ -383,6 +410,41 @@ const api = {
     json(res, 200, { customers: rows.map(r => ({ ...r, blocked: blocked.has(r.phone) })) });
   },
 
+  // ---------- public webhooks ----------
+  'GET /api/webhooks/whatsapp': (req, res, user, p, url) => {
+    const mode = url.searchParams.get('hub.mode');
+    const token = url.searchParams.get('hub.verify_token');
+    const challenge = url.searchParams.get('hub.challenge');
+    const expected = process.env.WHATSAPP_VERIFY_TOKEN || integ.getSetting('WHATSAPP_VERIFY_TOKEN');
+    if (mode === 'subscribe' && expected && token === expected) {
+      res.writeHead(200, { 'Content-Type': 'text/plain' }); return res.end(challenge);
+    }
+    return json(res, 403, { error: 'verification failed' });
+  },
+  'POST /api/webhooks/whatsapp': async (req, res) => {
+    const b = await readJSON(req);
+    try {
+      for (const entry of (b && b.entry) || []) {
+        for (const change of entry.changes || []) {
+          const msgs = change.value && change.value.messages;
+          for (const msg of msgs || []) {
+            const payload = (msg.button && msg.button.payload) || (msg.interactive && msg.interactive.button_reply && msg.interactive.button_reply.id) || '';
+            const m = String(payload).match(/^(CONFIRM|CANCEL)_(.+)$/);
+            if (!m) continue;
+            const order = db.prepare('SELECT * FROM orders WHERE number = ?').get(m[2]);
+            if (!order) continue;
+            const newStatus = m[1] === 'CONFIRM' ? 'confirmed' : 'cancelled';
+            if (order.status === 'new') {
+              db.prepare('UPDATE orders SET status = ?, whatsapp_confirmed = 1 WHERE id = ?').run(newStatus, order.id);
+              db.prepare('INSERT INTO order_status_history (order_id, status, note) VALUES (?, ?, ?)').run(order.id, newStatus, 'عبر رد العميل على واتساب (أكتف كونفيرم)');
+            }
+          }
+        }
+      }
+    } catch (_) { /* never fail the webhook ack */ }
+    json(res, 200, { ok: true });
+  },
+
   // ---------- admin ----------
   'GET /api/admin/stats': (req, res, user) => {
     json(res, 200, {
@@ -441,6 +503,25 @@ const api = {
     db.prepare('UPDATE stores SET is_published = ?, published_until = ? WHERE id = ?')
       .run(b.published ? 1 : 0, b.published ? new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10) : null, p.id);
     json(res, 200, { ok: true });
+  },
+  'GET /api/admin/integrations': (req, res, user) => {
+    json(res, 200, { providers: integ.status() });
+  },
+  'PUT /api/admin/integrations': async (req, res, user) => {
+    const b = await readJSON(req); if (!b || typeof b !== 'object') return json(res, 400, { error: 'بيانات غير صالحة' });
+    const allowed = new Set(Object.values(integ.PROVIDERS).flatMap(p => p.keys));
+    for (const [k, v] of Object.entries(b)) {
+      if (!allowed.has(k)) continue;
+      integ.setSetting(k, String(v).trim());
+    }
+    json(res, 200, { providers: integ.status() });
+  },
+  'GET /api/admin/integration-events': (req, res, user, p, url) => {
+    const provider = url.searchParams.get('provider');
+    const rows = provider
+      ? db.prepare('SELECT * FROM integration_events WHERE provider = ? ORDER BY id DESC LIMIT 50').all(provider)
+      : db.prepare('SELECT * FROM integration_events ORDER BY id DESC LIMIT 50').all();
+    json(res, 200, { events: rows });
   },
   'GET /api/admin/orders': (req, res, user) => {
     json(res, 200, {
@@ -543,7 +624,7 @@ const api = {
     let payMethod = 'cod';
     if (b.payment_method === 'online') {
       if (!paymentsCfg.online) return json(res, 400, { error: 'الدفع الأونلاين غير مفعّل لهذا المتجر — اختر الدفع عند الاستلام' });
-      payMethod = 'online_mock';
+      payMethod = 'online';
     }
 
     const r = db.prepare(`INSERT INTO orders (store_id, number, customer_name, customer_phone, customer_address, governorate, notes, subtotal, shipping, discount, total, coupon_code, payment_method)
@@ -558,7 +639,21 @@ const api = {
     db.prepare('INSERT INTO order_status_history (order_id, status) VALUES (?, ?)').run(oid, 'new');
     db.prepare(`INSERT INTO events (store_id, type, session_id) VALUES (?, 'purchase', ?)`).run(store.id, String(b.session_id || ''));
     db.prepare(`UPDATE carts SET items = '[]', customer_phone = ?, updated_at = datetime('now') WHERE store_id = ? AND session_id = ?`).run(phone, store.id, String(b.session_id || ''));
-    json(res, 201, { ok: true, number, total, shipping, discount });
+    let payment = null;
+    if (payMethod === 'online') {
+      payment = await integ.paymobCreatePayment({ amountEGP: total, orderNumber: number, customer: { name: b.name.trim(), phone, address: b.address.trim(), governorate: b.governorate || '' }, storeCfg: (JSON.parse(store.theme_settings || '{}').payments_config) || null });
+      if (payment.payment_url) {
+        db.prepare(`UPDATE orders SET payment_status = 'awaiting_payment', payment_ref = ? WHERE id = ?`).run(String(payment.paymob_order_id || ''), oid);
+      } else if (payment.simulated) {
+        // gateway not configured: keep the order payable on delivery and record the intent internally
+        db.prepare(`UPDATE orders SET payment_status = 'pending_gateway' WHERE id = ?`).run(oid);
+      } else if (payment.error) {
+        db.prepare(`UPDATE orders SET payment_status = 'gateway_error' WHERE id = ?`).run(oid);
+      }
+    } else {
+      db.prepare(`UPDATE orders SET payment_status = 'cod' WHERE id = ?`).run(oid);
+    }
+    json(res, 201, { ok: true, number, total, shipping, discount, payment_url: payment && payment.payment_url ? payment.payment_url : null });
   }
 };
 
@@ -594,7 +689,7 @@ const server = http.createServer(async (req, res) => {
       }
       if (!key) return json(res, 404, { error: 'Not found' });
       const isAdminRoute = key.includes('/api/admin/');
-      const isPublic = key.includes('/api/public/') || key.includes('/api/auth/');
+      const isPublic = key.includes('/api/public/') || key.includes('/api/auth/') || key.includes('/api/webhooks/');
       if (!isPublic && !user) return json(res, 401, { error: 'unauthenticated' });
       if (isAdminRoute && (!user || !user.is_admin)) return json(res, 403, { error: 'admin only' });
       if (!isPublic && !isAdminRoute && !getStoreForUser(user)) return json(res, 400, { error: 'لا يوجد متجر لهذا الحساب' });

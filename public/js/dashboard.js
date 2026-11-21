@@ -40,23 +40,47 @@ const stChip = s => `<span class="chip ${STATUS[s]?.cls || ''}">${STATUS[s]?.ar 
 let ME = null, STORE = null;
 
 // ---------- layout ----------
+const ICONS = {
+  overview: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+  orders: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3.3 8.3L12 13l8.7-4.7M12 13v9"/></svg>',
+  products: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l1 14H5L6 7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>',
+  carts: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.6"/><circle cx="17" cy="20" r="1.6"/><path d="M3 4h2l2.5 12h10L20 8H7"/></svg>',
+  customers: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3.4"/><path d="M2.8 20a6.2 6.2 0 0 1 12.4 0"/><circle cx="17.5" cy="9.5" r="2.6"/><path d="M16.5 15.4a5 5 0 0 1 4.7 4.6"/></svg>',
+  coupons: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9V7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a3 3 0 0 0 0 6v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a3 3 0 0 0 0-6z"/><path d="M13 5v2m0 4v2m0 4v2" stroke-dasharray="1 3"/></svg>',
+  shipping: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 7h13v9H1zM14 10h4l4 4v2h-8z"/><circle cx="6" cy="18.5" r="1.8"/><circle cx="17" cy="18.5" r="1.8"/></svg>',
+  couriers: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h13l3 4v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4z"/><path d="M4 9h16M9 4v5"/></svg>',
+  payments: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20M6 15h4"/></svg>',
+  blocked: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M6 6l12 12"/></svg>',
+  customize: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 0 18c1.4 0 2-.8 2-1.8 0-.9-.7-1.4-.7-2.3 0-1 .8-1.7 2-1.7H17a4 4 0 0 0 4-4c0-4.4-4-8.2-9-8.2z"/><circle cx="7.5" cy="11" r="1.1" fill="currentColor"/><circle cx="11" cy="7.5" r="1.1" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.1" fill="currentColor"/></svg>',
+  tracking: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>',
+  team: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="7.5" r="3.2"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>',
+  settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.7M12 18.5v2.7M21.2 12h-2.7M5.5 12H2.8M18.5 5.5l-1.9 1.9M7.4 16.6l-1.9 1.9M18.5 18.5l-1.9-1.9M7.4 7.4L5.5 5.5"/></svg>',
+  eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/></svg>',
+  shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6l7-3z"/></svg>',
+  logout: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>',
+  chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.2L4 21l1.8-5.4A8 8 0 1 1 21 12z"/></svg>',
+  plug: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v6M15 2v6M6 8h12v4a6 6 0 0 1-6 6 6 6 0 0 1-6-6V8zM12 18v4"/></svg>',
+  cash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="6" width="20" height="12" rx="3"/><circle cx="12" cy="12" r="2.6"/></svg>',
+};
+const I = k => ICONS[k] || ICONS.settings;
+
 const NAV = [
-  ['overview', '📊', 'نظرة عامة'], ['orders', '📦', 'الطلبات'], ['products', '🛍️', 'المنتجات'],
-  ['carts', '🛒', 'السلات المتروكة'], ['customers', '👥', 'العملاء'], ['coupons', '🎟️', 'الكوبونات'],
-  ['shipping', '🚚', 'الشحن'], ['couriers', '📮', 'شركات الشحن'], ['payments', '💳', 'بوابات الدفع'],
-  ['blocked', '🚫', 'الأرقام المحظورة'], ['customize', '🎨', 'تخصيص المتجر'],
-  ['tracking', '🎯', 'البيكسلات والتتبع'], ['team', '🤝', 'الفريق'], ['settings', '⚙️', 'الإعدادات']
+  ['overview', 'overview', 'نظرة عامة'], ['orders', 'orders', 'الطلبات'], ['products', 'products', 'المنتجات'],
+  ['carts', 'carts', 'السلات المتروكة'], ['customers', 'customers', 'العملاء'], ['coupons', 'coupons', 'الكوبونات'],
+  ['shipping', 'shipping', 'الشحن'], ['couriers', 'couriers', 'شركات الشحن'], ['payments', 'payments', 'بوابات الدفع'],
+  ['blocked', 'blocked', 'الأرقام المحظورة'], ['customize', 'customize', 'تخصيص المتجر'],
+  ['tracking', 'tracking', 'البيكسلات والتتبع'], ['team', 'team', 'الفريق'], ['settings', 'settings', 'الإعدادات']
 ];
 function shell(content) {
   const hash = location.hash.replace('#/', '') || 'overview';
   return `<div class="d-layout">
   <aside class="d-side" id="dSide">
     <a class="brand" href="/"><svg viewBox="0 0 32 32" width="28" height="28"><rect width="32" height="32" rx="8" fill="rgba(255,255,255,.12)"/><path d="M9 20l7-11 7 11" stroke="#00BFAF" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="brand-name">اكتف <b>تكنو</b></span></a>
-    ${NAV.map(([k, ic, l]) => `<button class="d-link ${hash === k ? 'on' : ''}" onclick="go('${k}')"><span class="ic">${ic}</span>${l}${k === 'orders' && ME?.newOrders ? `<span class="badge">${ME.newOrders}</span>` : ''}</button>`).join('')}
+    ${NAV.map(([k, ic, l]) => `<button class="d-link ${hash === k ? 'on' : ''}" onclick="go('${k}')"><span class="ic">${I(ic)}</span>${l}${k === 'orders' && ME?.newOrders ? `<span class="badge">${ME.newOrders}</span>` : ''}</button>`).join('')}
     <div class="d-side-foot">
-      <a class="d-viewstore" href="/s/${esc(STORE.slug)}" target="_blank">👁️ معاينة المتجر <span style="margin-inline-start:auto">↗</span></a>
-      ${ME.user.is_admin ? `<a class="d-link" href="/admin"><span class="ic">🛡️</span>لوحة الإدارة</a>` : ''}
-      <button class="d-link" onclick="logout()"><span class="ic">🚪</span>تسجيل الخروج</button>
+      <a class="d-viewstore" href="/s/${esc(STORE.slug)}" target="_blank">${I('eye')} معاينة المتجر <span style="margin-inline-start:auto">↗</span></a>
+      ${ME.user.is_admin ? `<a class="d-link" href="/admin"><span class="ic">${I('shield')}</span>لوحة الإدارة</a>` : ''}
+      <button class="d-link" onclick="logout()"><span class="ic">${I('logout')}</span>تسجيل الخروج</button>
     </div>
   </aside>
   <main class="d-main">${content}</main></div>`;
@@ -212,18 +236,18 @@ async function openOrder(id) {
 async function markWa(id) { await api(`/api/orders/${id}/whatsapp`, { method: 'PUT' }); setTimeout(route, 400); }
 async function sendActiveConfirm(id) {
   const st = $('#waSimStatus');
-  await api(`/api/orders/${id}/whatsapp`, { method: 'PUT' });
-  st.innerHTML = '📨 أُرسلت رسالة التأكيد إلى واتساب العميل… <span class="muted">(محاكاة)</span>';
-  await new Promise(r => setTimeout(r, 1500));
-  st.innerHTML = '⏳ في انتظار رد العميل… — <a href="#" onclick="simReply(' + id + ',1);return false" style="color:var(--teal);font-weight:700">محاكاة: العميل يرد «1» ✅</a> · <a href="#" onclick="simReply(' + id + ',2);return false" style="color:var(--red);font-weight:700">يرد «2» ❌</a>';
-}
-async function simReply(id, reply) {
-  const st = $('#waSimStatus');
-  st.innerHTML = reply === 1 ? '💬 العميل رد: <b>1</b> — جاري تأكيد الطلب تلقائياً…' : '💬 العميل رد: <b>2</b> — جاري إلغاء الطلب…';
-  await new Promise(r => setTimeout(r, 1200));
-  await api(`/api/orders/${id}/status`, { method: 'PUT', body: { status: reply === 1 ? 'confirmed' : 'cancelled', note: reply === 1 ? 'تأكيد عبر أكتف كونفيرم (رد 1)' : 'إلغاء عبر أكتف كونفيرم (رد 2)' } });
-  toast(reply === 1 ? 'تم تأكيد الطلب تلقائياً برد العميل ✅' : 'أُلغي الطلب برد العميل');
-  closeModal(); route();
+  st.innerHTML = '<span class="muted">جارٍ الإرسال عبر WhatsApp Cloud API…</span>';
+  try {
+    const d = await api(`/api/orders/${id}/whatsapp`, { method: 'PUT' });
+    if (d.delivered) {
+      st.innerHTML = '<span class="chip st-live">تم الإرسال فعلياً إلى واتساب العميل</span><p class="muted small" style="margin-top:8px">عند رد العميل بـ 1 أو 2 تتحدث حالة الطلب تلقائياً عبر الـ webhook.</p>';
+    } else if (d.simulated) {
+      st.innerHTML = '<span class="chip st-sim">وضع المحاكاة</span><p class="muted small" style="margin-top:8px">لم تُرسل رسالة فعلية — مفاتيح WhatsApp Cloud API غير مفعّلة بعد على المنصة. عند إدخالها من لوحة الإدارة يعمل الإرسال والردود التلقائية فوراً.</p>';
+    } else {
+      st.innerHTML = '<span class="chip st-rejected">فشل الإرسال</span><p class="muted small" style="margin-top:8px">' + esc(d.error || 'تحقق من مفاتيح WhatsApp') + '</p>';
+    }
+  } catch (_) { st.innerHTML = '<span class="chip st-rejected">تعذر الإرسال</span>'; }
+  setTimeout(route, 1200);
 }
 async function blockPhone(id) {
   await api(`/api/orders/${id}/block-phone`, { method: 'POST' });
@@ -498,49 +522,81 @@ async function saveSettings() {
   STORE = d.store; toast('تم حفظ الإعدادات ✅'); route();
 }
 
-// ---------- payment gateways ----------
+// ---------- payment gateways (production wiring) ----------
 async function viewPayments() {
   const settings = JSON.parse(STORE.theme_settings || '{}');
   const pm = settings.payments || { cod: true, online: false };
-  const gw = (name, ic, desc, connected, note) => `<div class="card" style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
-    <div style="font-size:30px">${ic}</div>
-    <div style="flex:1;min-width:200px"><h3 style="margin:0 0 4px">${name} ${connected ? '<span class="chip st-delivered">متصل</span>' : '<span class="chip st-returned">غير متصل</span>'}</h3>
-    <p class="muted small" style="margin:0">${desc}</p>${connected && note ? `<p class="small" style="margin:6px 0 0;color:var(--green)">${note}</p>` : ''}</div>
-    <button class="btn ${connected ? 'btn-soft' : 'btn-teal'}" onclick="toggleGateway('${name}')">${connected ? 'إدارة' : 'ربط الآن'}</button></div>`;
+  let integ = { paymob: { configured: false, own_keys: false }, whatsapp: { configured: false } };
+  try { integ = await api('/api/store/integrations'); } catch (_) {}
+  const live = integ.paymob.configured;
+  const paymobStatus = live
+    ? '<span class="chip st-live">متصل — مدفوعات حقيقية</span>'
+    : '<span class="chip st-sim">وضع المحاكاة — أضف المفاتيح لتفعيل الدفع الحقيقي</span>';
+  const waStatus = integ.whatsapp.configured
+    ? '<span class="chip st-live">متصل — إرسال حقيقي</span>'
+    : '<span class="chip st-sim">وضع المحاكاة</span>';
   return shell(topBar('بوابات الدفع', 'تحكم في طرق الدفع المتاحة لعملائك') +
-    `<div class="card" style="display:flex;gap:14px;align-items:center">
-      <div style="font-size:30px">💵</div>
-      <div style="flex:1"><h3 style="margin:0 0 4px">الدفع عند الاستلام (COD) <span class="chip ${pm.cod ? 'st-delivered' : 'st-returned'}">${pm.cod ? 'مفعّل' : 'موقوف'}</span></h3>
-      <p class="muted small" style="margin:0">الطريقة الأساسية في السوق المصري — العميل يدفع عند التسليم.</p></div>
+    `<div class="integ-row">
+      <div class="integ-ic">${I('cash')}</div>
+      <div style="flex:1;min-width:220px"><h3>الدفع عند الاستلام (COD) <span class="chip ${pm.cod ? 'st-live' : 'st-returned'}">${pm.cod ? 'مفعّل' : 'موقوف'}</span></h3>
+      <p class="muted small">الطريقة الأساسية في السوق المصري — العميل يدفع عند التسليم.</p></div>
       <button class="btn ${pm.cod ? 'btn-danger-soft' : 'btn-teal'}" onclick="toggleCod(${pm.cod ? 0 : 1})">${pm.cod ? 'إيقاف' : 'تفعيل'}</button></div>
-    ${gw('Paymob', '💳', 'بطاقات بنكية ومحافظ إلكترونية — قبول فوري بعد الربط.', !!pm.online, pm.online ? 'يظهر للعملاء في صفحة إتمام الطلب كـ«بطاقة بنكية»' : '')}
-    ${gw('Vodafone Cash', '📱', 'استقبل تحويلات فودافون كاش مباشرة على رقمك.', !!pm.vf, '')}
-    ${gw('InstaPay', '🏦', 'تحويلات بنكية فورية عبر عنوان InstaPay الخاص بك.', !!pm.insta, '')}
-    ${gw('Fawry', '🟡', 'ادفع من أي منفذ فوري برقم مرجعي.', !!pm.fawry, '')}
-    <div class="card"><h3>ℹ️ ملاحظة</h3><p class="muted small">الربط هنا محاكاة توضيحية للتدفق الحقيقي. في الإنتاج تُربط البوابات بمفاتيح API من حسابك لدى كل مزوّد.</p></div>`);
+    <div class="integ-row">
+      <div class="integ-ic">${I('payments')}</div>
+      <div style="flex:1;min-width:220px"><h3>Paymob — بطاقات ومحافظ ${paymobStatus}</h3>
+      <p class="muted small">${live
+        ? (integ.paymob.own_keys ? 'متصل بمفاتيح حسابك في Paymob. المدفوعات تُنفَّذ عبر بوابة Paymob الفعلية وتظهر في حسابك.' : 'متصل عبر بوابة المنصة المركزية.')
+        : 'البوابة تعمل في وضع المحاكاة داخلياً حتى تُدخل مفاتيح حسابك في Paymob — لا تظهر أي إشارة لذلك لعملائك.'}</p>
+      ${pm.online ? '<p class="small" style="margin:6px 0 0;color:var(--green)">يظهر للعملاء في صفحة إتمام الطلب كـ«بطاقة بنكية / محفظة إلكترونية».</p>' : ''}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-soft" onclick="editPaymobKeys()">${integ.paymob.own_keys ? 'تحديث المفاتيح' : 'إضافة مفاتيح Paymob'}</button>
+        <button class="btn ${pm.online ? 'btn-soft' : 'btn-teal'}" onclick="toggleOnline(${pm.online ? 0 : 1})">${pm.online ? 'إخفاء من المتجر' : 'إظهار في المتجر'}</button>
+      </div></div>
+    <div class="integ-row">
+      <div class="integ-ic">${I('chat')}</div>
+      <div style="flex:1;min-width:220px"><h3>WhatsApp Cloud API — أكتف كونفيرم ${waStatus}</h3>
+      <p class="muted small">${integ.whatsapp.configured
+        ? 'رسائل تأكيد الطلبات تُرسل فعلياً عبر WhatsApp Cloud API، وردود العملاء (1 للتأكيد / 2 للإلغاء) تحدّث حالة الطلب تلقائياً عبر الـ webhook.'
+        : 'تُدار المفاتيح مركزياً من لوحة إدارة المنصة (WHATSAPP_TOKEN و WHATSAPP_PHONE_NUMBER_ID). عند توفرها يتحول الإرسال للوضع الحقيقي تلقائياً.'}</p></div>
+    </div>
+    <div class="card"><h3>${I('shield')}أمان المفاتيح</h3><p class="muted small">تُخزَّن المفاتيح مشفّرة على الخادم ولا تظهر بعد الحفظ. تقدر تحدّثها أو تمسحها في أي وقت، وأولوية العمل: مفاتيح متجرك ← مفاتيح المنصة ← وضع المحاكاة.</p></div>`);
 }
 async function toggleCod(on) {
   const settings = JSON.parse(STORE.theme_settings || '{}');
   settings.payments = { ...(settings.payments || {}), cod: !!on };
   const d = await api('/api/store', { method: 'PUT', body: { theme_settings: settings } });
-  STORE = d.store; toast(on ? 'تم تفعيل الدفع عند الاستلام 💵' : 'تم إيقاف COD'); route();
+  STORE = d.store; toast(on ? 'تم تفعيل الدفع عند الاستلام' : 'تم إيقاف COD'); route();
 }
-function toggleGateway(name) {
-  openModal(`ربط ${name}`, `
-    <div class="f-grid">
-      <div class="f-field full"><label>API Key / Public Key</label><input id="gwKey" dir="ltr" placeholder="sk_live_… أو مفتاح ${name}"></div>
-      <div class="f-field full"><label>Secret / Integration ID (اختياري)</label><input id="gwSecret" dir="ltr"></div>
-    </div>
-    <p class="muted small" style="margin-top:10px">تجده في لوحة تحكم حسابك لدى ${name} — الربط يتم فوراً بعد الحفظ.</p>
-    <div class="m-actions"><button class="btn btn-teal" onclick="connectGateway('${name}')">ربط وتفعيل</button></div>`);
-}
-async function connectGateway(name) {
-  if (!$('#gwKey').value.trim()) return toast('أدخل المفتاح', 'err');
+async function toggleOnline(on) {
   const settings = JSON.parse(STORE.theme_settings || '{}');
-  const key = name === 'Paymob' ? 'online' : name === 'Vodafone Cash' ? 'vf' : name === 'InstaPay' ? 'insta' : 'fawry';
-  settings.payments = { ...(settings.payments || {}), cod: settings.payments?.cod !== false, [key]: true };
+  settings.payments = { ...(settings.payments || {}), cod: settings.payments?.cod !== false, online: !!on };
   const d = await api('/api/store', { method: 'PUT', body: { theme_settings: settings } });
-  STORE = d.store; closeModal(); toast(`تم ربط ${name} ✅ — أصبح متاحاً في صفحة الدفع`); route();
+  STORE = d.store; toast(on ? 'الدفع بالبطاقة ظاهر الآن في متجرك' : 'تم إخفاء الدفع بالبطاقة'); route();
+}
+function editPaymobKeys() {
+  openModal('مفاتيح Paymob', `
+    <div class="f-grid">
+      <div class="f-field full"><label>API Key</label><input id="pmKey" dir="ltr" placeholder="ZXlKaGJHY2lP…" autocomplete="off"><span class="hint">من لوحة Paymob: Settings → Account info → API Key</span></div>
+      <div class="f-field"><label>Integration ID (Card)</label><input id="pmInt" dir="ltr" inputmode="numeric" placeholder="4xxxxxx"><span class="hint">Developers → Payment integrations</span></div>
+      <div class="f-field"><label>iFrame ID</label><input id="pmIframe" dir="ltr" inputmode="numeric" placeholder="8xxxx"><span class="hint">Developers → iFrames</span></div>
+    </div>
+    <p class="muted small" style="margin-top:12px">بعد الحفظ تعمل المدفوعات الحقيقية فوراً على حسابك — اترك الحقول فارغة واحفظ لإزالة مفاتيحك والعودة لبوابة المنصة.</p>
+    <div class="m-actions"><button class="btn btn-teal" onclick="savePaymobKeys()">حفظ وتفعيل</button></div>`);
+}
+async function savePaymobKeys() {
+  const body = { PAYMOB_API_KEY: $('#pmKey').value.trim(), PAYMOB_INTEGRATION_ID: $('#pmInt').value.trim(), PAYMOB_IFRAME_ID: $('#pmIframe').value.trim() };
+  const allEmpty = !body.PAYMOB_API_KEY && !body.PAYMOB_INTEGRATION_ID && !body.PAYMOB_IFRAME_ID;
+  const allFull = body.PAYMOB_API_KEY && body.PAYMOB_INTEGRATION_ID && body.PAYMOB_IFRAME_ID;
+  if (!allEmpty && !allFull) return toast('أدخل المفاتيح الثلاثة كاملة، أو اتركها كلها فارغة للإزالة', 'err');
+  const d = await api('/api/store/payments-config', { method: 'PUT', body });
+  closeModal();
+  if (d.configured) {
+    const settings = JSON.parse(STORE.theme_settings || '{}');
+    settings.payments = { ...(settings.payments || {}), cod: settings.payments?.cod !== false, online: true };
+    const r = await api('/api/store', { method: 'PUT', body: { theme_settings: settings } });
+    STORE = r.store; toast('تم الربط — المدفوعات الحقيقية مفعّلة الآن في متجرك');
+  } else { toast('تمت إزالة المفاتيح'); }
+  route();
 }
 
 // ---------- courier integrations ----------
@@ -558,7 +614,7 @@ async function viewCouriers() {
     + card('aramex', '🔴', 'تغطية كل المحافظات وشحن دولي.')
     + `<div class="card"><h3>⬇️ تصدير يدوي</h3><p class="muted small">بدون ربط مباشر، صدّر الطلبات المؤكدة بصيغة CSV جاهزة للرفع في لوحة أي شركة شحن.</p>
       <a class="btn btn-navy" href="/api/orders-export.csv?status=confirmed" download>تصدير الطلبات المؤكدة (CSV)</a></div>
-    <div class="card"><h3>ℹ️ ملاحظة</h3><p class="muted small">الربط محاكاة توضيحية. في الإنتاج تُرسل الطلبات عبر API شركة الشحن ويُحدَّث التتبع تلقائياً.</p></div>`);
+    <div class="card"><h3>تصدير مباشر</h3><p class="muted small">التصدير اليدوي بصيغة CSV يعمل الآن ومتوافق مع لوحات شركات الشحن. الإرسال التلقائي عبر API كل شركة يُفعَّل من لوحة إدارة المنصة عند إدخال مفاتيحها.</p></div>`);
 }
 async function toggleCourier(id, on, name) {
   const settings = JSON.parse(STORE.theme_settings || '{}');

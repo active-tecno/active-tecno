@@ -24,17 +24,29 @@ const stChip = s => {
   return `<span class="chip ${m[s]?.[1] || ''}">${m[s]?.[0] || s}</span>`;
 };
 
+const ICONS = {
+  overview: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+  activations: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20M6 15h4"/></svg>',
+  merchants: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3.4"/><path d="M2.8 20a6.2 6.2 0 0 1 12.4 0"/><circle cx="17.5" cy="9.5" r="2.6"/><path d="M16.5 15.4a5 5 0 0 1 4.7 4.6"/></svg>',
+  stores: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l1-6h14l1 6M4 10v9a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-9M4 10h16M9 20v-6h6v6"/></svg>',
+  orders: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3.3 8.3L12 13l8.7-4.7M12 13v9"/></svg>',
+  integrations: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v6M15 2v6M6 8h12v4a6 6 0 0 1-6 6 6 6 0 0 1-6-6V8zM12 18v4"/></svg>',
+  shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6l7-3z"/></svg>',
+  logout: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>',
+};
+const I = k => ICONS[k] || ICONS.overview;
+
 const NAV = [
-  ['overview', '📊', 'نظرة عامة'], ['activations', '💳', 'طلبات التفعيل'], ['merchants', '🧑‍💼', 'التجار'], ['stores', '🏪', 'المتاجر'], ['orders', '📦', 'آخر الطلبات']
+  ['overview', 'overview', 'نظرة عامة'], ['activations', 'activations', 'طلبات التفعيل'], ['merchants', 'merchants', 'التجار'], ['stores', 'stores', 'المتاجر'], ['orders', 'orders', 'آخر الطلبات'], ['integrations', 'integrations', 'التكاملات']
 ];
 function shell(content) {
   const hash = location.hash.replace('#/', '') || 'overview';
   return `<div class="d-layout">
   <aside class="d-side" id="dSide">
     <a class="brand" href="/"><svg viewBox="0 0 32 32" width="28" height="28"><rect width="32" height="32" rx="8" fill="rgba(255,255,255,.12)"/><path d="M9 20l7-11 7 11" stroke="#00BFAF" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="brand-name">اكتف <b>تكنو</b></span></a>
-    <div style="padding:0 10px 14px"><span class="chip st-shipped">🛡️ لوحة إدارة المنصة</span></div>
-    ${NAV.map(([k, ic, l]) => `<button class="d-link ${hash === k ? 'on' : ''}" onclick="location.hash='#/${k}'"><span class="ic">${ic}</span>${l}${k === 'activations' && window._pending ? `<span class="badge">${window._pending}</span>` : ''}</button>`).join('')}
-    <div class="d-side-foot"><a class="d-link" href="/app"><span class="ic">🏪</span>لوحة التاجر</a><button class="d-link" onclick="logout()"><span class="ic">🚪</span>تسجيل الخروج</button></div>
+    <div style="padding:0 10px 14px"><span class="chip st-shipped">لوحة إدارة المنصة</span></div>
+    ${NAV.map(([k, ic, l]) => `<button class="d-link ${hash === k ? 'on' : ''}" onclick="location.hash='#/${k}'"><span class="ic">${I(ic)}</span>${l}${k === 'activations' && window._pending ? `<span class="badge">${window._pending}</span>` : ''}</button>`).join('')}
+    <div class="d-side-foot"><a class="d-link" href="/app"><span class="ic">${I('stores')}</span>لوحة التاجر</a><button class="d-link" onclick="logout()"><span class="ic">${I('logout')}</span>تسجيل الخروج</button></div>
   </aside>
   <main class="d-main">${content}</main></div>`;
 }
@@ -45,13 +57,13 @@ async function viewOverview() {
   const s = await api('/api/admin/stats');
   return shell(topBar('نظرة عامة على المنصة', 'أرقام اكتف تكنو لحظياً') +
     `<div class="stat-grid">
-      <div class="stat"><span class="ic">🧑‍💼</span><div class="lbl">التجار</div><div class="val">${s.merchants}</div></div>
-      <div class="stat"><span class="ic">🏪</span><div class="lbl">المتاجر</div><div class="val">${s.stores}</div></div>
-      <div class="stat"><span class="ic">🟢</span><div class="lbl">متاجر منشورة</div><div class="val">${s.published}</div></div>
-      <div class="stat"><span class="ic">📦</span><div class="lbl">إجمالي الطلبات</div><div class="val">${s.orders}</div></div>
-      <div class="stat"><span class="ic">💰</span><div class="lbl">GMV عبر المنصة</div><div class="val">${egp(s.gmv)}</div></div>
-      <div class="stat"><span class="ic">💳</span><div class="lbl">إيراد الاشتراكات</div><div class="val">${egp(s.activationRevenue)}</div></div>
-      <div class="stat"><span class="ic">⏳</span><div class="lbl">طلبات تفعيل معلقة</div><div class="val" style="color:${s.pendingActivations ? 'var(--amber)' : 'inherit'}">${s.pendingActivations}</div></div>
+      <div class="stat"><span class="ic">${I('merchants')}</span><div class="lbl">التجار</div><div class="val">${s.merchants}</div></div>
+      <div class="stat"><span class="ic">${I('stores')}</span><div class="lbl">المتاجر</div><div class="val">${s.stores}</div></div>
+      <div class="stat"><span class="ic">${I('shield')}</span><div class="lbl">متاجر منشورة</div><div class="val">${s.published}</div></div>
+      <div class="stat"><span class="ic">${I('orders')}</span><div class="lbl">إجمالي الطلبات</div><div class="val">${s.orders}</div></div>
+      <div class="stat"><span class="ic">${I('activations')}</span><div class="lbl">GMV عبر المنصة</div><div class="val">${egp(s.gmv)}</div></div>
+      <div class="stat"><span class="ic">${I('activations')}</span><div class="lbl">إيراد الاشتراكات</div><div class="val">${egp(s.activationRevenue)}</div></div>
+      <div class="stat"><span class="ic">${I('overview')}</span><div class="lbl">طلبات تفعيل معلقة</div><div class="val" style="color:${s.pendingActivations ? 'var(--amber)' : 'inherit'}">${s.pendingActivations}</div></div>
     </div>
     ${s.pendingActivations ? `<div class="act-banner pending"><div class="txt"><h3>⏳ ${s.pendingActivations} طلب تفعيل بانتظار المراجعة</h3><p>راجع التحويلات وفعّل المتاجر.</p></div><button class="btn btn-teal" onclick="location.hash='#/activations'">مراجعة الآن</button></div>` : ''}`);
 }
@@ -124,7 +136,47 @@ async function viewOrders() {
     ${d.orders.map(o => `<tr><td class="mono">${esc(o.number)}</td><td>${esc(o.store_name)}</td><td>${esc(o.customer_name)}</td><td><b>${egp(o.total)}</b></td><td>${stChip(o.status)}</td><td class="muted small">${fmtDate(o.created_at)}</td></tr>`).join('')}</tbody></table></div>`);
 }
 
-const VIEWS = { overview: viewOverview, activations: viewActivations, merchants: viewMerchants, stores: viewStores, orders: viewOrders };
+async function viewIntegrations() {
+  const { providers } = await api('/api/admin/integrations');
+  const { events } = await api('/api/admin/integration-events');
+  const provCard = p => {
+    const badge = p.configured
+      ? `<span class="chip st-live">متصل — وضع حقيقي (${p.source === 'env' ? 'من متغيرات البيئة' : 'من الإعدادات'})</span>`
+      : '<span class="chip st-sim">وضع المحاكاة — لا تُرسل طلبات فعلية</span>';
+    const rows = p.keys.map(k => `<div class="integ-key-row"><code>${k.key}</code>
+      <span class="src" style="color:${k.set ? 'var(--green)' : 'var(--faint)'}">${k.set ? (k.from === 'env' ? '✓ من البيئة' : '✓ محفوظ') : 'غير مضبوط'}</span></div>`).join('');
+    return `<div class="card">
+      <h3>${esc(p.label)} ${badge}</h3>
+      <div class="grid-2">
+        <div>${rows}
+          <div class="f-grid" style="margin-top:14px">
+            ${p.keys.map(k => `<div class="f-field"><label>${k.key}</label><input data-integ-key="${k.key}" dir="ltr" placeholder="${k.set ? '•••••••• (محفوظ — أدخل قيمة جديدة للتغيير)' : 'الصق القيمة هنا'}" autocomplete="off"></div>`).join('')}
+          </div>
+          <div class="m-actions" style="margin-top:14px"><button class="btn btn-teal" onclick="saveIntegKeys()">حفظ المفاتيح</button></div>
+          ${p.last_event ? `<p class="muted small" style="margin-top:10px">آخر نشاط: ${esc(p.last_event.kind)} — ${p.last_event.status === 'ok' ? 'ناجح' : p.last_event.status === 'simulated' ? 'محاكاة' : 'خطأ'} — ${fmtDate(p.last_event.created_at)}</p>` : '<p class="muted small" style="margin-top:10px">لا يوجد نشاط بعد.</p>'}
+        </div>
+      </div>
+    </div>`;
+  };
+  const evRows = events.map(e => `<tr><td>${fmtDate(e.created_at)}</td><td>${esc(e.provider)}</td><td>${esc(e.kind)}</td>
+    <td>${e.status === 'ok' ? '<span class="chip st-live">ناجح</span>' : e.status === 'simulated' ? '<span class="chip st-sim">محاكاة</span>' : '<span class="chip st-rejected">خطأ</span>'}</td>
+    <td class="muted small" style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(e.detail || '')}</td></tr>`).join('');
+  return shell(topBar('التكاملات', 'مفاتيح الدفع وواتساب والبريد — عند إدخال مفاتيح حقيقية تعمل الخدمات فعلياً فوراً') +
+    `<div class="act-banner pending"><div class="txt"><h3>وضع المحاكاة يظهر هنا فقط</h3><p>عند غياب المفاتيح تعمل التدفقات داخلياً دون طلبات خارجية، ولا يظهر أي تمييز للعملاء أو التجار في واجهاتهم.</p></div></div>` +
+    providers.map(provCard).join('') +
+    `<div class="card"><h3>سجل أحداث التكامل <span class="hint">آخر 50 حدث</span></h3>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>الوقت</th><th>المزوّد</th><th>الحدث</th><th>الحالة</th><th>تفاصيل</th></tr></thead>
+      <tbody>${evRows || '<tr><td colspan="5" class="muted">لا أحداث بعد</td></tr>'}</tbody></table></div></div>`);
+}
+async function saveIntegKeys() {
+  const body = {};
+  document.querySelectorAll('[data-integ-key]').forEach(el => { if (el.value.trim()) body[el.dataset.integKey] = el.value.trim(); });
+  if (!Object.keys(body).length) return toast('أدخل قيمة واحدة على الأقل', 'err');
+  await api('/api/admin/integrations', { method: 'PUT', body });
+  toast('تم حفظ المفاتيح — الخدمة تعمل الآن بالوضع الحقيقي'); route();
+}
+
+const VIEWS = { overview: viewOverview, integrations: viewIntegrations, activations: viewActivations, merchants: viewMerchants, stores: viewStores, orders: viewOrders };
 async function route() {
   const hash = location.hash.replace('#/', '') || 'overview';
   $('#root').innerHTML = '<div class="d-main"><div class="skel" style="height:200px;margin-bottom:14px"></div><div class="skel" style="height:300px"></div></div>';

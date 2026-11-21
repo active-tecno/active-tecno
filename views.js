@@ -1,6 +1,29 @@
 // views.js — server-rendered pages (landing, auth, storefront). Dashboard/admin are SPA shells.
 const { db } = require('./db');
 
+
+const IC = {
+  bag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l1 14H5L6 7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>',
+  box: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3.3 8.3L12 13l8.7-4.7M12 13v9"/></svg>',
+  chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.2L4 21l1.8-5.4A8 8 0 1 1 21 12z"/></svg>',
+  cart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.6"/><circle cx="17" cy="20" r="1.6"/><path d="M3 4h2l2.5 12h10L20 8H7"/></svg>',
+  shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>',
+  trend: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>',
+  target: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>',
+  chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+  ticket: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9V7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a3 3 0 0 0 0 6v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a3 3 0 0 0 0-6z"/><path d="M13 5v2m0 4v2m0 4v2" stroke-dasharray="1 3"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg>',
+  truck: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 7h13v9H1zM14 10h4l4 4v2h-8z"/><circle cx="6" cy="18.5" r="1.8"/><circle cx="17" cy="18.5" r="1.8"/></svg>',
+  card: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg>',
+  cash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="6" width="20" height="12" rx="3"/><circle cx="12" cy="12" r="2.6"/></svg>',
+  lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="5" y="11" width="14" height="9" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+  ret: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>',
+  bulb: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 1 3.5 10.9c-.7.5-1 1.2-1 2.1h-5c0-.9-.3-1.6-1-2.1A6 6 0 0 1 12 3z"/></svg>',
+  flame: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s5 4 5 9a5 5 0 0 1-10 0c0-2 1-3.5 1-3.5S9 10 10 10c0-3 2-7 2-7z"/></svg>',
+  spark: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2z"/></svg>',
+  eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/></svg>',
+};
+
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const egp = n => `${Number(n || 0).toLocaleString('ar-EG')} ج.م`;
 // placeholder image for products without one
@@ -28,33 +51,33 @@ function landing() {
 <a class="btn btn-teal" href="/register">ابدأ مجاناً</a></div></header>
 
 <section class="hero"><div class="wrap">
-<div class="hero-badge">✦ منصة المتاجر العربية — صُنعت للسوق المصري</div>
+<div class="hero-badge"><span class="pulse"></span>منصة المتاجر العربية — صُنعت للسوق المصري</div>
 <h1>أطلق متجرك الإلكتروني<br><span class="grad">واستقبل أول طلب اليوم</span></h1>
 <p class="hero-sub">قوالب عربية جاهزة، دفع عند الاستلام، تحليلات دقيقة، وأدوات بيع ترفع تحويلك — كل ذلك من لوحة واحدة، بدون سطر كود واحد.</p>
 <div class="hero-cta"><a class="btn btn-teal btn-lg" href="/register">أنشئ متجرك مجاناً</a><a class="btn btn-ghost btn-lg" href="/s/noura" target="_blank">شاهد متجراً تجريبياً</a></div>
-<div class="hero-trust"><span>بدون بطاقة بنكية</span><span>إطلاق خلال دقائق</span><span>0% عمولة على المبيعات</span><span>أكتف كونفيرم لتأكيد الطلبات</span></div>
+<div class="hero-trust"><span>${IC.check}بدون بطاقة بنكية</span><span>${IC.check}إطلاق خلال دقائق</span><span>${IC.check}0% عمولة على المبيعات</span><span>${IC.check}أكتف كونفيرم لتأكيد الطلبات</span></div>
 <div class="hero-shot"><img src="/public/img/hero-dashboard.svg" alt="لوحة تحكم اكتف تكنو"></div>
 </div></section>
 
 <section class="strip"><div class="wrap strip-grid">
 <div><b>${storesCount > 1 ? '+' + storesCount : ''} متجر</b><span>يعمل على اكتف تكنو</span></div>
-<div><b>0%</b><span>عمولة على الطلبات</span></div>
-<div><b>50 ج.م</b><span>فقط كل 30 يوم</span></div>
-<div><b>100%</b><span>عربي و RTL</span></div>
+<div><b><em>0%</em></b><span>عمولة على الطلبات</span></div>
+<div><b>50 <em>ج.م</em></b><span>فقط كل 30 يوم</span></div>
+<div><b><em>100%</em></b><span>عربي و RTL</span></div>
 </div></section>
 
 <section id="features" class="section"><div class="wrap">
 <h2>كل ما يحتاجه تاجر الـ COD المصري</h2><p class="section-sub">أدوات مترابطة تختصر وقت التشغيل وترفع معدل إتمام الطلبات على الموبايل.</p>
 <div class="feat-grid">
-<div class="feat"><div class="feat-ic">🛍️</div><h3>متجر جاهز في دقائق</h3><p>قوالب عربية سريعة متوافقة مع الموبايل. اختر قالباً، عدّل الألوان، وانشر.</p></div>
-<div class="feat"><div class="feat-ic">📦</div><h3>لوحة طلبات ذكية</h3><p>كانبان للطلبات بحالاتها من جديد إلى مُسلَّم، مع سجل كامل لكل حركة وتصدير شركات الشحن.</p></div>
-<div class="feat"><div class="feat-ic">💬</div><h3>تأكيد واتساب</h3><p>أرسل تأكيد الطلب للعميل على واتساب بضغطة واحدة برسالة جاهزة تلقائياً.</p></div>
-<div class="feat"><div class="feat-ic">🛒</div><h3>السلات المتروكة</h3><p>شاهد من أضاف للسلة ولم يشترِ، واسترجعه برسالة واتساب جاهزة قبل أن يذهب لمنافس.</p></div>
-<div class="feat"><div class="feat-ic">🚫</div><h3>حظر الطلبات الوهمية</h3><p>احظر أرقام الهواتف المزعجة مرة واحدة وتتوقف طلباتها نهائياً عن الوصول.</p></div>
-<div class="feat"><div class="feat-ic">📈</div><h3>Upsell و Cross-sell</h3><p>اقترح منتجات مكملة قبل الدفع وارفع متوسط قيمة الطلب بدون مجهود.</p></div>
-<div class="feat"><div class="feat-ic">🎯</div><h3>بيكسلات و CAPI</h3><p>اربط Meta و TikTok و Snap و Google مع Conversions API من إعدادات التتبع.</p></div>
-<div class="feat"><div class="feat-ic">📊</div><h3>تحليلات وفانل</h3><p>إيرادات، طلبات، معدل تحويل، وفانل كامل من الزيارة حتى الشراء.</p></div>
-<div class="feat"><div class="feat-ic">🎟️</div><h3>كوبونات وشحن مرن</h3><p>كوبونات بنسبة أو مبلغ ثابت، مناطق شحن بأسعار مختلفة، وشحن مجاني فوق حد معين.</p></div>
+<div class="feat"><div class="feat-ic">${IC.bag}</div><h3>متجر جاهز في دقائق</h3><p>قوالب عربية سريعة متوافقة مع الموبايل. اختر قالباً، عدّل الألوان، وانشر.</p></div>
+<div class="feat"><div class="feat-ic">${IC.box}</div><h3>لوحة طلبات ذكية</h3><p>كانبان للطلبات بحالاتها من جديد إلى مُسلَّم، مع سجل كامل لكل حركة وتصدير شركات الشحن.</p></div>
+<div class="feat"><div class="feat-ic">${IC.chat}</div><h3>تأكيد واتساب</h3><p>أرسل تأكيد الطلب للعميل على واتساب بضغطة واحدة برسالة جاهزة تلقائياً.</p></div>
+<div class="feat"><div class="feat-ic">${IC.cart}</div><h3>السلات المتروكة</h3><p>شاهد من أضاف للسلة ولم يشترِ، واسترجعه برسالة واتساب جاهزة قبل أن يذهب لمنافس.</p></div>
+<div class="feat"><div class="feat-ic">${IC.shield}</div><h3>حظر الطلبات الوهمية</h3><p>احظر أرقام الهواتف المزعجة مرة واحدة وتتوقف طلباتها نهائياً عن الوصول.</p></div>
+<div class="feat"><div class="feat-ic">${IC.trend}</div><h3>Upsell و Cross-sell</h3><p>اقترح منتجات مكملة قبل الدفع وارفع متوسط قيمة الطلب بدون مجهود.</p></div>
+<div class="feat"><div class="feat-ic">${IC.target}</div><h3>بيكسلات و CAPI</h3><p>اربط Meta و TikTok و Snap و Google مع Conversions API من إعدادات التتبع.</p></div>
+<div class="feat"><div class="feat-ic">${IC.chart}</div><h3>تحليلات وفانل</h3><p>إيرادات، طلبات، معدل تحويل، وفانل كامل من الزيارة حتى الشراء.</p></div>
+<div class="feat"><div class="feat-ic">${IC.ticket}</div><h3>كوبونات وشحن مرن</h3><p>كوبونات بنسبة أو مبلغ ثابت، مناطق شحن بأسعار مختلفة، وشحن مجاني فوق حد معين.</p></div>
 </div></div></section>
 
 ${activeConfirmSection()}
@@ -74,9 +97,30 @@ ${activeConfirmSection()}
 <div class="price-num">50 <small>ج.م / 30 يوم</small></div>
 <p>جهّز متجرك مجاناً بالكامل، وادفع فقط عندما تقرر النشر.</p></div>
 <ul class="price-list">
-<li>منتجات وطلبات غير محدودة</li><li>0% عمولة على مبيعاتك</li><li>كل القوالب والتحليلات</li><li>ربط دومين خاص</li><li>فريق وصلاحيات</li><li>دفع عبر InstaPay أو Vodafone Cash</li>
+<li>${IC.check}منتجات وطلبات غير محدودة</li><li>${IC.check}0% عمولة على مبيعاتك</li><li>${IC.check}كل القوالب والتحليلات</li><li>${IC.check}ربط دومين خاص</li><li>${IC.check}فريق وصلاحيات</li><li>${IC.check}دفع عبر InstaPay أو Vodafone Cash</li>
 </ul>
 <a class="btn btn-teal btn-lg" href="/register">ابدأ الآن مجاناً</a>
+</div></div></section>
+
+
+<section class="section alt"><div class="wrap">
+<span class="kicker">قالوا عنا</span>
+<h2>تجار يبيعون كل يوم على اكتف تكنو</h2><p class="section-sub">من أول طلب حتى مئات الطلبات شهرياً — هكذا تغيّرت شغلتهم معنا.</p>
+<div class="testi-grid">
+<div class="testi"><div class="stars">★★★★★</div><p>«أول مرة أطلق متجر بدون ما أحتاج مطوّر. القالب جاهز والطلبات دخلت من أول أسبوع، ولوحة الطلبات وفّرت عليّا ساعات شغل يومياً.»</p><div class="who"><span class="avatar">ن</span><div><b>نورهان سامي</b><span>متجر أزياء نسائية — القاهرة</span></div></div></div>
+<div class="testi"><div class="stars">★★★★★</div><p>«أكتف كونفيرم غيّر اللعبة. نسبة الطلبات الوهمية نزلت لأقل من النص لأن العميل بيأكد بنفسه على واتساب قبل ما أشحن.»</p><div class="who"><span class="avatar">م</span><div><b>محمد عبد الرحمن</b><span>إلكترونيات وموبايلات — الجيزة</span></div></div></div>
+<div class="testi"><div class="stars">★★★★★</div><p>«التحليلات خلتني أعرف بالظبط أنهي منتج بييجي منه الربح، والسلات المتروكة رجّعتلي عملاء كنت بخسرهم من غير ما أعرف.»</p><div class="who"><span class="avatar">س</span><div><b>سارة المصري</b><span>مستحضرات تجميل — الإسكندرية</span></div></div></div>
+</div></div></section>
+
+<section class="section"><div class="wrap">
+<span class="kicker">أسئلة شائعة</span>
+<h2>كل ما تريد معرفته قبل أن تبدأ</h2><p class="section-sub">إجابات مباشرة بدون مصطلحات معقدة.</p>
+<div class="faq">
+<details><summary>هل أحتاج خبرة برمجية لإطلاق متجري؟</summary><p>إطلاقاً. تختار القالب، تضيف منتجاتك من لوحة التحكم، وتنشر. كل شيء يعمل بالعربي ومن الموبايل، ولا تكتب سطر كود واحد.</p></details>
+<details><summary>كيف يصلني فلوس المبيعات؟</summary><p>الدفع عند الاستلام يصلك مباشرة من شركة الشحن. ومع ربط Paymob تستقبل مدفوعات البطاقات والمحافظ في حسابك البنكي تلقائياً — اكتف تكنو لا تأخذ أي عمولة.</p></details>
+<details><summary>ما هو أكتف كونفيرم؟</summary><p>نظام تأكيد طلبات تلقائي: عميلك يستلم رسالة واتساب بمجرد الطلب، يرد 1 للتأكيد أو 2 للإلغاء، وتتحدث الحالة في لوحتك فوراً. يحميك من الشحن لعناوين وهمية.</p></details>
+<details><summary>هل أستطيع إيقاف الاشتراك في أي وقت؟</summary><p>نعم. الاشتراك 50 ج.م كل 30 يوماً بدون التزام سنوي، ومتجرك وبياناتك تظل محفوظة لو قررت العودة.</p></details>
+<details><summary>هل أستطيع ربط دومين خاص بمتجري؟</summary><p>نعم، من إعدادات المتجر تربط دومينك الخاص (مثل store.com) خلال دقائق مع شهادة حماية تلقائية.</p></details>
 </div></div></section>
 
 <section class="cta-final"><div class="wrap">
@@ -84,7 +128,15 @@ ${activeConfirmSection()}
 <a class="btn btn-teal btn-lg" href="/register">أنشئ متجرك مجاناً</a>
 </div></section>
 
-<footer class="land-foot"><div class="wrap">${logo}<p>اكتف تكنو © 2026 — صُنع بحب في القاهرة 🇪🇬</p></div></footer>
+<footer class="land-foot"><div class="wrap">
+<div class="foot-grid">
+<div>${logo}<p class="foot-desc">منصة عربية متكاملة لإنشاء المتاجر الإلكترونية، مبنية خصيصاً لتجار الدفع عند الاستلام في مصر والوطن العربي.</p></div>
+<div><h4>المنتج</h4><a href="#features">المميزات</a><a href="#themes">القوالب</a><a href="#pricing">التسعير</a><a href="/s/noura" target="_blank">متجر تجريبي</a></div>
+<div><h4>الشركة</h4><a href="#">من نحن</a><a href="#">المدونة</a><a href="#">تواصل معنا</a></div>
+<div><h4>قانوني</h4><a href="#">شروط الاستخدام</a><a href="#">سياسة الخصوصية</a><a href="#">سياسة الاسترجاع</a></div>
+</div>
+<div class="foot-base"><span>اكتف تكنو © 2026 — جميع الحقوق محفوظة</span><span>صُنعت في القاهرة</span></div>
+</div></footer>
 `);
 }
 
@@ -118,16 +170,13 @@ document.getElementById('authForm').addEventListener('submit', async e => {
   const d = await r.json();
   if (!r.ok) { err.textContent = d.error || 'حدث خطأ'; return; }
   if (IS_LOGIN) { location.href = '/app'; return; }
-  showVerify(body.email, d.dev_code);
+  showVerify(body.email, d.dev_code, d.email_sent);
 });
-function showVerify(email, devCode) {
+function showVerify(email, devCode, emailSent) {
   document.getElementById('authCard').innerHTML = \`
-  <h1>تحقق من بريدك 📬</h1>
-  <p class="auth-sub">أرسلنا كود تحقق من 6 أرقام إلى <b dir="ltr">\` + email + \`</b></p>
-  <div class="mail-sim">
-    <div class="mail-sim-head">📧 بريد وارد — اكتف تكنو</div>
-    <div class="mail-sim-body">كود التحقق الخاص بك:<div class="mail-sim-code">\` + devCode + \`</div><span>محاكاة إرسال البريد — في النسخة الحقيقية يصل الكود إلى بريدك</span></div>
-  </div>
+  <h1>تحقق من بريدك</h1>
+  <p class="auth-sub">أرسلنا رمز تحقق من 6 أرقام إلى <b dir="ltr">\` + email + \`</b></p>
+  \` + (devCode ? '<div class="verify-code-card"><div class="vc-label">بيئة العرض — خدمة البريد غير مفعّلة بعد</div><div class="vc-code">' + devCode + '</div><div class="vc-note">أدخل الرمز بالأسفل لإتمام إنشاء متجرك</div></div>' : '') + \`
   <form id="verifyForm" class="auth-form">
     <label>كود التحقق<input name="code" required inputmode="numeric" maxlength="6" placeholder="______" dir="ltr" style="text-align:center;font-size:22px;letter-spacing:8px"></label>
     <div class="auth-err" id="vErr"></div>
@@ -173,7 +222,7 @@ ${logo}
   </form>
 </div>
 <div id="obStep3" hidden>
-  <div style="text-align:center;font-size:52px;margin:8px 0 14px">🎉</div>
+  <div style="display:grid;place-items:center;margin:4px 0 14px"><span style="width:64px;height:64px;border-radius:50%;background:var(--teal-500);color:#fff;display:grid;place-items:center"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></div>
   <h1 style="font-size:21px;text-align:center">متجرك جاهز!</h1>
   <p class="auth-sub" style="text-align:center">رابط متجرك: <b class="mono" dir="ltr">/s/${esc(store.slug)}</b><br>فعّل النشر بـ 50 ج.م كل 30 يوم وابدأ استقبال الطلبات.</p>
   <a class="btn btn-teal btn-lg full" href="/app">الذهاب إلى لوحة التحكم</a>
@@ -252,7 +301,7 @@ function storeHeader(store, t) {
   return `${store.announcement ? `<div class="s-announce">${esc(store.announcement)}</div>` : ''}
 <header class="s-header ${t.header === 'split' ? 'split' : ''}">
   <a class="s-brand" href="/s/${esc(store.slug)}"><span class="s-logo">${esc((store.logo_text || store.name).trim().charAt(0))}</span><span>${esc(store.name)}</span></a>
-  <button class="s-cart-btn" onclick="toggleCart(true)" aria-label="السلة">🛒<span class="s-cart-count" id="cartCount">0</span></button>
+  <button class="s-cart-btn" onclick="toggleCart(true)" aria-label="السلة">${IC.cart}<span class="s-cart-count" id="cartCount">0</span></button>
 </header>`;
 }
 const storeScripts = store => `<script>window.STORE_SLUG=${JSON.stringify(store.slug)};</script><script src="/public/js/store.js"></script>`;
@@ -273,14 +322,14 @@ function storefront(store, t, owner) {
   }).join('');
   return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, store.name)}</head>
 <body class="store ${t.dark ? 'dark' : ''}">
-${owner ? `<div class="s-ownerbar">👁️ وضع المعاينة — <a href="/app">العودة للوحة التحكم</a></div>` : ''}
+${owner ? `<div class="s-ownerbar">وضع المعاينة — <a href="/app">العودة للوحة التحكم</a></div>` : ''}
 ${storeHeader(store, t)}
 <section class="s-hero"><h1>${esc(store.name)}</h1><p>${esc(store.description)}</p>
 <div class="s-hero-cta"><a class="s-btn" href="#products">تسوّق الآن</a>
 ${store.whatsapp ? `<a class="s-btn ghost" href="https://wa.me/${esc(store.whatsapp)}" target="_blank" rel="noopener">تواصل واتساب</a>` : ''}</div></section>
 ${cats.length ? `<nav class="s-cats" id="products">${['الكل', ...cats].map(c => `<button class="s-cat" data-cat="${esc(c)}">${esc(c)}</button>`).join('')}</nav>` : '<div id="products"></div>'}
 <main class="s-grid">${cards || `<div class="s-empty">لا توجد منتجات بعد — تابعنا قريباً ✨</div>`}</main>
-${store.free_shipping_over ? `<div class="s-freeship">🚚 شحن مجاني للطلبات فوق ${egp(store.free_shipping_over)}</div>` : ''}
+${store.free_shipping_over ? `<div class="s-freeship">${IC.truck}شحن مجاني للطلبات فوق ${egp(store.free_shipping_over)}</div>` : ''}
 <footer class="s-footer"><p>يعمل بواسطة <a href="/">اكتف تكنو</a> — الدفع عند الاستلام متاح</p></footer>
 ${cartDrawer(store)}
 ${storeScripts(store)}
@@ -294,7 +343,7 @@ function productPage(store, p, t, owner) {
   const off = p.compare_at_price && p.compare_at_price > p.price ? Math.round(100 - p.price * 100 / p.compare_at_price) : 0;
   return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, `${p.name} | ${store.name}`)}</head>
 <body class="store ${t.dark ? 'dark' : ''}">
-${owner ? `<div class="s-ownerbar">👁️ وضع المعاينة — <a href="/app">العودة للوحة التحكم</a></div>` : ''}
+${owner ? `<div class="s-ownerbar">وضع المعاينة — <a href="/app">العودة للوحة التحكم</a></div>` : ''}
 ${storeHeader(store, t)}
 <main class="pd">
 <div class="pd-gallery"><img id="pdImg" src="${esc(imgs[0] || ph(p.name))}" alt="${esc(p.name)}">
@@ -304,12 +353,12 @@ ${imgs.length > 1 ? `<div class="pd-thumbs">${imgs.map((im, i) => `<img src="${e
 <h1>${esc(p.name)}</h1>
 <div class="pd-price"><b>${egp(p.price)}</b>${p.compare_at_price ? `<s>${egp(p.compare_at_price)}</s>` : ''}${off ? `<span class="p-off">وفّر ${off}%</span>` : ''}</div>
 <p class="pd-desc">${esc(p.description)}</p>
-${p.stock > 0 && p.stock <= (p.low_stock_threshold || 3) ? `<div class="pd-low">🔥 باقي ${p.stock} فقط — اطلب الآن</div>` : ''}
+${p.stock > 0 && p.stock <= (p.low_stock_threshold || 3) ? `<div class="pd-low">${IC.flame}باقي ${p.stock} فقط — اطلب الآن</div>` : ''}
 ${p.stock <= 0 ? `<div class="pd-low out">نفدت الكمية مؤقتاً</div>` : `
 <div class="pd-qty"><button onclick="pdQty(-1)">−</button><span id="pdQty">1</span><button onclick="pdQty(1)">+</button></div>
 <button class="s-btn btn-lg full" onclick="addToCart(${p.id}, '${esc(p.name).replace(/'/g, '')}', ${p.price}, ${JSON.stringify(imgs[0] || '')}, +document.getElementById('pdQty').textContent)">أضف إلى السلة 🛒</button>
 <button class="s-btn btn-lg full buy" onclick="buyNow(${p.id}, '${esc(p.name).replace(/'/g, '')}', ${p.price}, ${JSON.stringify(imgs[0] || '')}, +document.getElementById('pdQty').textContent)">اشتري الآن — دفع عند الاستلام</button>`}
-${upsell ? `<div class="pd-upsell"><h4>💡 يُشترى معه غالباً</h4>
+${upsell ? `<div class="pd-upsell"><h4>${IC.bulb}يُشترى معه غالباً</h4>
 <div class="pd-upsell-card"><img src="${esc(JSON.parse(upsell.images || '[]')[0] || '')}"><div><b>${esc(upsell.name)}</b><span>${egp(upsell.price)}</span></div>
 <button onclick="addToCart(${upsell.id}, '${esc(upsell.name).replace(/'/g, '')}', ${upsell.price}, ${JSON.stringify(JSON.parse(upsell.images || '[]')[0] || '')}, 1)">أضف</button></div></div>` : ''}
 </div></main>
@@ -327,7 +376,7 @@ function checkoutPage(store, t, owner) {
 ${storeHeader(store, t)}
 <main class="co">
 <h1>إتمام الطلب</h1>
-<p class="co-sub">خطوة واحدة وطلبك يوصلك — الدفع عند الاستلام 💵</p>
+<p class="co-sub">خطوة واحدة وطلبك في الطريق إليك</p>
 <div id="coEmpty" class="s-empty" hidden>سلتك فارغة — <a href="/s/${esc(store.slug)}">ارجع للتسوق</a></div>
 <div class="co-grid" id="coGrid">
 <form id="coForm" class="co-form">
@@ -339,13 +388,13 @@ ${storeHeader(store, t)}
 <label>ملاحظات (اختياري)<input name="notes" placeholder="أي تفاصيل إضافية"></label>
 <h3 style="margin-top:6px">طريقة الدفع</h3>
 <div class="pay-methods">
-<label class="pay-method"><input type="radio" name="payment_method" value="cod" checked><div class="pm-body"><b>💵 الدفع عند الاستلام</b><span>ادفع كاش أو بالمحفظة عند وصول طلبك</span></div><span class="pm-check"></span></label>
-<label class="pay-method" id="pmOnline"><input type="radio" name="payment_method" value="online"><div class="pm-body"><b>💳 بطاقة بنكية / محفظة إلكترونية</b><span id="pmOnlineHint">عبر بوابة دفع آمنة (Paymob)</span></div><span class="pm-check"></span></label>
+<label class="pay-method"><input type="radio" name="payment_method" value="cod" checked><span class="pm-ic">${IC.cash}</span><div class="pm-body"><b>الدفع عند الاستلام</b><span>ادفع كاش أو بالمحفظة عند وصول طلبك</span></div><span class="pm-check"></span></label>
+<label class="pay-method" id="pmOnline"><input type="radio" name="payment_method" value="online"><span class="pm-ic">${IC.card}</span><div class="pm-body"><b>بطاقة بنكية / محفظة إلكترونية</b><span id="pmOnlineHint">دفع آمن ومشفّر عبر Paymob</span></div><span class="pm-check"></span></label>
 </div>
 <div class="co-coupon"><input name="coupon" placeholder="كود الخصم" dir="ltr"><button type="button" onclick="applyCoupon()">تطبيق</button></div>
 <div class="auth-err" id="coErr"></div>
 <button type="submit" class="s-btn btn-lg full buy" id="coSubmit">تأكيد الطلب — دفع عند الاستلام</button>
-<div class="co-trust"><span>🔒 بياناتك آمنة</span><span>🚚 توصيل سريع</span><span>↩️ إرجاع سهل</span></div>
+<div class="co-trust"><span>${IC.lock}بياناتك آمنة ومشفّرة</span><span>${IC.truck}توصيل سريع</span><span>${IC.ret}إرجاع سهل</span></div>
 </form>
 <aside class="co-summary" id="coSummary"></aside>
 </div></main>
@@ -363,7 +412,7 @@ function orderPage(store, o, t) {
 <body class="store ${t.dark ? 'dark' : ''}">
 <main class="done">
 <div class="done-card">
-<div class="done-check">✓</div>
+<div class="done-check">${IC.check}</div>
 <h1>شكراً ${esc(o.customer_name)}! 🎉</h1>
 <p>تم استلام طلبك <b>${esc(o.number)}</b> بنجاح وسنتواصل معك لتأكيد الشحن.</p>
 <div class="done-items">${items.map(i => `<div class="done-item"><span>${esc(i.name)} × ${i.qty}</span><b>${egp(i.price * i.qty)}</b></div>`).join('')}
@@ -383,10 +432,10 @@ function activeConfirmSection() {
   return `
 <section class="section ac-sec"><div class="wrap ac-grid">
 <div class="ac-copy">
-<div class="hero-badge" style="background:rgba(0,191,175,.1);border-color:rgba(0,191,175,.35)">✦ أكتف كونفيرم — حصرياً في اكتف تكنو</div>
+<div class="hero-badge"><span class="pulse"></span>أكتف كونفيرم — حصرياً في اكتف تكنو</div>
 <h2 style="text-align:start">أكّد طلبات COD على واتساب<br>برسالة واحدة ورد <b class="grad">1 أو 2</b></h2>
 <p class="section-sub" style="text-align:start;margin:14px 0 22px">كل طلب جديد يصل عميلك تلقائياً رسالة واتساب جاهزة: يرد <b>1</b> فيتأكد الطلب، أو <b>2</b> فيُلغى — ويتحدث وضعه في لوحتك لحظياً. قلّل الطلبات الوهمية ووفّر ساعات المكالمات.</p>
-<div class="ac-points"><span>✓ تأكيد فوري بدون مكالمات</span><span>✓ تحديث حالة الطلب تلقائياً</span><span>✓ يقلل المرتجعات والوهمي</span></div>
+<div class="ac-points"><span>${IC.check}تأكيد فوري بدون مكالمات</span><span>${IC.check}تحديث حالة الطلب تلقائياً</span><span>${IC.check}يقلل المرتجعات والطلبات الوهمية</span></div>
 <a class="btn btn-teal btn-lg" href="/register">جرّب أكتف كونفيرم مجاناً</a>
 </div>
 <div class="ac-phone">
@@ -394,7 +443,7 @@ function activeConfirmSection() {
 <div class="wa-in">أهلاً مريم 👋<br>طلبك <b>NO-1027</b> من متجر نورا<br>الإجمالي: 780 ج.م — دفع عند الاستلام<br><br>رد بـ <b>1</b> لتأكيد الطلب ✅<br>رد بـ <b>2</b> للإلغاء ❌</div>
 <div class="wa-out">1</div>
 <div class="wa-in">تم تأكيد طلبك بنجاح 🎉<br>شحنك في الطريق قريباً 🚚</div>
-<div class="ac-sys">✓ تحدّثت حالة الطلب إلى «مؤكد» في لوحة التحكم</div>
+<div class="ac-sys">${IC.check}تحدّثت حالة الطلب إلى «مؤكد» في لوحة التحكم</div>
 </div>
 </div>
 </div></section>`;

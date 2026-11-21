@@ -190,6 +190,29 @@ const migrations = [
   {
     id: '002_payments',
     sql: `ALTER TABLE orders ADD COLUMN payment_method TEXT NOT NULL DEFAULT 'cod';`
+  },
+  {
+    id: '003_integrations',
+    sql: `
+    CREATE TABLE settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE integration_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      provider TEXT NOT NULL,
+      kind TEXT NOT NULL,
+      payload TEXT,
+      status TEXT NOT NULL,
+      simulated INTEGER NOT NULL DEFAULT 0,
+      detail TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX idx_integ_provider ON integration_events(provider, id);
+    ALTER TABLE orders ADD COLUMN payment_status TEXT NOT NULL DEFAULT 'unpaid';
+    ALTER TABLE orders ADD COLUMN payment_ref TEXT;
+    `
   }
 ];
 
