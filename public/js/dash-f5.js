@@ -61,30 +61,46 @@ registerView('plugins', async () => {
     ['pixel', 'اعدادات البيكسل', 'اربط فيسبوك وتيك توك وسناب بيكسل بصفحات متجرك لتتبع الزوار وقياس أداء حملاتك الإعلانية بدقة.', 'pixels-settings', st(px.meta || px.tiktok || px.snap)],
     ['capi', 'Conversion API', 'أرسل أحداث الشراء من السيرفر مباشرة إلى Meta لتحسين دقة التتبع واستهداف الإعلانات.', 'pixel-conversion', st(px.capi_token)],
     ['ga', 'Google Analytics', 'تتبع زيارات متجرك وتحويلاته عبر Google Analytics 4 بمجرد لصق معرّف القياس.', 'ga', st(px.ga)],
-    ['coupons', 'كوبونات التخفيضات', 'أنشئ أكواد خصم بنسبة أو بمبلغ ثابت، وحدد شروط استخدامها وعدد مرات صلاحيتها.', 'coupons', `<span class="chip st-delivered">${coupons.length} كوبون</span>`],
+    ['coupons', 'كوبونات التخفيضات', 'أنشئ أكواد خصم بنسبة أو بمبلغ ثابت، وحدد شروط استخدامها وعدد مرات صلاحيتها.', 'coupons', coupons.length ? `<span class="chip st-delivered">${coupons.length} كوبون</span>` : st(false)],
     ['feed', 'Google Merchant Feed', 'صدّر منتجات متجرك إلى Google Merchant Center لتظهر في نتائج Google Shopping.', 'google-merchant', '<span class="chip st-delivered">يعمل تلقائياً</span>'],
     ['popup', 'Sales Popup', 'أظهر إشعارات مشتريات حقيقية لزوار متجرك لبناء الثقة وتحفيز الطلب.', 'sales-popup', st(settings.sales_popup)],
-    ['cross', 'Cross Sell', 'اقترح منتجات مكملة للعميل أثناء إتمام الطلب لرفع متوسط قيمة السلة.', 'cross-sell', `<span class="chip st-delivered">${cross_sells.length} عرض</span>`],
+    ['cross', 'Cross Sell', 'اقترح منتجات مكملة للعميل أثناء إتمام الطلب لرفع متوسط قيمة السلة.', 'cross-sell', cross_sells.length ? `<span class="chip st-delivered">${cross_sells.length} عرض</span>` : st(false)],
     ['down', 'Downsell', 'اعرض عرضًا أخيرًا بخصم في صفحة الشكر بعد إتمام الطلب لزيادة المبيعات.', 'downsell', st(settings.downsell)],
     ['whatsapp', 'واتساب الرسمي من ميتا', 'أرسل تأكيدات الطلبات ورسائل استرجاع السلات المتروكة عبر واتساب الرسمي من ميتا.', 'whatsapp-api', st(intg.whatsapp && intg.whatsapp.configured)],
-    ['link', 'روابط الإحالة', 'تتبع الطلبات القادمة من روابط المسوقين والمؤثرين واعرف أداء كل رابط.', 'referral-link', `<span class="chip st-delivered">${links.length} رابط</span>`],
+    ['link', 'روابط الإحالة', 'تتبع الطلبات القادمة من روابط المسوقين والمؤثرين واعرف أداء كل رابط.', 'referral-link', links.length ? `<span class="chip st-delivered">${links.length} رابط</span>` : st(false)],
   ];
-  return `
-  <div class="d-page">
-    ${topBar('التطبيقات', 'هنا تجد التطبيقات التي تساعدك على تطوير متجرك وإضافة وظائف جديدة له', '')}
-    <div class="pill-tabs" style="margin-bottom:14px"><button class="on">تطبيقات مثبتة (${installed.length})</button></div>
-    <div class="apps-grid apps-grid-3">
-      ${installed.map(([ic, name, desc, route, status]) => `
+  const isOn = st => st.includes('st-delivered');
+  const configured = installed.filter(a => isOn(a[4]));
+  const discover = installed.filter(a => !isOn(a[4]));
+  const card = ([ic, name, desc, route, status]) => `
       <div class="app-card" onclick="go('${route}')">
         <span class="app-gear">${I('settings')}</span>
         <b>${name}</b>
         <span class="app-sub muted">مجاني</span>
         <p class="app-desc muted">${desc}</p>
         <div class="app-foot">${status}<span class="app-cfg muted">الإعدادات ←</span></div>
-      </div>`).join('')}
+      </div>`;
+  return `
+  <div class="d-page">
+    ${topBar('التطبيقات', 'هنا تجد التطبيقات التي تساعدك على تطوير متجرك وإضافة وظائف جديدة له', '')}
+    <div class="pill-tabs" style="margin-bottom:14px">
+      <button class="on" data-apps-tab="installed" onclick="switchAppsTab(this)">تطبيقات مثبتة (${configured.length})</button>
+      <button data-apps-tab="discover" onclick="switchAppsTab(this)">اكتشف تطبيقات اكثر (${discover.length})</button>
     </div>
+    <div class="apps-grid apps-grid-3" id="appsInstalled">${configured.length ? configured.map(card).join('') : ''}</div>
+    ${configured.length ? '' : `<div class="card" id="appsInstalledEmpty"><div class="empty"><span class="e-ic">${I('apps')}</span><b>لا توجد تطبيقات مُعدّة بعد</b><p>اكتشف التطبيقات المتاحة وفعّل ما يناسب متجرك</p></div></div>`}
+    <div class="apps-grid apps-grid-3" id="appsDiscover" style="display:none">${discover.map(card).join('')}</div>
   </div>`;
 });
+function switchAppsTab(btn) {
+  const t = btn.dataset.appsTab;
+  document.querySelectorAll('[data-apps-tab]').forEach(b => b.classList.toggle('on', b === btn));
+  const inst = document.getElementById('appsInstalled'), disc = document.getElementById('appsDiscover');
+  const instEmpty = document.getElementById('appsInstalledEmpty');
+  if (inst) inst.style.display = t === 'installed' && inst.innerHTML.trim() ? '' : 'none';
+  if (instEmpty) instEmpty.style.display = t === 'installed' ? '' : 'none';
+  if (disc) disc.style.display = t === 'discover' ? '' : 'none';
+}
 
 // ---------- subscriptions (الباقة المميزة) ----------
 registerView('subscriptions', async () => {
