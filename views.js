@@ -484,49 +484,76 @@ ${siteFooter}
 
 // ---------- auth ----------
 const inputCls = 'w-full rounded-xl border border-input bg-surface px-4 py-3 text-[14px] outline-none transition-all duration-150 focus:ring-4 focus:ring-ring/30 focus:border-brand';
-function authCard(kind) {
-  const isLogin = kind === 'login';
-  return base(isLogin ? 'تسجيل الدخول | اكتف اوردر' : 'إنشاء حساب | اكتف اوردر', `
-<div class="min-h-screen grid place-items-center bg-subtle px-4 py-14 relative overflow-hidden">
-  <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[400px] rounded-full opacity-[0.10] blur-[110px]" style="background:radial-gradient(closest-side,var(--color-brand),transparent)"></div>
-  <div class="relative w-full max-w-md rounded-3xl border border-border bg-card p-8 shadow-float" id="authCard" data-reveal="pop">
-    <div class="flex justify-center">${logo}</div>
-    <h1 class="mt-7 text-center text-[24px] font-bold tracking-tight">${isLogin ? 'أهلاً بعودتك' : 'أنشئ متجرك مجاناً'}</h1>
-    <p class="mt-1.5 text-center text-[14px] text-muted-foreground">${isLogin ? 'سجّل دخولك لإدارة متجرك' : '30 ثانية وتكون جاهز — بدون بطاقة بنكية'}</p>
-    <form id="authForm" class="mt-7 space-y-4">
-      ${isLogin ? '' : `<label class="block"><span class="block mb-1.5 text-[13.5px] font-semibold">اسمك</span><input class="${inputCls}" name="name" required placeholder="مثال: نورا محمود"></label>
-      <label class="block"><span class="block mb-1.5 text-[13.5px] font-semibold">اسم المتجر</span><input class="${inputCls}" name="storeName" required placeholder="مثال: متجر نورا"></label>`}
-      <label class="block"><span class="block mb-1.5 text-[13.5px] font-semibold">البريد الإلكتروني</span><input class="${inputCls}" name="email" type="email" required placeholder="you@example.com" dir="ltr"></label>
-      <label class="block"><span class="block mb-1.5 text-[13.5px] font-semibold">كلمة المرور</span><input class="${inputCls}" name="password" type="password" required minlength="8" placeholder="8 أحرف على الأقل" dir="ltr"></label>
-      <div class="text-[13px] font-medium text-red-600 min-h-[18px]" id="authErr"></div>
-      <button class="btn-sheen w-full rounded-full bg-brand py-3.5 text-[15px] font-bold text-night transition-all duration-200 hover:bg-brand-bright" type="submit">${isLogin ? 'دخول' : 'إنشاء الحساب'}</button>
-    </form>
-    ${isLogin ? `<p class="mt-5 text-center text-[13.5px] text-muted-foreground">ليس لديك حساب؟ <a class="font-bold text-brand-foreground hover:underline" href="/register">ابدأ مجاناً</a></p>
-    <div class="mt-4 rounded-xl bg-muted px-4 py-3 text-center text-[12.5px] text-muted-foreground">حساب تجريبي: <code dir="ltr" class="font-semibold text-foreground">demo@activetecno.software / demo1234</code></div>`
-    : `<p class="mt-5 text-center text-[13.5px] text-muted-foreground">لديك حساب بالفعل؟ <a class="font-bold text-brand-foreground hover:underline" href="/login">سجّل دخولك</a></p>`}
+// ---------- auth pages (EO layout) ----------
+const logoWhite = `<a class="flex items-center gap-2 shrink-0" href="/"><span class="grid place-items-center"><svg viewBox="0 0 32 32" width="30" height="30"><rect width="32" height="32" rx="8" fill="rgba(255,255,255,.16)"/><path d="M9 20l7-11 7 11" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="text-[17px] font-bold tracking-tight text-white">اكتف <b class="text-white/85">اوردر</b></span></a>`;
+const egFlag = '<svg width="18" height="13" viewBox="0 0 18 13" class="rounded-[3px] shadow-sm"><rect width="18" height="13" fill="#fff"/><rect width="18" height="4.33" fill="#ce1126"/><rect y="8.67" width="18" height="4.33" fill="#000"/></svg>';
+const fieldBox = 'flex items-stretch rounded-xl border border-input bg-surface overflow-hidden transition-all duration-150 focus-within:ring-4 focus-within:ring-ring/30 focus-within:border-brand';
+const fieldInput = 'flex-1 min-w-0 px-4 py-3 text-[14px] outline-none bg-transparent';
+
+function registerPage() {
+  return base('إنشاء حساب | اكتف اوردر', `
+${siteHeader('light')}
+<div class="min-h-screen bg-background px-4 pt-32 pb-20">
+  <div class="mx-auto max-w-md">
+    <div class="flex justify-center"><span class="scale-125 origin-center inline-block">${logo}</span></div>
+    <h1 class="mt-9 text-center text-[26px] font-bold tracking-tight">أنشئ حسابك المجاني</h1>
+    <div class="mt-8 rounded-3xl border border-border bg-card p-6 sm:p-8 shadow-soft" id="regCard" data-reveal="fade-up">
+      <form id="regForm" class="space-y-4">
+        <label class="block"><span class="block mb-1.5 text-[13.5px] font-semibold">اسم موقعك</span>
+          <div class="${fieldBox}" dir="ltr">
+            <input class="${fieldInput}" name="slug" required placeholder="store-name" pattern="[a-z0-9][a-z0-9-]*" title="حروف إنجليزية صغيرة وأرقام وشرطات فقط" autocomplete="off">
+            <span class="grid place-items-center px-3 text-[12.5px] text-muted-foreground bg-muted border-s border-input whitespace-nowrap">.active-order.store</span>
+          </div>
+        </label>
+        <label class="block"><span class="block mb-1.5 text-[13.5px] font-semibold">اختر العملة</span>
+          <select class="${inputCls}" name="currency">
+            <option value="EGP" selected>جنيه مصري - ج.م</option>
+            <option value="SAR">ريال سعودي - ر.س</option>
+            <option value="AED">درهم إماراتي - د.إ</option>
+            <option value="USD">دولار أمريكي - $</option>
+          </select>
+        </label>
+        <label class="block"><span class="block mb-1.5 text-[13.5px] font-semibold">الاسم بالكامل</span><input class="${inputCls}" name="name" required placeholder="اسمك واسم العائلة"></label>
+        <label class="block"><span class="block mb-1.5 text-[13.5px] font-semibold">رقم الهاتف</span>
+          <div class="${fieldBox}" dir="ltr">
+            <span class="flex items-center gap-1.5 px-3 text-[13.5px] font-semibold bg-muted border-e border-input">${egFlag}<span dir="ltr">+20</span></span>
+            <input class="${fieldInput}" name="phone" required inputmode="tel" autocomplete="tel" placeholder="1X XXX XXXX">
+          </div>
+        </label>
+        <label class="block"><span class="block mb-1.5 text-[13.5px] font-semibold">البريد الإلكتروني</span><input class="${inputCls}" name="email" type="email" required placeholder="name@company.com" dir="ltr" autocomplete="email"></label>
+        <label class="block"><span class="block mb-1.5 text-[13.5px] font-semibold">كلمة المرور</span><input class="${inputCls}" name="password" type="password" required minlength="8" placeholder="8 أحرف على الأقل" dir="ltr" autocomplete="new-password"></label>
+        <label class="block"><span class="block mb-1.5 text-[13.5px] font-semibold">تأكيد كلمة المرور</span><input class="${inputCls}" name="password2" type="password" required minlength="8" dir="ltr" autocomplete="new-password"></label>
+        <div class="text-[13px] font-medium text-red-600 min-h-[18px]" id="regErr"></div>
+        <button class="btn-sheen w-full rounded-xl bg-brand py-3.5 text-[15px] font-bold text-white transition-all duration-200 hover:bg-brand-bright" type="submit">إنشاء الحساب</button>
+      </form>
+      <p class="mt-5 text-center text-[13.5px] text-muted-foreground">لديك حساب بالفعل؟ <a class="font-bold text-brand-foreground hover:underline" href="/login">سجّل دخولك</a></p>
+    </div>
   </div>
 </div>
+${siteFooter}
 <script>
-const IS_LOGIN = ${isLogin};
-document.getElementById('authForm').addEventListener('submit', async e => {
+document.getElementById('regForm').addEventListener('submit', async e => {
   e.preventDefault();
   const f = new FormData(e.target); const body = Object.fromEntries(f.entries());
-  const err = document.getElementById('authErr'); err.textContent = '';
-  const r = await fetch('/api/auth/${kind}', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  const err = document.getElementById('regErr'); err.textContent = '';
+  if (body.password !== body.password2) { err.textContent = 'كلمتا المرور غير متطابقتين'; return; }
+  delete body.password2;
+  body.phone = '+20' + String(body.phone || '').replace(/\D/g, '').replace(/^0+/, '');
+  body.storeName = body.slug;
+  const r = await fetch('/api/auth/register', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
   const d = await r.json();
   if (!r.ok) { err.textContent = d.error || 'حدث خطأ'; return; }
-  if (IS_LOGIN) { location.href = '/app'; return; }
   showVerify(body.email, d.dev_code, d.email_sent);
 });
 function showVerify(email, devCode, emailSent) {
-  document.getElementById('authCard').innerHTML = \`
-  <h1 class="text-center text-[24px] font-bold tracking-tight">تحقق من بريدك</h1>
+  document.getElementById('regCard').innerHTML = \`
+  <h2 class="text-center text-[24px] font-bold tracking-tight">تحقق من بريدك</h2>
   <p class="mt-1.5 text-center text-[14px] text-muted-foreground">أرسلنا رمز تحقق من 6 أرقام إلى <b dir="ltr">\` + email + \`</b></p>
   \` + (devCode ? '<div class="mt-5 rounded-2xl border border-warning/40 bg-warning-soft p-4 text-center"><div class="text-[12px] font-semibold text-muted-foreground">بيئة العرض — خدمة البريد غير مفعّلة بعد</div><div dir="ltr" class="mt-2 text-[30px] font-bold tracking-[10px] text-brand-foreground">' + devCode + '</div><div class="mt-1 text-[12px] text-muted-foreground">أدخل الرمز بالأسفل لإتمام إنشاء متجرك</div></div>' : '') + \`
   <form id="verifyForm" class="mt-6 space-y-4">
     <label class="block"><span class="block mb-1.5 text-[13.5px] font-semibold">كود التحقق</span><input class="${inputCls}" name="code" required inputmode="numeric" maxlength="6" placeholder="______" dir="ltr" style="text-align:center;font-size:22px;letter-spacing:8px"></label>
     <div class="text-[13px] font-medium text-red-600 min-h-[18px]" id="vErr"></div>
-    <button class="btn-sheen w-full rounded-full bg-brand py-3.5 text-[15px] font-bold text-night transition-all duration-200 hover:bg-brand-bright" type="submit">تأكيد البريد وإنشاء المتجر</button>
+    <button class="btn-sheen w-full rounded-xl bg-brand py-3.5 text-[15px] font-bold text-white transition-all duration-200 hover:bg-brand-bright" type="submit">تأكيد البريد وإنشاء المتجر</button>
   </form>\`;
   document.getElementById('verifyForm').addEventListener('submit', async e => {
     e.preventDefault();
@@ -537,6 +564,72 @@ function showVerify(email, devCode, emailSent) {
     location.href = '/onboarding';
   });
 }
+</script>`);
+}
+
+function loginPage() {
+  const feats = [
+    ['<path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>', 'إدارة الطلبات والشحن بضغطة واحدة'],
+    ['<path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/>', 'صفحات هبوط احترافية ترفع مبيعاتك'],
+    ['<path d="M4 20V10m6 10V4m6 16v-8M2 20h20"/>', 'تقارير وإحصائيات لحظية عن أداء متجرك'],
+  ];
+  return base('تسجيل الدخول | اكتف اوردر', `
+<div class="min-h-screen bg-background lg:grid lg:grid-cols-2">
+  <section class="relative hidden lg:flex flex-col overflow-hidden text-white p-12" style="background:linear-gradient(155deg,#0cbb4a 0%,#079a3c 38%,#056b2b 72%,#045122 100%)">
+    <div class="hero-grid absolute inset-0 opacity-20"></div>
+    <div class="relative">${logoWhite}</div>
+    <div class="relative my-auto max-w-md">
+      <h1 class="text-[32px] font-bold leading-snug">كل ما يحتاجه متجرك في مكان واحد</h1>
+      <p class="mt-3 text-[15px] leading-7 text-white/85">منصة اكتف اوردر تساعدك على البيع أونلاين بسهولة واحترافية</p>
+      <div class="mt-10 space-y-4">
+        ${feats.map(f => `
+        <div class="flex items-center gap-4 rounded-2xl border border-white/15 bg-white/10 backdrop-blur px-5 py-4">
+          <span class="grid place-items-center w-11 h-11 rounded-xl bg-white/15 shrink-0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${f[0]}</svg></span>
+          <span class="text-[15px] font-semibold">${f[1]}</span>
+        </div>`).join('')}
+      </div>
+    </div>
+    <div class="relative flex items-center gap-1.5 text-[13.5px] text-white/85"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span dir="ltr">active-order.store</span></div>
+  </section>
+  <section class="flex items-center justify-center px-4 py-14 min-h-screen lg:min-h-0">
+    <div class="w-full max-w-sm" id="loginCard" data-reveal="fade-up">
+      <div class="mb-8 lg:hidden">${logo}</div>
+      <h1 class="text-[26px] font-bold tracking-tight">مرحباً بعودتك 👋</h1>
+      <p class="mt-1.5 text-[14px] text-muted-foreground">سجّل دخولك لمتابعة متجرك وطلباتك</p>
+      <form id="loginForm" class="mt-8 space-y-4">
+        <label class="block"><span class="block mb-1.5 text-[13.5px] font-semibold">البريد الإلكتروني</span>
+          <span class="relative block" dir="ltr">
+            <input class="${inputCls} !pl-11" name="email" type="email" required placeholder="name@company.com" autocomplete="email">
+            <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m3 7 9 6 9-6"/></svg>
+          </span>
+        </label>
+        <label class="block"><span class="block mb-1.5 text-[13.5px] font-semibold">كلمة المرور</span>
+          <span class="relative block" dir="ltr">
+            <input id="loginPw" class="${inputCls} !pl-11" name="password" type="password" required autocomplete="current-password">
+            <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+            <button type="button" onclick="const i=document.getElementById('loginPw');i.type=i.type==='password'?'text':'password'" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" aria-label="إظهار كلمة المرور"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </span>
+        </label>
+        <a class="inline-block text-[13px] font-bold text-brand-foreground hover:underline" href="https://wa.me/201011206670" target="_blank" rel="noopener">نسيت كلمة المرور؟</a>
+        <div class="text-[13px] font-medium text-red-600 min-h-[18px]" id="loginErr"></div>
+        <button class="w-full rounded-xl bg-night py-3.5 text-[15px] font-bold text-white transition-all duration-200 hover:opacity-90" type="submit">تسجيل الدخول</button>
+      </form>
+      <div class="my-6 border-t border-border"></div>
+      <p class="text-center text-[13.5px] text-foreground">ليس لديك حساب؟ <a class="font-bold text-brand-foreground hover:underline" href="/register">سجّل من هنا</a></p>
+      <div class="mt-6 rounded-xl bg-muted px-4 py-3 text-center text-[12.5px] text-muted-foreground">حساب تجريبي: <code dir="ltr" class="font-semibold text-foreground">demo@activetecno.software / demo1234</code></div>
+    </div>
+  </section>
+</div>
+<script>
+document.getElementById('loginForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const body = Object.fromEntries(new FormData(e.target).entries());
+  const err = document.getElementById('loginErr'); err.textContent = '';
+  const r = await fetch('/api/auth/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  const d = await r.json();
+  if (!r.ok) { err.textContent = d.error || 'بيانات الدخول غير صحيحة'; return; }
+  location.href = '/app';
+});
 </script>`);
 }
 
@@ -914,4 +1007,4 @@ ${siteHeader('light')}
 ${siteFooter}`);
 }
 
-module.exports = { landing, login: () => authCard('login'), register: () => authCard('register'), appShell, adminShell, storefront, productPage, checkoutPage, orderPage, comingSoon, notFound, onboarding, egp, esc, pricingPage, themesPage };
+module.exports = { landing, login: loginPage, register: registerPage, appShell, adminShell, storefront, productPage, checkoutPage, orderPage, comingSoon, notFound, onboarding, egp, esc, pricingPage, themesPage };

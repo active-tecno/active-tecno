@@ -98,15 +98,16 @@ const api = {
   // auth
   'POST /api/auth/register': async (req, res) => {
     const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
-    const { email, password, name, storeName, slug } = b;
+    const { email, password, name, storeName, slug, phone, currency } = b;
     if (!email || !password || !name || !storeName) return json(res, 400, { error: 'كل الحقول مطلوبة' });
     if (password.length < 8) return json(res, 400, { error: 'كلمة المرور 8 أحرف على الأقل' });
     const s = String(slug || storeName).toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]+/g, '-').replace(/^-+|-+$/g, '') || 'store';
     if (db.prepare('SELECT id FROM users WHERE email = ?').get(email.toLowerCase())) return json(res, 409, { error: 'البريد مسجل بالفعل' });
     let finalSlug = s, n = 1;
     while (db.prepare('SELECT id FROM stores WHERE slug = ?').get(finalSlug)) finalSlug = `${s}-${++n}`;
-    const u = db.prepare('INSERT INTO users (email, password_hash, name) VALUES (?, ?, ?)').run(email.toLowerCase(), hashPassword(password), name);
-    db.prepare('INSERT INTO stores (user_id, name, slug) VALUES (?, ?, ?)').run(u.lastInsertRowid, storeName, finalSlug);
+    const cur = ['EGP', 'SAR', 'AED', 'USD'].includes(currency) ? currency : 'EGP';
+    const u = db.prepare('INSERT INTO users (email, password_hash, name, phone) VALUES (?, ?, ?, ?)').run(email.toLowerCase(), hashPassword(password), name, String(phone || ''));
+    db.prepare('INSERT INTO stores (user_id, name, slug, currency) VALUES (?, ?, ?, ?)').run(u.lastInsertRowid, storeName, finalSlug, cur);
     db.prepare('INSERT INTO team_members (store_id, email, name, role) VALUES (?, ?, ?, ?)')
       .run(db.prepare('SELECT id FROM stores WHERE slug = ?').get(finalSlug).id, email.toLowerCase(), name, 'owner');
     const code = String(Math.floor(100000 + Math.random() * 900000));
