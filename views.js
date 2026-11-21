@@ -785,7 +785,7 @@ IC.search = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-w
 IC.heart = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20s-7-4.4-9.2-8.6C1.2 8.4 3 5 6.2 5c2 0 3.4 1.1 4.2 2.3h3.2C14.4 6.1 15.8 5 17.8 5c3.2 0 5 3.4 3.4 6.4C19 15.6 12 20 12 20z"/></svg>';
 IC.menu = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';
 function storeHeader(store, t, cats = []) {
-  const lay = eoLayout(store);
+  const lay = eoLayout(store, t);
   if (!lay) {
     return `${store.announcement && !t.hide_announcement ? `<div class="s-announce">${esc(store.announcement)}</div>` : ''}
 <header class="s-header ${t.header === 'split' ? 'split' : ''}">
@@ -816,6 +816,32 @@ function storeHeader(store, t, cats = []) {
   ${brand}
   <div class="fh-side fh-left">${cartBtn}<span class="fh-total" id="cartTotalHead"></span></div>
   <nav class="fh-links">${linksHtml}</nav>
+</header>`;
+  }
+  if (lay === 'blast' || lay === 'clear') {
+    return `${store.announcement && !t.hide_announcement ? announce : ''}
+<header class="s-header eo hcenter ${lay}">
+  <nav class="hc-links">${linksHtml}</nav>${brand}<div class="hc-icons">${searchBtn}${cartBtn}</div>
+</header>`;
+  }
+  if (lay === 'elegance' || lay === 'shine') {
+    return `${store.announcement && !t.hide_announcement ? announce : ''}
+<header class="s-header eo hsplit ${lay}">
+  <div class="hs-top">${brand}<div class="hs-icons">${searchBtn}${cartBtn}</div></div>
+  <nav class="hs-links">${linksHtml}</nav>
+</header>`;
+  }
+  if (lay === 'vantage-el' || lay === 'vantage-cos') {
+    return `${store.announcement && !t.hide_announcement ? announce : ''}
+<header class="s-header eo hcontact ${lay}">
+  <div class="hk-row"><span class="hk-phone">${store.phone ? `عندك استفسار؟ ${esc(store.phone)}` : ''}</span>${brand}<div class="hk-icons">${searchBtn}${cartBtn}<span class="fh-total" id="cartTotalHead"></span></div></div>
+</header>`;
+  }
+  if (lay === 'phoenix') {
+    return `${store.announcement && !t.hide_announcement ? announce : ''}
+<header class="s-header eo sphinx phoenix">
+  <div class="sh-row">${brand}<div class="sh-search">${IC.search}<input id="hSearch" placeholder="ابحث عن منتج..."></div>${cartBtn}</div>
+  <nav class="sh-links">${linksHtml}</nav>
 </header>`;
   }
   if (lay === 'luxify') {
@@ -870,7 +896,7 @@ function categoryPage(store, cat, t, owner, sort) {
     <option value="price_asc" ${sort === 'price_asc' ? 'selected' : ''}>السعر: من الأقل</option>
     <option value="price_desc" ${sort === 'price_desc' ? 'selected' : ''}>السعر: من الأعلى</option></select>`;
   return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, `${cat} | ${store.name}`)}</head>
-<body class="store ${t.dark ? 'dark' : ''} t-${esc(store.theme_id)}">
+<body class="store ${t.dark ? 'dark' : ''} t-${esc((t && t.__id) || store.theme_id)}">
 ${demoBar(store)}
 ${owner ? `<div class="s-ownerbar">وضع المعاينة — <a href="/app">العودة للوحة التحكم</a></div>` : ''}
 ${storeHeader(store, t, allCats)}
@@ -933,7 +959,7 @@ function renderSection(store, s, ctx) {
       const title = esc(st.title || store.name), sub = esc(st.subtitle || '');
       const cta = st.cta_text ? `<a class="s-btn" href="${escAttr(st.cta_link || '#products')}">${esc(st.cta_text)}</a>` : '';
       const bg = st.img ? ` style="background-image:url('${escAttr(st.img)}');background-size:cover;background-position:center"` : '';
-      if (hv === 'minimal') return `<section class="s-hero hv-minimal"${bg}><div class="hv-m-in"><h1>${title}</h1><p>${sub}</p><div class="s-hero-cta">${cta}</div></div></section>`;
+      if (hv === 'minimal') { const bgm = st.img ? bg : (themeHeroImg(lay) ? ` style="background-image:linear-gradient(to top, color-mix(in srgb, var(--sp) 58%, transparent), color-mix(in srgb, var(--sp) 10%, transparent)), url('${themeHeroImg(lay)}');background-size:cover;background-position:center"` : bg); return `<section class="s-hero hv-minimal"${bgm}><div class="hv-m-in"><h1>${title}</h1><p>${sub}</p><div class="s-hero-cta">${cta}</div></div></section>`; }
       if (hv === 'split') {
         const img0 = st.img || themeHeroImg(lay) || (products[0] ? (JSON.parse(products[0].images || '[]')[0] || '') : '');
         return `<section class="s-hero hv-split"><div class="hv-s-text"><h1>${title}</h1><p>${sub}</p><div class="s-hero-cta">${cta}</div></div>${img0 ? `<div class="hv-s-img"><img src="${escAttr(img0)}" alt="" loading="lazy"></div>` : ''}</section>`;
@@ -942,7 +968,7 @@ function renderSection(store, s, ctx) {
       if (hv === 'banner') { const bgh = st.img ? bg : (themeHeroImg(lay) ? ` style="background-image:linear-gradient(to top, color-mix(in srgb, var(--sp) 72%, transparent), color-mix(in srgb, var(--sp) 22%, transparent)), url('${themeHeroImg(lay)}');background-size:cover;background-position:center"` : bg); return `<section class="s-hero hv-banner"${bgh}><div class="hv-b-in"><span class="hv-b-kicker">${esc(store.name)}</span><h1>${title}</h1><p>${sub}</p><div class="s-hero-cta">${cta}</div></div></section>`; }
       if (hv === 'photo') {
         const him = st.img || themeHeroImg(lay);
-        const style = him ? ` style="background-image:linear-gradient(to top, color-mix(in srgb, var(--sp) 78%, transparent), color-mix(in srgb, var(--sp) 25%, transparent)), url('${escAttr(him)}');background-size:cover;background-position:center"` : ` style="background:linear-gradient(135deg, var(--sp) 0%, color-mix(in srgb, var(--sa) 70%, var(--sp)) 100%)"`;
+        const style = him ? ` style="background-image:linear-gradient(to top, color-mix(in srgb, var(--sp) 62%, transparent), color-mix(in srgb, var(--sp) 12%, transparent)), url('${escAttr(him)}');background-size:cover;background-position:center"` : ` style="background:linear-gradient(135deg, var(--sp) 0%, color-mix(in srgb, var(--sa) 70%, var(--sp)) 100%)"`;
         return `<section class="s-hero hv-photo hv-photo--${escAttr(lay || 'default')}"${style}><div class="hv-p-in"><h1>${title}</h1><p>${sub}</p><div class="s-hero-cta">${cta}</div></div></section>`;
       }
       if (hv === 'promo') {
@@ -1029,7 +1055,7 @@ function storefront(store, t, owner) {
 ${store.whatsapp ? `<a class="s-btn ghost" href="https://wa.me/${esc(store.whatsapp)}" target="_blank" rel="noopener">تواصل واتساب</a>` : ''}</div></section>`;
   const ctx = { products, cats, lay, t };
   return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, store.name)}</head>
-<body class="store ${t.dark ? 'dark' : ''} t-${esc(store.theme_id)}">
+<body class="store ${t.dark ? 'dark' : ''} t-${esc((t && t.__id) || store.theme_id)}">
 ${demoBar(store)}
 ${owner ? `<div class="s-ownerbar">وضع المعاينة — <a href="/app">العودة للوحة التحكم</a></div>` : ''}
 ${renderZone(store, 'home', 'above_header', ctx)}
@@ -1093,7 +1119,7 @@ function productPage(store, p, t, owner) {
     : S.fake_stock && S.fake_stock_count > 0 ? `<div class="pd-low">${IC.flame}باقي ${S.fake_stock_count} قطعة فقط — اطلب الآن</div>`
     : p.stock_tracking && p.stock > 0 && p.stock <= (p.low_stock_threshold || 3) ? `<div class="pd-low">${IC.flame}باقي ${p.stock} فقط — اطلب الآن</div>` : '';
   return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, `${p.name} | ${store.name}`)}${cur ? '' : ''}${p.custom_pixel && p.custom_pixel.trim() ? p.custom_pixel : ''}</head>
-<body class="store pd-adv ${t.dark ? 'dark' : ''} t-${esc(store.theme_id)}">
+<body class="store pd-adv ${t.dark ? 'dark' : ''} t-${esc((t && t.__id) || store.theme_id)}">
 ${demoBar(store)}
 ${owner ? `<div class="s-ownerbar">وضع المعاينة — <a href="/app">العودة للوحة التحكم</a></div>` : ''}
 ${renderZone(store, 'product', 'above_header', ctx)}
@@ -1179,7 +1205,7 @@ function checkoutPage(store, t, owner) {
   const ctxProds = db.prepare(`SELECT id, name, price, compare_at_price, stock, category, images FROM products WHERE store_id = ? AND status = 'active' AND COALESCE(json_extract(settings,'$.hidden_product'),0) = 0 ORDER BY created_at DESC`).all(store.id);
   const ctx = { products: ctxProds, cats: [...new Set(ctxProds.map(x => x.category).filter(Boolean))], lay: eoLayout(store, t), t };
   return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, `إتمام الطلب | ${store.name}`)}</head>
-<body class="store ${t.dark ? 'dark' : ''} t-${esc(store.theme_id)}">
+<body class="store ${t.dark ? 'dark' : ''} t-${esc((t && t.__id) || store.theme_id)}">
 ${demoBar(store)}
 ${renderZone(store, 'checkout', 'above_header', ctx)}
 ${storeHeader(store, t)}
@@ -1282,7 +1308,7 @@ document.getElementById('fnForm')?.addEventListener('submit', async e => {
 function storeBlogIndex(store, t) {
   const posts = db.prepare(`SELECT p.*, c.name AS category_name FROM blog_posts p LEFT JOIN blog_categories c ON c.id = p.category_id WHERE p.store_id = ? AND p.status = 'published' ORDER BY p.id DESC`).all(store.id);
   return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, `المدونة | ${store.name}`)}</head>
-<body class="store ${t.dark ? 'dark' : ''} t-${esc(store.theme_id)}">
+<body class="store ${t.dark ? 'dark' : ''} t-${esc((t && t.__id) || store.theme_id)}">
 ${demoBar(store)}${storeHeader(store, t)}
 <main class="wrap">
 <h1 class="pg-title">المدونة</h1>
@@ -1302,7 +1328,7 @@ ${storeScripts(store)}
 function storeBlogPost(store, p, t) {
   const more = db.prepare(`SELECT title, slug FROM blog_posts WHERE store_id = ? AND status = 'published' AND id != ? ORDER BY id DESC LIMIT 3`).all(store.id, p.id);
   return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, `${p.title} | ${store.name}`)}</head>
-<body class="store ${t.dark ? 'dark' : ''} t-${esc(store.theme_id)}">
+<body class="store ${t.dark ? 'dark' : ''} t-${esc((t && t.__id) || store.theme_id)}">
 ${demoBar(store)}${storeHeader(store, t)}
 <main class="wrap blog-post">
 <a class="blog-back" href="/s/${esc(store.slug)}/blog">→ كل المقالات</a>
@@ -1319,7 +1345,7 @@ ${storeScripts(store)}
 
 function verifiedPage(store, stats, t) {
   return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, `طلبات موثقة | ${store.name}`)}</head>
-<body class="store ${t.dark ? 'dark' : ''} t-${esc(store.theme_id)}">
+<body class="store ${t.dark ? 'dark' : ''} t-${esc((t && t.__id) || store.theme_id)}">
 ${demoBar(store)}
 <main class="done">
 <div class="done-card">
@@ -1363,7 +1389,7 @@ function orderPage(store, o, t) {
   const waMsg = encodeURIComponent(`أهلاً ${o.customer_name} 👋\nتم استلام طلبك رقم ${o.number} من ${store.name} بنجاح ✅\nالإجمالي: ${egp(o.total)} — الدفع عند الاستلام\nسنتواصل معك قريباً لتأكيد الشحن 🚚`);
   const waLink = store.whatsapp ? `https://wa.me/${store.whatsapp}?text=${encodeURIComponent(`أهلاً، أريد الاستفسار عن طلبي رقم ${o.number}`)}` : null;
   return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, `طلبك ${o.number} | ${store.name}`)}</head>
-<body class="store ${t.dark ? 'dark' : ''} t-${esc(store.theme_id)}">
+<body class="store ${t.dark ? 'dark' : ''} t-${esc((t && t.__id) || store.theme_id)}">
 ${demoBar(store)}
 <main class="done">
 <div class="done-card">
@@ -1699,7 +1725,7 @@ function policiesPage(store, t) {
     ? secs.map(([k, label]) => `<section class="card" style="margin-bottom:14px"><h2 style="font-size:18px;margin:0 0 8px">${label}</h2><p style="white-space:pre-wrap;line-height:1.9;margin:0">${esc(pol[k])}</p></section>`).join('')
     : `<div class="s-empty">لم يضف المتجر سياسات بعد.</div>`;
   return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, `السياسات | ${store.name}`)}</head>
-<body class="store ${t.dark ? 'dark' : ''} t-${esc(store.theme_id)}">
+<body class="store ${t.dark ? 'dark' : ''} t-${esc((t && t.__id) || store.theme_id)}">
 ${demoBar(store)}
 ${storeHeader(store, t)}
 <main style="max-width:760px;margin:24px auto;padding:0 16px">${body}</main>
