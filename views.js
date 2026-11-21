@@ -723,13 +723,23 @@ function adminShell() {
 function themeVars(t) {
   return `--sp:${t.primary || '#141924'};--sa:${t.accent || '#27cd27'};--sbg:${t.bg || '#fff'};--ssf:${t.surface || '#F6F8FC'};--sr:${t.radius ?? 16}px;`;
 }
+function pixelSnippets(store) {
+  let px = {}; try { px = (JSON.parse(store.theme_settings || '{}').pixels) || {}; } catch (e) {}
+  let out = '';
+  if (px.meta) out += `<script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init',${JSON.stringify(px.meta)});fbq('track','PageView');<\/script>`;
+  if (px.tiktok) out += `<script>!function(w,d,t){w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=['page','track','identify','instances','debug','on','off','once','ready','alias','group','enableCookie','disableCookie'];ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e};ttq.load=function(e,n){var i='https://analytics.tiktok.com/i18n/pixel/events.js';ttq._i=ttq._i||{};ttq._i[e]=[];ttq._i[e]._u=i;ttq._t=ttq._t||{};ttq._t[e]=+new Date;ttq._o=ttq._o||{};ttq._o[e]=n||{};var o=document.createElement('script');o.type='text/javascript';o.async=!0;o.src=i+'?sdkid='+e+'&lib='+t;var a=document.getElementsByTagName('script')[0];a.parentNode.insertBefore(o,a)};ttq.load(${JSON.stringify(px.tiktok)});ttq.page();}(window,document,'ttq');<\/script>`;
+  if (px.snap) out += `<script>(function(e,t,n){if(e.snaptr)return;var a=e.snaptr=function(){a.handleRequest?a.handleRequest.apply(a,arguments):a.queue.push(arguments)};a.queue=[];var s='script';var r=t.createElement(s);r.async=!0;r.src=n;var u=t.getElementsByTagName(s)[0];u.parentNode.insertBefore(r,u)})(window,document,'https://sc-static.net/scevent.min.js');snaptr('init',${JSON.stringify(px.snap)});snaptr('track','PAGE_VIEW');<\/script>`;
+  if (px.ga) out += `<script async src="https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(px.ga)}"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config',${JSON.stringify(px.ga)});<\/script>`;
+  if (out) out += `<script>function pxPurchase(value){try{if(window.fbq)fbq('track','Purchase',{value:value,currency:'EGP'});if(window.ttq)ttq.track('CompletePayment',{value:value,currency:'EGP'});if(window.snaptr)snaptr('track','PURCHASE',{price:value,currency:'EGP'});if(window.gtag)gtag('event','purchase',{value:value,currency:'EGP'});}catch(e){}}<\/script>`;
+  return out;
+}
 function storeHead(store, t, title) {
   return `<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${esc(title)}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Rubik:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/public/css/store.css">
-<style>:root{${themeVars(t)}}</style>`;
+<style>:root{${themeVars(t)}}</style>${pixelSnippets(store)}`;
 }
 
 function storeHeader(store, t) {
@@ -840,6 +850,65 @@ ${storeScripts(store)}
 </body></html>`;
 }
 
+function funnelPage(store, funnel, p, t, owner) {
+  const imgs = JSON.parse(p.images || '[]');
+  const off = p.compare_at_price && p.compare_at_price > p.price ? Math.round(100 - p.price * 100 / p.compare_at_price) : 0;
+  const govs = ['القاهرة', 'الجيزة', 'الإسكندرية', 'الدقهلية', 'الشرقية', 'الغربية', 'المنوفية', 'القليوبية', 'البحيرة', 'كفر الشيخ', 'دمياط', 'بورسعيد', 'الإسماعيلية', 'السويس', 'الفيوم', 'بني سويف', 'المنيا', 'أسيوط', 'سوهاج', 'قنا', 'الأقصر', 'أسوان', 'البحر الأحمر', 'مطروح', 'شمال سيناء', 'جنوب سيناء', 'طنطا', 'المنصورة', 'الزقازيق'];
+  const out = p.stock <= 0;
+  return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, `${p.name} | ${store.name}`)}</head>
+<body class="store funnel ${t.dark ? 'dark' : ''}">
+${owner ? `<div class="s-ownerbar">وضع المعاينة — <a href="/app#/funnels">العودة للوحة التحكم</a></div>` : ''}
+<header class="fn-brand"><span class="s-logo">${esc((store.logo_text || store.name).trim().charAt(0))}</span><b>${esc(store.name)}</b></header>
+<main class="fn">
+<section class="fn-hero">
+  <div class="fn-gallery"><img id="fnImg" src="${esc(imgs[0] || ph(p.name))}" alt="${esc(p.name)}">
+  ${imgs.length > 1 ? `<div class="pd-thumbs">${imgs.map((im, i) => `<img src="${esc(im)}" onclick="document.getElementById('fnImg').src=this.src" class="${i === 0 ? 'on' : ''}">`).join('')}</div>` : ''}</div>
+  <div class="fn-info">
+    <h1>${esc(p.name)}</h1>
+    <div class="pd-price"><b>${egp(p.price)}</b>${p.compare_at_price ? `<s>${egp(p.compare_at_price)}</s>` : ''}${off ? `<span class="p-off">وفّر ${off}%</span>` : ''}</div>
+    <div class="fn-desc">${p.description || ''}</div>
+    ${store.free_shipping_over ? `<div class="s-freeship">${IC.truck}شحن مجاني للطلبات فوق ${egp(store.free_shipping_over)}</div>` : ''}
+  </div>
+</section>
+<section class="fn-order" id="order">
+  <h2>اطلب الآن — الدفع عند الاستلام</h2>
+  ${out ? `<div class="s-empty">نفدت الكمية مؤقتاً — تابعنا قريباً</div>` : `
+  <form id="fnForm" class="co-form">
+    <div class="fn-qty"><span>الكمية</span><div class="qty-ctl"><button type="button" onclick="fnQty(-1)">−</button><b id="fnQty">1</b><button type="button" onclick="fnQty(1)">+</button></div></div>
+    <label>الاسم بالكامل<input name="name" required placeholder="مثال: مريم أحمد"></label>
+    <label>رقم الموبايل<input name="phone" required inputmode="tel" dir="ltr" placeholder="01xxxxxxxxx" pattern="01[0125][0-9]{8}"></label>
+    <label>المحافظة<select name="governorate" required>${govs.map(g => `<option>${g}</option>`).join('')}</select></label>
+    <label>العنوان بالتفصيل<textarea name="address" required placeholder="الشارع، رقم العمارة، الدور، الشقة، علامة مميزة"></textarea></label>
+    <label>ملاحظات (اختياري)<input name="notes" placeholder="أي تفاصيل إضافية"></label>
+    <div class="auth-err" id="fnErr"></div>
+    <button type="submit" class="s-btn btn-lg full buy" id="fnSubmit">تأكيد الطلب — ${egp(p.price)} <span id="fnTotal"></span></button>
+    <div class="co-trust"><span>${IC.lock}بياناتك آمنة</span><span>${IC.truck}توصيل سريع</span><span>${IC.ret}إرجاع سهل</span></div>
+  </form>`}
+</section>
+</main>
+<footer class="s-footer"><p>يعمل بواسطة <a href="/">اكتف اوردر</a> — الدفع عند الاستلام متاح</p></footer>
+${storeScripts(store)}
+<script>
+track('page_view', ${p.id});
+const FN_PRICE = ${Number(p.price)}, FN_ID = ${funnel.id}, FN_PID = ${p.id}, FN_NAME = ${JSON.stringify(p.name)};
+let fnQ = 1;
+function fnQty(d) { fnQ = Math.max(1, Math.min(20, fnQ + d)); document.getElementById('fnQty').textContent = fnQ; document.getElementById('fnTotal').textContent = fnQ > 1 ? '× ' + fnQ + ' = ' + (FN_PRICE * fnQ).toLocaleString('ar-EG') + ' ج.م' : ''; }
+document.getElementById('fnForm')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = document.getElementById('fnSubmit'); btn.disabled = true; btn.textContent = 'جاري تأكيد الطلب…';
+  const body = Object.fromEntries(new FormData(e.target).entries());
+  body.session_id = sid(); body.funnel_id = FN_ID; body.payment_method = 'cod';
+  body.items = [{ product_id: FN_PID, name: FN_NAME, qty: fnQ }];
+  const r = await fetch('/api/public/' + SLUG + '/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const d = await r.json();
+  if (!r.ok) { document.getElementById('fnErr').textContent = d.error || 'حدث خطأ، حاول مرة أخرى'; btn.disabled = false; btn.textContent = 'تأكيد الطلب'; return; }
+  if (window.pxPurchase) pxPurchase(FN_PRICE * fnQ);
+  location.href = '/s/' + SLUG + '/order/' + d.number;
+});
+</script>
+</body></html>`;
+}
+
 function orderPage(store, o, t) {
   const items = db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(o.id);
   const waMsg = encodeURIComponent(`أهلاً ${o.customer_name} 👋\nتم استلام طلبك رقم ${o.number} من ${store.name} بنجاح ✅\nالإجمالي: ${egp(o.total)} — الدفع عند الاستلام\nسنتواصل معك قريباً لتأكيد الشحن 🚚`);
@@ -860,6 +929,7 @@ ${waLink ? `<a class="s-btn" href="${waLink}" target="_blank" rel="noopener">ت�
 <a class="s-btn ghost" href="/s/${esc(store.slug)}">متابعة التسوق</a></div>
 </div></main>
 <footer class="s-footer"><p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>
+<script>if(window.pxPurchase)pxPurchase(${Number(o.total) || 0});</script>
 </body></html>`;
 }
 
@@ -1168,4 +1238,4 @@ ${siteHeader('light')}
 ${siteFooter}`);
 }
 
-module.exports = { landing, login: loginPage, register: registerPage, appShell, adminShell, storefront, productPage, checkoutPage, orderPage, comingSoon, notFound, onboarding, egp, esc, pricingPage, themesPage, blogIndex, blogPostPage, blogStaticPage, BLOG_POSTS };
+module.exports = { landing, login: loginPage, register: registerPage, appShell, adminShell, storefront, productPage, checkoutPage, funnelPage, orderPage, comingSoon, notFound, onboarding, egp, esc, pricingPage, themesPage, blogIndex, blogPostPage, blogStaticPage, BLOG_POSTS };

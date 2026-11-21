@@ -838,6 +838,24 @@ const api = {
     const r = db.prepare(`INSERT INTO orders (store_id, number, customer_name, customer_phone, customer_address, governorate, notes, subtotal, shipping, discount, total, coupon_code, payment_method)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
       .run(store.id, number, b.name.trim(), phone, b.address.trim(), b.governorate || '', (b.notes || '').trim(), subtotal, shipping, discount, total, couponCode, payMethod);
+    // funnel attribution
+    if (b.funnel_id) db.prepare('UPDATE funnels SET orders = orders + 1 WHERE id = ? AND store_id = ?').run(b.funnel_id | 0, store.id);
+    // Meta Conversion API (server-to-server), fire-and-forget
+    try {
+      const pxs = (JSON.parse(store.theme_settings || '{}').pixels) || {};
+      if (pxs.meta && pxs.capi) {
+        const sha = s => crypto.createHash('sha256').update(String(s)).digest('hex');
+        fetch(`https://graph.facebook.com/v19.0/${encodeURIComponent(pxs.meta)}/events?access_token=${encodeURIComponent(pxs.capi)}`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data: [{
+            event_name: 'Purchase', event_time: Math.floor(Date.now() / 1000), event_id: number,
+            action_source: 'website', event_source_url: `https://${req.headers.host || ''}/s/${store.slug}`,
+            user_data: { ph: [sha(phone)], country: [sha('eg')] },
+            custom_data: { value: total, currency: 'EGP' }
+          }], ...(pxs.capi_test ? { test_event_code: pxs.capi_test } : {}) })
+        }).catch(() => {});
+      }
+    } catch (e) { /* CAPI must never break checkout */ }
     const oid = r.lastInsertRowid;
     const itemStmt = db.prepare('INSERT INTO order_items (order_id, product_id, name, price, qty, image) VALUES (?, ?, ?, ?, ?, ?)');
     for (const li of lineItems) {
@@ -926,9 +944,9 @@ const server = http.createServer(async (req, res) => {
     }
     if (pathname === '/admin') return html(res, 200, views.adminShell());
 
-    const storeMatch = pathname.match(/^\/s\/([a-z0-9\u0600-\u06FF-]+)(\/p\/(\d+)|\/checkout|\/order\/([A-Z0-9-]+))?\/?$/i);
+    const storeMatch = pathname.match(/^\/s\/([a-z0-9\u0600-\u06FF-]+)(\/p\/(\d+)|\/f\/(\d+)|\/checkout|\/order\/([A-Z0-9-]+))?\/?$/i);
     if (storeMatch) {
-      const [, slug, sub, productId, orderNumber] = storeMatch;
+      const [, slug, sub, productId, funnelId, orderNumber] = storeMatch;
       const store = db.prepare('SELECT * FROM stores WHERE slug = ?').get(slug);
       if (!store) return html(res, 404, views.notFound('المتجر غير موجود', 'تأكد من الرابط أو تواصل مع صاحب المتجر.'));
       const theme = db.prepare('SELECT * FROM themes WHERE id = ?').get(store.theme_id);
@@ -941,6 +959,15 @@ const server = http.createServer(async (req, res) => {
         const product = db.prepare(`SELECT * FROM products WHERE id = ? AND store_id = ? AND status = 'active'`).get(productId, store.id);
         if (!product) return html(res, 404, views.notFound('المنتج غير موجود', 'ربما تم حذفه أو إيقافه.'));
         return html(res, 200, views.productPage(store, product, themeConfig, owner));
+      }
+      if (sub && sub.startsWith('/f/')) {
+        const funnel = db.prepare(`SELECT * FROM funnels WHERE id = ? AND store_id = ? AND status = 'active'`).get(funnelId, store.id);
+        if (!funnel || !funnel.product_id) return html(res, 404, views.notFound('الصفحة غير موجودة', 'ربما توقف هذا الرابط أو حُذف.'));
+        const product = db.prepare(`SELECT * FROM products WHERE id = ? AND store_id = ? AND status = 'active'`).get(funnel.product_id, store.id);
+        if (!product) return html(res, 404, views.notFound('المنتج غير متاح', 'ربما تم حذفه أو إيقافه.'));
+        if (!store.is_published && !owner) return html(res, 200, views.comingSoon(store));
+        db.prepare('UPDATE funnels SET views = views + 1 WHERE id = ?').run(funnel.id);
+        return html(res, 200, views.funnelPage(store, funnel, product, themeConfig, owner));
       }
       if (sub === '/checkout') return html(res, 200, views.checkoutPage(store, themeConfig, owner));
       if (sub && sub.startsWith('/order/')) {
