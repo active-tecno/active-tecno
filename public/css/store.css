@@ -568,7 +568,7 @@ body:has(.pd-sticky) main.pd { padding-bottom: 80px; }
 /* per-theme hero geometry grounded in EO demo measurements */
 .s-hero.hv-photo--void { min-height: calc(100vh - 132px); max-height: 780px; }
 .s-hero.hv-photo--blast { min-height: min(78vh, 620px); }
-.hv-photo--sphinx, .hv-photo--phoenix { width: min(1200px, calc(100% - 48px)); margin: 22px auto 0; border-radius: 18px; overflow: hidden; min-height: min(58vh, 470px); }
+.s-hero.hv-photo--sphinx, .s-hero.hv-photo--phoenix { width: min(1200px, calc(100% - 48px)); margin: 22px auto 0; border-radius: 18px; overflow: hidden; min-height: min(58vh, 470px); }
 .s-hero.hv-photo--hype { min-height: min(70vh, 560px); }
 .s-hero.hv-photo--luxify { min-height: min(74vh, 600px); }
 /* header archetypes */
