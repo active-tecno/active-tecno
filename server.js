@@ -1209,9 +1209,9 @@ const server = http.createServer(async (req, res) => {
     }
     if (pathname === '/admin') return html(res, 200, views.adminShell());
 
-    const storeMatch = pathname.match(/^\/s\/([a-z0-9\u0600-\u06FF-]+)(\/p\/(\d+)|\/f\/(\d+)|\/checkout|\/verified|\/policies|\/blog|\/blog\/([^\/]+)|\/order\/([A-Z0-9-]+))?\/?$/i);
+    const storeMatch = pathname.match(/^\/s\/([a-z0-9\u0600-\u06FF-]+)(\/p\/(\d+)|\/f\/(\d+)|\/checkout|\/verified|\/policies|\/cat\/([^\/]+)|\/blog|\/blog\/([^\/]+)|\/order\/([A-Z0-9-]+))?\/?$/i);
     if (storeMatch) {
-      const [, slug, sub, productId, funnelId, , orderNumber] = storeMatch;
+      const [, slug, sub, productId, funnelId, catName, , orderNumber] = storeMatch;
       const store = db.prepare('SELECT * FROM stores WHERE slug = ?').get(slug);
       if (!store) return html(res, 404, views.notFound('المتجر غير موجود', 'تأكد من الرابط أو تواصل مع صاحب المتجر.'));
       const theme = db.prepare('SELECT * FROM themes WHERE id = ?').get(store.theme_id);
@@ -1241,6 +1241,7 @@ const server = http.createServer(async (req, res) => {
         return html(res, 200, views.storeBlogPost(store, post, themeConfig));
       }
       if (sub === '/policies') return html(res, 200, views.policiesPage(store, themeConfig));
+      if (sub && sub.startsWith('/cat/')) return html(res, 200, views.categoryPage(store, catName, themeConfig, owner, url.searchParams.get('sort') || ''));
       if (sub === '/verified') {
         const stats = db.prepare(`SELECT COUNT(*) c, COALESCE(SUM(total),0) t FROM orders WHERE store_id = ? AND status NOT IN ('cancelled','returned')`).get(store.id);
         return html(res, 200, views.verifiedPage(store, stats, themeConfig));

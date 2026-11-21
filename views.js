@@ -792,7 +792,7 @@ function storeHeader(store, t, cats = []) {
   const brand = `<a class="s-brand" href="/s/${esc(store.slug)}"><span class="s-logo">${esc((store.logo_text || store.name).trim().charAt(0))}</span><span class="s-brand-name">${esc(store.name)}</span></a>`;
   const cartBtn = `<button class="s-cart-btn" onclick="toggleCart(true)" aria-label="السلة">${IC.cart}<span class="s-cart-count" id="cartCount">0</span></button>`;
   const searchBtn = `<button class="s-icon-btn" aria-label="بحث" onclick="document.getElementById('products')?.scrollIntoView({behavior:'smooth'})">${IC.search}</button>`;
-  const navLinks = [...cats.slice(0, 4).map(c => ({ label: c, href: `?cat=${encodeURIComponent(c)}#products` })),
+  const navLinks = [...cats.slice(0, 4).map(c => ({ label: c, href: `/s/${esc(store.slug)}/cat/${encodeURIComponent(c)}` })),
     { label: 'سياسة الاستبدال والاسترجاع', href: `/s/${esc(store.slug)}/policies` },
     { label: 'سياسة الشحن', href: `/s/${esc(store.slug)}/policies` }];
   const linksHtml = navLinks.map(l => `<a href="${esc(l.href)}">${esc(l.label)}</a>`).join('');
@@ -837,23 +837,47 @@ function eoHero(store, products) {
 }
 const storeScripts = store => `<script>window.STORE_SLUG=${JSON.stringify(store.slug)};</script><script src="/public/js/store.js"></script>`;
 
+function productCardHTML(store, lay, p) {
+  const imgs = JSON.parse(p.images || '[]');
+  const off = p.compare_at_price && p.compare_at_price > p.price ? Math.round(100 - p.price * 100 / p.compare_at_price) : 0;
+  const badge = off ? (lay === 'fasty' || lay === 'luxify' ? `<span class="p-off">تخفيضات</span>` : `<span class="p-off">-${off}%</span>`) : '';
+  return `<a class="p-card" data-cat="${esc(p.category)}" data-name="${esc(p.name)}" href="/s/${esc(store.slug)}/p/${p.id}">
+    ${badge}
+    ${p.stock <= 0 ? `<span class="p-out">نفدت الكمية</span>` : ''}
+    <div class="p-img"><img src="${esc(imgs[0] || ph(p.name))}" alt="${esc(p.name)}" loading="lazy"></div>
+    <div class="p-info"><h3>${esc(p.name)}</h3>
+    <div class="p-price"><b>${egp(p.price)}</b>${p.compare_at_price ? `<s>${egp(p.compare_at_price)}</s>` : ''}</div></div>
+    ${lay === 'fasty' ? `<div class="p-actions"><span class="p-heart">${IC.heart}</span><span class="p-add">أضف إلى السلة ${IC.cart}</span></div>` : ''}
+  </a>`;
+}
+function categoryPage(store, cat, t, owner, sort) {
+  const lay = eoLayout(store);
+  const order = sort === 'price_asc' ? 'price ASC' : sort === 'price_desc' ? 'price DESC' : 'created_at DESC';
+  const products = db.prepare(`SELECT id, name, price, compare_at_price, stock, category, images FROM products WHERE store_id = ? AND status = 'active' AND category = ? ORDER BY ${order}`).all(store.id, cat);
+  const allCats = [...new Set(db.prepare(`SELECT category FROM products WHERE store_id = ? AND status = 'active'`).all(store.id).map(r => r.category).filter(Boolean))];
+  const sortSel = `<select class="cat-sort" onchange="location.href='/s/${esc(store.slug)}/cat/${encodeURIComponent(cat)}'+(this.value?'?sort='+this.value:'')">
+    <option value="" ${!sort ? 'selected' : ''}>الأحدث</option>
+    <option value="price_asc" ${sort === 'price_asc' ? 'selected' : ''}>السعر: من الأقل</option>
+    <option value="price_desc" ${sort === 'price_desc' ? 'selected' : ''}>السعر: من الأعلى</option></select>`;
+  return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, `${cat} | ${store.name}`)}</head>
+<body class="store ${t.dark ? 'dark' : ''} t-${esc(store.theme_id)}">
+${demoBar(store)}
+${owner ? `<div class="s-ownerbar">وضع المعاينة — <a href="/app">العودة للوحة التحكم</a></div>` : ''}
+${storeHeader(store, t, allCats)}
+<main class="cat-page">
+<div class="cat-head"><h1>${esc(cat)}</h1>${sortSel}</div>
+${products.length ? `<div class="s-grid">${products.map(p => productCardHTML(store, lay, p)).join('')}</div>` : `<div class="s-empty">لا توجد منتجات في هذا القسم حالياً — <a href="/s/${esc(store.slug)}">تصفح كل المنتجات</a></div>`}
+</main>
+<footer class="s-footer">${socialLinks(store)}<p>يعمل بواسطة <a href="/">اكتف اوردر</a> — الدفع عند الاستلام متاح</p></footer>
+${cartDrawer(store)}
+${storeScripts(store)}
+</body></html>`;
+}
 function storefront(store, t, owner) {
   const lay = eoLayout(store);
   const products = db.prepare(`SELECT id, name, price, compare_at_price, stock, category, images FROM products WHERE store_id = ? AND status = 'active' ORDER BY created_at DESC`).all(store.id);
   const cats = [...new Set(products.map(p => p.category).filter(Boolean))];
-  const cards = products.map(p => {
-    const imgs = JSON.parse(p.images || '[]');
-    const off = p.compare_at_price && p.compare_at_price > p.price ? Math.round(100 - p.price * 100 / p.compare_at_price) : 0;
-    const badge = off ? (lay === 'fasty' || lay === 'luxify' ? `<span class="p-off">تخفيضات</span>` : `<span class="p-off">-${off}%</span>`) : '';
-    return `<a class="p-card" data-cat="${esc(p.category)}" data-name="${esc(p.name)}" href="/s/${esc(store.slug)}/p/${p.id}">
-      ${badge}
-      ${p.stock <= 0 ? `<span class="p-out">نفدت الكمية</span>` : ''}
-      <div class="p-img"><img src="${esc(imgs[0] || ph(p.name))}" alt="${esc(p.name)}" loading="lazy"></div>
-      <div class="p-info"><h3>${esc(p.name)}</h3>
-      <div class="p-price"><b>${egp(p.price)}</b>${p.compare_at_price ? `<s>${egp(p.compare_at_price)}</s>` : ''}</div></div>
-      ${lay === 'fasty' ? `<div class="p-actions"><span class="p-heart">${IC.heart}</span><span class="p-add">أضف إلى السلة ${IC.cart}</span></div>` : ''}
-    </a>`;
-  }).join('');
+  const cards = products.map(p => productCardHTML(store, lay, p)).join('');
   const hero = lay ? eoHero(store, products)
     : `<section class="s-hero"><h1>${esc(store.name)}</h1><p>${esc(store.description)}</p>
 <div class="s-hero-cta"><a class="s-btn" href="#products">تسوّق الآن</a>
@@ -895,7 +919,7 @@ ${imgs.length > 1 ? `<div class="pd-thumbs">${imgs.map((im, i) => `<img src="${e
 ${p.stock > 0 && p.stock <= (p.low_stock_threshold || 3) ? `<div class="pd-low">${IC.flame}باقي ${p.stock} فقط — اطلب الآن</div>` : ''}
 ${p.stock <= 0 ? `<div class="pd-low out">نفدت الكمية مؤقتاً</div>` : `
 <div class="pd-qty"><button onclick="pdQty(-1)">−</button><span id="pdQty">1</span><button onclick="pdQty(1)">+</button></div>
-<button class="s-btn btn-lg full" onclick="addToCart(${p.id}, '${esc(p.name).replace(/'/g, '')}', ${p.price}, ${JSON.stringify(imgs[0] || '')}, +document.getElementById('pdQty').textContent)">أضف إلى السلة 🛒</button>
+<button class="s-btn btn-lg full" onclick="addToCart(${p.id}, '${esc(p.name).replace(/'/g, '')}', ${p.price}, ${JSON.stringify(imgs[0] || '')}, +document.getElementById('pdQty').textContent)">${IC.cart} أضف إلى السلة</button>
 <button class="s-btn btn-lg full buy" onclick="buyNow(${p.id}, '${esc(p.name).replace(/'/g, '')}', ${p.price}, ${JSON.stringify(imgs[0] || '')}, +document.getElementById('pdQty').textContent)">اشتري الآن — دفع عند الاستلام</button>`}
 ${upsell ? `<div class="pd-upsell"><h4>${IC.bulb}يُشترى معه غالباً</h4>
 <div class="pd-upsell-card"><img src="${esc(JSON.parse(upsell.images || '[]')[0] || '')}"><div><b>${esc(upsell.name)}</b><span>${egp(upsell.price)}</span></div>
@@ -1434,4 +1458,4 @@ ${storeHeader(store, t)}
 </body></html>`;
 }
 
-module.exports = { landing, login: loginPage, register: registerPage, appShell, adminShell, storefront, productPage, checkoutPage, funnelPage, orderPage, verifiedPage, policiesPage, storeBlogIndex, storeBlogPost, comingSoon, notFound, onboarding, egp, esc, pricingPage, themesPage, blogIndex, blogPostPage, blogStaticPage, BLOG_POSTS };
+module.exports = { landing, login: loginPage, register: registerPage, appShell, adminShell, storefront, productPage, checkoutPage, funnelPage, orderPage, verifiedPage, policiesPage, categoryPage, storeBlogIndex, storeBlogPost, comingSoon, notFound, onboarding, egp, esc, pricingPage, themesPage, blogIndex, blogPostPage, blogStaticPage, BLOG_POSTS };

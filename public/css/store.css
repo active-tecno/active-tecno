@@ -384,3 +384,41 @@ body.dark .blog-card { background: #131a2b; border-color: #232c44; }
 .t-eo-nue .s-footer{border-top:3px solid #141414}
 .t-eo-nue .p-price b{color:#141414;font-weight:800;font-size:16px}
 .t-eo-nue .p-price s{color:rgba(20,20,20,.65);font-size:12px}
+
+/* ============ Stage G part 2: product page + category page per theme ============ */
+.cat-page{max-width:1100px;margin:0 auto;padding:18px 16px 40px}
+.cat-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.cat-head h1{font-size:24px;margin:0}
+.cat-sort{font:inherit;padding:8px 12px;border:1px solid #E5E7EB;border-radius:8px;background:#fff;cursor:pointer}
+.t-eo-nue .cat-head h1{background:#FFE9A8;border:3px solid #141414;padding:8px 18px;box-shadow:5px 5px 0 #141414}
+.t-eo-nue .cat-sort{border:2.5px solid #141414;border-radius:0;font-weight:700}
+.t-eo-luxify .cat-head h1{font-weight:600;letter-spacing:.01em}
+.t-eo-luxify .cat-sort{border-radius:20px}
+
+/* product page per theme */
+.t-eo-default .pd-gallery img{border-radius:14px}
+.t-eo-default .s-btn.buy{background:#111;color:#fff}
+.t-eo-default .pd-qty button{border:1px solid #D1D5DB;background:#fff}
+.t-eo-sphinx .pd-gallery{background:var(--sf);border:1px solid #E5E7EB;border-radius:12px;padding:10px}
+.t-eo-sphinx .s-btn.buy{background:#111;color:#fff}
+.t-eo-sphinx .pd-price b{font-size:24px}
+.t-eo-fasty .pd-price b{color:#E63946;font-size:24px}
+.t-eo-fasty .s-btn.buy{background:#111;color:#fff}
+.t-eo-fasty .s-btn:not(.buy){border:1px solid #D1D5DB;background:#fff;color:#1f2937}
+.t-eo-fasty .pd-qty button{border:1px solid #D1D5DB;background:#fff;border-radius:8px}
+.t-eo-fasty .pd-upsell-card{border-color:#FECACA}
+.t-eo-luxify .pd-info h1{font-weight:600;letter-spacing:.01em}
+.t-eo-luxify .s-btn{border-radius:30px}
+.t-eo-luxify .s-btn.buy{background:#111;color:#fff}
+.t-eo-luxify .pd-gallery img{border-radius:10px}
+.t-eo-nue .pd-gallery{background:#fff;border:3px solid #141414;box-shadow:8px 8px 0 #141414;padding:0}
+.t-eo-nue .pd-gallery img{border-radius:0}
+.t-eo-nue .pd-thumbs img{border:2.5px solid #141414;border-radius:0}
+.t-eo-nue .pd-cat{background:#C8F31D;border:2.5px solid #141414;color:#141414;padding:3px 12px;font-weight:700;border-radius:0}
+.t-eo-nue .pd-info h1{font-weight:800}
+.t-eo-nue .pd-price b{background:#C8F31D;border:3px solid #141414;color:#141414;padding:6px 14px;font-size:22px}
+.t-eo-nue .pd-desc{background:#fff;border:2.5px solid #141414;padding:12px}
+.t-eo-nue .pd-qty button{border:2.5px solid #141414;background:#fff;border-radius:0;font-weight:800}
+.t-eo-nue .s-btn{border-radius:0;border:3px solid #141414;box-shadow:5px 5px 0 rgba(20,20,20,.35)}
+.t-eo-nue .s-btn.buy{background:#141414;color:#C8F31D}
+.t-eo-nue .pd-upsell{border:3px solid #141414;box-shadow:6px 6px 0 #141414;border-radius:0}
