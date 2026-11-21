@@ -90,7 +90,7 @@ function seed() {
     'eo-phoenix': ['متجر عام', 'ملابس وأزياء'], 'eo-shine': ['مستحضرات تجميل'], 'eo-clear': ['متجر عام']
   };
   const HERO_CARD = {
-    'eo-default': ['classic', 'flat', 'pills'], 'eo-sphinx': ['photo', 'shadow', 'cards'], 'eo-fasty': ['none', 'bordered', 'icons'], 'eo-luxify': ['photo', 'shadow', 'pills'], 'eo-nue': ['promo', 'brutal', 'circles'],
+    'eo-default': ['classic', 'flat', 'pills'], 'eo-sphinx': ['photo', 'shadow', 'cards'], 'eo-fasty': ['none', 'bordered', 'none'], 'eo-luxify': ['photo', 'shadow', 'pills'], 'eo-nue': ['promo', 'brutal', 'circles'],
     'eo-void': ['photo', 'shadow', 'circles'], 'eo-nature': ['split', 'flat', 'cards'], 'eo-blast': ['photo', 'pill', 'icons'], 'eo-hype': ['photo', 'bordered', 'cards'],
     'eo-vantage-el': ['minimal', 'bordered', 'pills'], 'eo-vantage-cos': ['split', 'shadow', 'circles'], 'eo-trendy': ['photo', 'bordered', 'circles'], 'eo-elegance': ['banner', 'shadow', 'circles'],
     'eo-phoenix': ['photo', 'flat', 'cards'], 'eo-shine': ['banner', 'pill', 'circles'], 'eo-clear': ['minimal', 'bordered', 'pills']

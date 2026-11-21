@@ -994,6 +994,7 @@ ${store.whatsapp ? `<a class="s-btn ghost" href="https://wa.me/${escAttr(store.w
     case 'categories': {
       if (!cats.length) return '';
       const cvariant = st.variant || t.cats_style || 'pills';
+      if (cvariant === 'none') return '';
       if (cvariant === 'circles' || cvariant === 'cards' || cvariant === 'icons') {
         const cell = (c) => { const p = products.find(x => x.category === c); const im = p ? JSON.parse(p.images || '[]')[0] : ''; return `<a class="cat-cell" href="/s/${escAttr(store.slug)}/cat/${encodeURIComponent(c)}">${cvariant !== 'icons' ? `<span class="cat-thumb">${im ? `<img src="${escAttr(im)}" alt="" loading="lazy">` : `<i>${esc(c.trim().charAt(0))}</i>`}</span>` : `<span class="cat-ico">${IC.menu}</span>`}<b>${esc(c)}</b></a>`; };
         return `${st.title ? `<h2 class="s-sec-t">${esc(st.title)}</h2>` : ''}<nav class="s-cats v-${esc(cvariant)}" id="products"><a class="cat-cell" href="/s/${escAttr(store.slug)}">${cvariant !== 'icons' ? `<span class="cat-thumb"><i>ك</i></span>` : `<span class="cat-ico">${IC.menu}</span>`}<b>الكل</b></a>${cats.map(cell).join('')}</nav>`;
