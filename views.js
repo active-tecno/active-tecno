@@ -28,6 +28,7 @@ const IC = {
   eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/></svg>',
 };
 
+const { APP_VERSION } = require('./version');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 // Store brand mark: uploaded logo image (theme_settings.logo_img) wins over the letter avatar
 const brandMark = (store, t, cls = 's-logo') => (t && t.logo_img)
@@ -44,9 +45,9 @@ function base(title, body, extraHead = '') {
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Rubik:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/public/css/animate.min.css">
-<link rel="stylesheet" href="/public/css/app.css">
+<link rel="stylesheet" href="/public/css/app.css?v=${APP_VERSION}">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23141924'/%3E%3Cpath d='M9 20l7-11 7 11' stroke='%2327cd27' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-${extraHead}</head><body class="bg-background text-foreground font-arabic antialiased">${body}<script src="/public/js/reveal.js"></script></body></html>`;
+${extraHead}</head><body class="bg-background text-foreground font-arabic antialiased">${body}<script src="/public/js/reveal.js?v=${APP_VERSION}"></script></body></html>`;
 }
 
 const logo = `<a class="flex items-center gap-2 shrink-0" href="/"><span class="grid place-items-center"><svg viewBox="0 0 32 32" width="30" height="30"><rect width="32" height="32" rx="8" fill="#141924"/><path d="M9 20l7-11 7 11" stroke="#27cd27" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="text-[17px] font-bold tracking-tight">اكتف <b class="text-brand">اوردر</b></span></a>`;
@@ -713,9 +714,9 @@ function appShell() {
 <title>لوحة التحكم | اكتف اوردر</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Rubik:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/public/css/dashboard.css">
+<link rel="stylesheet" href="/public/css/dashboard.css?v=${APP_VERSION}">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23141924'/%3E%3Cpath d='M9 20l7-11 7 11' stroke='%2327cd27' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-</head><body class="dash"><div id="root"></div><script src="/public/js/dash-core.js"></script><script src="/public/js/dash-legacy.js"></script><script src="/public/js/dash-home.js"></script><script src="/public/js/dash-orders.js"></script><script src="/public/js/dash-products.js"></script><script src="/public/js/dash-funnels.js"></script><script src="/public/js/dash-marketing.js"></script><script src="/public/js/dash-f5.js"></script><script src="/public/js/dash-f6.js"></script><script src="/public/js/dash-richtext.js"></script><script src="/public/js/dash-pages.js"></script><script src="/public/js/dash-builder.js"></script><script src="/public/js/dash-i18n.js"></script></body></html>`;
+</head><body class="dash"><div id="root"></div><script>window.__APP_VERSION='${APP_VERSION}';</script><script src="/public/js/dash-core.js?v=${APP_VERSION}"></script><script src="/public/js/dash-legacy.js?v=${APP_VERSION}"></script><script src="/public/js/dash-home.js?v=${APP_VERSION}"></script><script src="/public/js/dash-orders.js?v=${APP_VERSION}"></script><script src="/public/js/dash-products.js?v=${APP_VERSION}"></script><script src="/public/js/dash-funnels.js?v=${APP_VERSION}"></script><script src="/public/js/dash-marketing.js?v=${APP_VERSION}"></script><script src="/public/js/dash-f5.js?v=${APP_VERSION}"></script><script src="/public/js/dash-f6.js?v=${APP_VERSION}"></script><script src="/public/js/dash-richtext.js?v=${APP_VERSION}"></script><script src="/public/js/dash-pages.js?v=${APP_VERSION}"></script><script src="/public/js/dash-builder.js?v=${APP_VERSION}"></script><script src="/public/js/dash-i18n.js?v=${APP_VERSION}"></script></body></html>`;
 }
 
 function adminShell() {
@@ -724,8 +725,8 @@ function adminShell() {
 <title>لوحة الإدارة | اكتف اوردر</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Rubik:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/public/css/dashboard.css">
-</head><body class="dash admin"><div id="root"></div><script src="/public/js/admin.js"></script></body></html>`;
+<link rel="stylesheet" href="/public/css/dashboard.css?v=${APP_VERSION}">
+</head><body class="dash admin"><div id="root"></div><script>window.__APP_VERSION='${APP_VERSION}';</script><script src="/public/js/admin.js?v=${APP_VERSION}"></script></body></html>`;
 }
 
 // ---------- storefront ----------
@@ -898,7 +899,7 @@ function eoHero(store, products) {
   if (store.free_shipping_over > 0) slides.push(`<div class="h-slide grad-c"><div class="h-slide-in"><h2>شحن مجاني</h2><p>للطلبات فوق ${egp(store.free_shipping_over)}</p><a class="s-btn" href="#products">ابدأ التسوق</a></div></div>`);
   return `<section class="h-slider" id="hSlider">${slides.join('')}${slides.length > 1 ? `<div class="h-dots">${slides.map((_, i) => `<button class="h-dot${i ? '' : ' on'}" data-i="${i}" aria-label="شريحة ${i + 1}"></button>`).join('')}</div>` : ''}</section>`;
 }
-const storeScripts = store => `<script>window.STORE_SLUG=${JSON.stringify(store.slug)};</script><script src="/public/js/store.js"></script>${designAssets(store).filter(a => a.enabled && a.kind === 'js').map(a => `<script defer src="${esc(a.url)}"></script>`).join('')}`;
+const storeScripts = store => `<script>window.STORE_SLUG=${JSON.stringify(store.slug)};</script><script src="/public/js/store.js?v=${APP_VERSION}"></script>${designAssets(store).filter(a => a.enabled && a.kind === 'js').map(a => `<script defer src="${esc(a.url)}"></script>`).join('')}`;
 
 function productCardHTML(store, lay, p, t) {
   t = t || {};

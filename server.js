@@ -6,6 +6,7 @@ const path = require('path');
 const { db } = require('./db');
 const { seed, hashPassword } = require('./seed');
 const views = require('./views');
+const { APP_VERSION } = require('./version');
 const integ = require('./integrations');
 
 seed();
@@ -123,6 +124,7 @@ async function readJSON(req) {
   try { return JSON.parse(raw); } catch { return null; }
 }
 function json(res, code, obj) {
+  res.setHeader('X-App-Version', APP_VERSION);
   const body = JSON.stringify(obj);
   res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8' });
   res.end(body);

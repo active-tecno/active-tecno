@@ -7,6 +7,12 @@ const fmtDate = d => new Date(String(d).replace(' ', 'T') + 'Z').toLocaleDateStr
 async function api(path, opts = {}) {
   if (opts.body) { opts.headers = { 'Content-Type': 'application/json' }; opts.body = JSON.stringify(opts.body); }
   const r = await fetch(path, opts);
+  // deploy handshake: if the server was redeployed under us, reload once to fetch matching assets
+  const srvV = r.headers.get('x-app-version');
+  if (srvV && window.__APP_VERSION && srvV !== window.__APP_VERSION) {
+    const last = +(sessionStorage.getItem('at_vreload') || 0);
+    if (Date.now() - last > 60000) { sessionStorage.setItem('at_vreload', Date.now()); location.reload(); }
+  }
   if (r.status === 401) { location.href = '/login'; throw new Error('auth'); }
   if (r.status === 403) { location.href = '/app'; throw new Error('forbidden'); }
   const d = await r.json().catch(() => ({}));
