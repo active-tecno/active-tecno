@@ -169,10 +169,13 @@ registerView('products/create', async () => {
             <select onchange="rteCmd('formatBlock', this.value); this.value=''"><option value="" selected>عادي</option><option value="h2">عنوان كبير</option><option value="h3">عنوان متوسط</option><option value="h4">عنوان صغير</option><option value="p">نص عادي</option><option value="blockquote">اقتباس</option></select>
             <button type="button" onclick="rteCmd('bold')"><b>B</b></button><button type="button" onclick="rteCmd('italic')"><i>I</i></button><button type="button" onclick="rteCmd('underline')"><u>U</u></button><button type="button" onclick="rteCmd('strikeThrough')"><s>S</s></button>
             <button type="button" onclick="rteCmd('insertUnorderedList')">• قائمة</button><button type="button" onclick="rteCmd('insertOrderedList')">1. قائمة</button>
+            <button type="button" onclick="rteCmd('justifyRight')">⇤</button><button type="button" onclick="rteCmd('justifyCenter')">⇋</button><button type="button" onclick="rteCmd('justifyLeft')">⇥</button>
             <button type="button" onclick="rteLink()">${I('link')} رابط</button>
-            <label class="rte-color" title="لون النص">A<input type="color" onchange="rteCmd('foreColor', this.value)"></label>
+            <button type="button" onclick="rteImage()">${I('image')} صورة</button>
+            <button type="button" onclick="rteVideo()">${I('video')} فيديو</button>
+            <button type="button" onclick="rteSource(this)">&lt;/&gt; كود</button>
+            <label class="rte-color" title="لون النص">لون<input type="color" onchange="rteCmd('foreColor', this.value)"></label>
             <button type="button" onclick="rteCmd('removeFormat')">مسح التنسيق</button>
-            <button type="button" onclick="pfToggleExpand()">${I('expand')}</button>
           </div>
           <div id="pf-desc" class="d-input rte" contenteditable="true">${p?.description || ''}</div>
         </div>
@@ -280,6 +283,9 @@ function renderPfVars() {
 }
 function rteCmd(c, v) { $('#pf-desc').focus(); document.execCommand(c, false, v || null); }
 function rteLink() { const u = prompt('رابط:'); if (u) rteCmd('createLink', u); }
+function rteImage() { const u = prompt('رابط الصورة:'); if (u) rteCmd('insertImage', u); }
+function rteVideo() { const u = prompt('رابط الفيديو (YouTube أو mp4):'); if (!u) return; const m = u.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([\w-]+)/); const html = m ? '<iframe src="https://www.youtube.com/embed/' + m[1] + '" style="width:100%;aspect-ratio:16/9;border:0" allowfullscreen></iframe>' : '<video src="' + u + '" controls style="width:100%"></video>'; rteCmd('insertHTML', html); }
+function rteSource(btn) { const ed = $('#pf-desc'); if (ed.dataset.src === '1') { ed.innerHTML = ed.textContent; ed.dataset.src = ''; ed.contentEditable = 'true'; btn.classList.remove('on'); } else { ed.dataset.src = '1'; ed.textContent = ed.innerHTML; ed.contentEditable = 'true'; btn.classList.add('on'); } }
 function pfToggleExpand() { const on = $('#pf-basics').classList.toggle('expanded'); $('#pf-expand').innerHTML = on ? 'تصغير' : 'تكبير'; }
 // ---------- advanced settings modal ----------
 function advSwitch(key, label) {
