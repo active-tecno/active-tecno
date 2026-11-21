@@ -438,6 +438,7 @@ function drawChart(daily) {
 
 // ---------- router ----------
 async function route() {
+  closeModal();
   const hash = currentRoute();
   const view = VIEWS[hash] || VIEWS.overview;
   const c = $('#dContent');
