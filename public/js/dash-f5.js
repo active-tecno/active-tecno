@@ -201,20 +201,20 @@ registerView('referral', async () => {
   const wSt = { pending: '<span class="chip st-new">قيد المراجعة</span>', paid: '<span class="chip st-delivered">تم الدفع</span>', rejected: '<span class="chip st-cancelled">مرفوض</span>' };
   return `
   <div class="d-page">
-    ${topBar('نظام التسويق بالعمولة', 'عمولة 20% من كل اشتراك يتم عبر رابطك — مدى الاشتراك الأول', '')}
-    <div class="d-card stats-grid">
-      <div class="stat"><div class="stat-ic">${I('percent')}</div><div><b>${egp(d.balance)}</b><span>عمولتك الحالية</span></div></div>
-      <div class="stat"><div class="stat-ic">${I('cash')}</div><div><b>${egp(d.paid)}</b><span>تم سحبه</span></div></div>
-      <div class="stat"><div class="stat-ic">${I('link')}</div><div><b>${d.referrals.length}</b><span>تسجيل عبر رابطك</span></div></div>
+    ${topBar('اربح معنا بالتسويق بالعمولة', 'شارك رابط المنصة مع التجار واحصل على عمولة نقدية عن كل تاجر يشترك من خلالك', '')}
+    <div class="d-card ref-earn">
+      <span class="ref-ic">${I('wallet')}</span>
+      <div><span class="muted small">عمولتك</span><b class="ref-amt">${egp(d.balance)}</b></div>
     </div>
     <div class="d-card">
-      <h3>${I('link')} رابط الإحالة الخاص بك</h3>
-      <p class="muted">شارك رابط المنصة بكود الإحالة الخاص بك وستحصل على عمولة 20% (10 ج.م) من أول اشتراك يدفعه كل تاجر يسجل عبرك.</p>
-      <div class="copy-row"><input class="d-input ltr" readonly value="${link}" id="refPlatLink"><button class="btn primary" onclick="copyEl('refPlatLink')">نسخ الرابط</button></div>
+      <p style="font-weight:700;line-height:2">انسخ رابط الإحالة الخاص بك وشاركه مع أي تاجر — عندما يسجل ويدفع أول اشتراك تحصل على عمولة 20% (10 ج.م) نقدًا. تُسحب العمولة إلى حساب بنكي أو فودافون كاش عبر الدعم.</p>
+      <div class="d-note"><span class="n-ic">${I('eye')}</span><div><b>ملاحظة</b><p class="muted" style="margin:2px 0 0">يمكنك سحب أي مبلغ حتى رصيد عمولاتك المكتسبة، ويراجع الفريق كل طلب قبل التحويل.</p></div></div>
+      <label class="d-label" style="margin-top:14px">الرابط الخاص بك</label>
+      <input class="d-input ltr" readonly value="${link}" id="refPlatLink" onclick="this.select()">
     </div>
     ${d.referrals.length ? `<div class="d-card"><h3>التسجيلات عبر رابطك</h3>
       <table class="d-table"><thead><tr><th>التاجر</th><th>العمولة</th><th>الحالة</th><th>التاريخ</th></tr></thead><tbody>
-      ${d.referrals.map(r => `<tr><td><b>${esc(r.referred_name)}</b></td><td>${egp(r.commission)}</td><td>${r.status === 'pending' ? '<span class="chip">لم يشترك بعد</span>' : r.status === 'credited' ? '<span class="chip st-delivered">مضافة لرصيدك</span>' : '<span class="chip st-shipped">مدفوعة</span>'}</td><td class="muted small">${fmtDate(r.created_at)}</td></tr>`).join('')}</tbody></table></div>` : ''}
+      ${d.referrals.map(r => `<tr><td><b>${esc(r.referred_name)}</b></td><td>${egp(r.commission)}</td><td>${r.status === 'pending' ? '<span class="chip">لم يشترك بعد</span>' : r.status === 'credited' ? '<span class="chip st-delivered">مضافة لرصيدك</span>' : '<span class="chip st-shipped">مدفوعة</span>'}</td><td class="muted small ltr">${fmtDateNum(r.created_at)}</td></tr>`).join('')}</tbody></table></div>` : ''}
     <div class="d-card">
       <h3>${I('wallet')} سحب العمولة</h3>
       <p class="muted">اسحب رصيدك عبر InstaPay أو Vodafone Cash — يراجع الفريق الطلب ويحوّل خلال أيام عمل.</p>
@@ -225,7 +225,7 @@ registerView('referral', async () => {
       </div>
       <button class="btn primary" style="margin-top:14px" onclick="wdSave()">طلب سحب</button>
       ${d.withdrawals.length ? `<table class="d-table" style="margin-top:14px"><thead><tr><th>المبلغ</th><th>الوسيلة</th><th>الحالة</th><th>التاريخ</th></tr></thead><tbody>
-        ${d.withdrawals.map(w => `<tr><td>${egp(w.amount)}</td><td>${w.method === 'instapay' ? 'InstaPay' : 'Vodafone Cash'}</td><td>${wSt[w.status] || w.status}</td><td class="muted small">${fmtDate(w.created_at)}</td></tr>`).join('')}</tbody></table>` : ''}
+        ${d.withdrawals.map(w => `<tr><td>${egp(w.amount)}</td><td>${w.method === 'instapay' ? 'InstaPay' : 'Vodafone Cash'}</td><td>${wSt[w.status] || w.status}</td><td class="muted small ltr">${fmtDateNum(w.created_at)}</td></tr>`).join('')}</tbody></table>` : ''}
     </div>
   </div>`;
 });

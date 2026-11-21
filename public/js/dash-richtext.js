@@ -13,9 +13,9 @@ const RT_IC = {
   code: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6l-6 6 6 6M16 6l6 6-6 6"/></svg>',
 };
 
-function richEditorHTML(id, initialHtml) {
+function richEditorHTML(id, extraCls) {
   return `
-  <div class="rt-wrap" id="rt-${id}">
+  <div class="rt-wrap${extraCls ? ' ' + extraCls : ''}" id="rt-${id}">
     <div class="rt-bar" dir="ltr">
       <select class="rt-fmt" data-rt-fmt title="نمط الفقرة">
         <option value="p">Normal</option><option value="h1">Heading 1</option><option value="h2">Heading 2</option><option value="h3">Heading 3</option>

@@ -132,12 +132,12 @@ registerView('ui-blocks', async () => {
     <section class="uib-sec">
       <h3 class="cf-title">اعلي ال header</h3>
       <div class="tg-row"><label class="tg rev"><input type="checkbox" id="uibTopHtml" ${u.top_on ? 'checked' : ''} onchange="uibHtmlMode('uibTop', this.checked)"><i></i><span>تفعيل محرر html</span></label></div>
-      <div style="margin-top:10px">${richEditorHTML('uibTop')}</div>
+      <div style="margin-top:10px">${richEditorHTML('uibTop', 'rt-sm')}</div>
     </section>
     <section class="uib-sec">
       <h3 class="cf-title">اسفل ال header</h3>
       <div class="tg-row"><label class="tg rev"><input type="checkbox" id="uibBottomHtml" ${u.bottom_on ? 'checked' : ''} onchange="uibHtmlMode('uibBottom', this.checked)"><i></i><span>تفعيل محرر html</span></label></div>
-      <div style="margin-top:10px">${richEditorHTML('uibBottom')}</div>
+      <div style="margin-top:10px">${richEditorHTML('uibBottom', 'rt-sm')}</div>
     </section>
     <div class="save-float"><button class="save-pill" onclick="uibSave()">${I('check')} حفظ</button></div>
   </div>`, after: () => {
