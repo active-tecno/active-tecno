@@ -662,3 +662,24 @@ body:has(.pd-sticky) main.pd { padding-bottom: 80px; }
 .s-features.v-strip { display: flex; flex-wrap: wrap; gap: 0; border-block: 1px solid color-mix(in srgb, var(--sp) 10%, transparent); padding: 6px 0; }
 .s-features.v-strip .s-feat { flex: 1 1 180px; padding: 14px 18px; border-inline-end: 1px solid color-mix(in srgb, var(--sp) 10%, transparent); }
 .s-features.v-strip .s-feat:last-child { border-inline-end: 0; }
+
+/* preset variants round 2 + mobile menu contact + owner-configured payment chips */
+.s-faq.v-minimal details { border: 0; padding: 14px 4px; margin: 0; border-bottom: 2px solid color-mix(in srgb, var(--sa) 35%, transparent); border-radius: 0; }
+.s-faq.v-minimal summary { font-weight: 700; color: var(--sa); }
+.s-revs.v-quote .s-revs-row { display: grid; gap: 16px; max-width: 720px; margin: 0 auto; }
+.s-revs.v-quote .s-rev { text-align: center; border: 0; box-shadow: none; background: transparent; padding: 18px 26px; }
+.s-revs.v-quote .s-rev p { font-size: 17px; line-height: 1.9; font-style: italic; }
+.s-revs.v-quote .s-rev p::before { content: '"'; display: block; font-size: 42px; line-height: .6; color: var(--sa); font-style: normal; margin-bottom: 8px; }
+.s-cats.v-list { display: grid; gap: 0; padding: 8px 20px; }
+.s-cats.v-list .s-cat, .s-cats.v-list .cat-cell { display: flex; justify-content: space-between; align-items: center; width: 100%; text-align: start; padding: 14px 6px; border: 0; border-bottom: 1px solid color-mix(in srgb, var(--sp) 10%, transparent); border-radius: 0; background: none; font-size: 15px; font-weight: 600; color: var(--sp); }
+.s-cats.v-list .cat-cell .cat-thumb { display: none; }
+.s-cats.v-list .s-cat::after, .s-cats.v-list .cat-cell b::after { content: '‹'; color: var(--sa); font-weight: 800; margin-inline-start: auto; }
+.s-blog.v-mag .s-blog-row { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; }
+.s-blog.v-mag .s-blog-card:first-child { grid-row: span 3; background: var(--ssf); border-radius: var(--sr); padding: 26px; }
+.s-blog.v-mag .s-blog-card:first-child b { font-size: 21px; }
+.mm-contact { border-top: 1px solid color-mix(in srgb, var(--sp) 12%, transparent); margin-top: 12px; padding-top: 12px; display: grid; gap: 6px; font-size: 13.5px; }
+.mm-contact p { color: color-mix(in srgb, var(--sp) 75%, transparent); }
+.mm-contact a { font-weight: 700; direction: ltr; display: inline-block; }
+.s-pay-chips { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 10px 0 4px; }
+.s-pay-chip { border: 1px solid color-mix(in srgb, var(--sp) 18%, transparent); border-radius: 8px; padding: 5px 12px; font-size: 12px; font-weight: 600; color: color-mix(in srgb, var(--sp) 80%, transparent); background: color-mix(in srgb, var(--sp) 4%, transparent); }
+@media (max-width: 640px) { .s-blog.v-mag .s-blog-row { grid-template-columns: 1fr; } .s-blog.v-mag .s-blog-card:first-child { grid-row: auto; } }

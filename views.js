@@ -771,7 +771,20 @@ function themeOverrides(t) {
   add('main_padding_top', v => /^\d{1,3}$/.test(String(v)) && `.store main{padding-top:${v}px!important}`);
   add('cats_strip_bg', v => col(v) && `.s-cats{background:${v}!important}`);
   add('cats_strip_color', v => col(v) && `.s-cats a,.s-cats .s-cat{color:${v}!important}`);
+  add('hero_subtitle_color', v => col(v) && `.s-hero p{color:${v}!important}`);
+  add('hero_cta_bg', v => col(v) && `.s-hero .s-btn{background:${v}!important}`);
+  add('hero_cta_color', v => col(v) && `.s-hero .s-btn{color:${v}!important}`);
+  add('hero_cta_weight', v => /^[1-9]00$/.test(String(v)) && `.s-hero .s-btn{font-weight:${v}!important}`);
   return rules.length ? `<style>${rules.join('\n')}</style>` : '';
+}
+// Owner-configured footer payment-method chips: only render when the merchant
+// explicitly enables them AND enters the method names. Off by default; no payment
+// relationship is asserted by the platform.
+function footerPayments(t) {
+  if (!t || !t.footer_payments || !t.footer_payments_list) return '';
+  const methods = String(t.footer_payments_list).split(/[،,]/).map(s => s.trim()).filter(Boolean).slice(0, 8);
+  if (!methods.length) return '';
+  return `<div class="s-pay-chips">${methods.map(m => `<span class="s-pay-chip">${esc(m)}</span>`).join('')}</div>`;
 }
 function pixelSnippets(store) {
   let px = {}; try { px = (JSON.parse(store.theme_settings || '{}').pixels) || {}; } catch (e) {}
@@ -888,7 +901,7 @@ function storeHeader(store, t, cats = []) {
   <div class="fh-side fh-right"><button class="s-icon-btn" onclick="document.querySelector('.fh-links').classList.toggle('open')">${IC.menu}<span>القائمة</span></button><button class="s-icon-btn" aria-label="المفضلة">${IC.heart}</button>${searchBtn}</div>
   ${brand}
   <div class="fh-side fh-left">${cartBtn}<span class="fh-total" id="cartTotalHead"></span></div>
-  <nav class="fh-links">${linksHtml}</nav>
+  <nav class="fh-links">${linksHtml}${t.mobile_menu_contact ? `<div class="mm-contact">${t.mobile_menu_msg_ar ? `<p>${esc(t.mobile_menu_msg_ar)}</p>` : ''}${t.mobile_menu_msg_en ? `<p class="mm-en" dir="ltr">${esc(t.mobile_menu_msg_en)}</p>` : ''}${(t.mobile_menu_phone || store.phone) ? `<a href="tel:${esc(t.mobile_menu_phone || store.phone)}">${esc(t.mobile_menu_phone || store.phone)}</a>` : ''}</div>` : ''}</nav>
 </header>`;
   }
   if (lay === 'blast' || lay === 'clear') {
@@ -977,7 +990,7 @@ ${uiBlocks(store, 'top')}${storeHeader(store, t, allCats)}${uiBlocks(store, 'bot
 <div class="cat-head"><h1>${esc(cat)}</h1>${sortSel}</div>
 ${products.length ? `<div class="s-grid">${products.map(p => productCardHTML(store, lay, p, t)).join('')}</div>` : `<div class="s-empty">لا توجد منتجات في هذا القسم حالياً — <a href="/s/${esc(store.slug)}">تصفح كل المنتجات</a></div>`}
 </main>
-<footer class="s-footer">${socialLinks(store)}<p>يعمل بواسطة <a href="/">اكتف اوردر</a> — الدفع عند الاستلام متاح</p></footer>
+<footer class="s-footer">${socialLinks(store)}${footerPayments(t)}<p>يعمل بواسطة <a href="/">اكتف اوردر</a> — الدفع عند الاستلام متاح</p></footer>
 ${cartDrawer(store, t)}
 ${storeScripts(store)}
 </body></html>`;
@@ -1142,7 +1155,7 @@ ${renderZone(store, 'home', 'below_header', ctx)}
 ${renderZone(store, 'home', 'content', ctx)}
 ${store.free_shipping_over ? `<div class="s-freeship">${IC.truck}شحن مجاني للطلبات فوق ${egp(store.free_shipping_over)}</div>` : ''}
 ${renderZone(store, 'home', 'above_footer', ctx)}
-<footer class="s-footer">${socialLinks(store)}${t.footer_text ? `<p>${esc(t.footer_text)}</p>` : ''}${t.trust_line ? `<p class="s-trust">${esc(t.trust_line)}</p>` : ''}<p>يعمل بواسطة <a href="/">اكتف اوردر</a> — الدفع عند الاستلام متاح</p></footer>
+<footer class="s-footer">${socialLinks(store)}${footerPayments(t)}${t.footer_text ? `<p>${esc(t.footer_text)}</p>` : ''}${t.trust_line ? `<p class="s-trust">${esc(t.trust_line)}</p>` : ''}<p>يعمل بواسطة <a href="/">اكتف اوردر</a> — الدفع عند الاستلام متاح</p></footer>
 ${renderZone(store, 'home', 'below_footer', ctx)}
 ${cartDrawer(store, t)}
 ${storeScripts(store)}
@@ -1231,7 +1244,7 @@ ${reviews.length ? reviews.map(r => `<div class="pd-review"><div class="pd-revie
 ${similar.length ? `<section class="pd-similar wrap"><h2>منتجات مشابهة</h2><div class="s-grid">${similar.map(sp => productCardHTML(store, lay, sp, t)).join('')}</div></section>` : ''}
 ${renderZone(store, 'product', 'content', ctx)}
 ${renderZone(store, 'product', 'above_footer', ctx)}
-<footer class="s-footer">${socialLinks(store)}${t.footer_text ? `<p>${esc(t.footer_text)}</p>` : ''}<p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>
+<footer class="s-footer">${socialLinks(store)}${footerPayments(t)}${t.footer_text ? `<p>${esc(t.footer_text)}</p>` : ''}<p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>
 ${renderZone(store, 'product', 'below_footer', ctx)}
 ${S.sticky_buy && !out ? `<div class="pd-sticky"><img src="${esc(imgs[0] || '')}" alt=""><div class="pd-sticky-info"><b>${esc(p.name)}</b><span>${money(p.price)}</span></div><button class="s-btn buy" onclick="${S.buy_same_page ? `document.getElementById('pdOrder').scrollIntoView({behavior:'smooth'})` : `buyNow(${p.id}, '${jsName}', ${p.price}, ${JSON.stringify(imgs[0] || '')}, ${qtyVal})`}">${esc(buyText)}</button></div>` : ''}
 ${cartDrawer(store, t)}
@@ -1321,7 +1334,7 @@ ${demoFormNotice(store)}
 </div></main>
 ${renderZone(store, 'checkout', 'content', ctx)}
 ${renderZone(store, 'checkout', 'above_footer', ctx)}
-<footer class="s-footer">${socialLinks(store)}${t.footer_text ? `<p>${esc(t.footer_text)}</p>` : ''}<p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>
+<footer class="s-footer">${socialLinks(store)}${footerPayments(t)}${t.footer_text ? `<p>${esc(t.footer_text)}</p>` : ''}<p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>
 ${renderZone(store, 'checkout', 'below_footer', ctx)}
 ${storeScripts(store)}
 <script>track('begin_checkout'); renderCheckout(); loadPayMethods();</script>
@@ -1366,7 +1379,7 @@ ${owner ? `<div class="s-ownerbar">وضع المعاينة — <a href="/app#/fu
   </form>`}
 </section>
 </main>
-<footer class="s-footer"><p>يعمل بواسطة <a href="/">اكتف اوردر</a> — الدفع عند الاستلام متاح</p></footer>
+<footer class="s-footer">${footerPayments(t)}<p>يعمل بواسطة <a href="/">اكتف اوردر</a> — الدفع عند الاستلام متاح</p></footer>
 ${storeScripts(store)}
 <script>
 track('page_view', ${p.id});
@@ -1404,7 +1417,7 @@ ${p.category_name ? `<span class="blog-cat">${esc(p.category_name)}</span>` : ''
 <span class="blog-date">${esc((p.created_at || '').slice(0, 10))}</span></a>`).join('')}</div>`
   : `<div class="s-empty">لا توجد مقالات منشورة بعد — تابعنا قريباً</div>`}
 </main>
-<footer class="s-footer"><p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>
+<footer class="s-footer">${footerPayments(t)}<p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>
 ${storeScripts(store)}
 </body></html>`;
 }
@@ -1422,7 +1435,7 @@ ${p.category_name ? `<span class="blog-cat">${esc(p.category_name)}</span>` : ''
 <article class="blog-body">${p.body}</article>
 ${more.length ? `<h3 class="blog-more-t">مقالات أخرى</h3><div class="blog-grid">${more.map(m => `<a class="blog-card" href="/s/${esc(store.slug)}/blog/${esc(m.slug)}"><h3>${esc(m.title)}</h3></a>`).join('')}</div>` : ''}
 </main>
-<footer class="s-footer"><p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>
+<footer class="s-footer">${footerPayments(t)}<p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>
 ${storeScripts(store)}
 </body></html>`;
 }
@@ -1442,7 +1455,7 @@ ${demoBar(store)}
 <p style="font-size:13px;color:#777;margin-top:14px">هذه الأرقام محسوبة لحظياً من سجلات الطلبات الفعلية على المنصة، ولا يمكن للمتجر تعديلها.</p>
 <a class="s-btn" href="/s/${esc(store.slug)}">تصفح المتجر</a>
 </div></main>
-<footer class="s-footer"><p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>
+<footer class="s-footer">${footerPayments(t)}<p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>
 </body></html>`;
 }
 
@@ -1492,7 +1505,7 @@ ${waLink ? `<a class="s-btn" href="${waLink}" target="_blank" rel="noopener">ت�
 ${homeBtn ? `<a class="s-btn ghost" href="/s/${esc(store.slug)}">متابعة التسوق</a>` : ''}</div>
 </div>
 ${downsellCard}</main>
-<footer class="s-footer"><p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>
+<footer class="s-footer">${footerPayments(t)}<p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>
 <script>if(window.pxPurchase)pxPurchase(${Number(o.total) || 0});</script>
 </body></html>`;
 }
@@ -1823,7 +1836,7 @@ function policiesPage(store, t) {
 ${demoBar(store)}
 ${storeHeader(store, t)}
 <main style="max-width:760px;margin:24px auto;padding:0 16px">${body}</main>
-<footer class="s-footer">${socialLinks(store)}<p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>
+<footer class="s-footer">${socialLinks(store)}${footerPayments(t)}<p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>
 </body></html>`;
 }
 
@@ -1872,7 +1885,7 @@ function builderRender(store, t, page) {
     },
     announcement: store.announcement || '',
     header: storeHeader(store, t, cats),
-    footer: `<footer class="s-footer">${socialLinks(store)}${t.footer_text ? `<p>${esc(t.footer_text)}</p>` : ''}${t.trust_line ? `<p class="s-trust">${esc(t.trust_line)}</p>` : ''}<p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>`,
+    footer: `<footer class="s-footer">${socialLinks(store)}${footerPayments(t)}${t.footer_text ? `<p>${esc(t.footer_text)}</p>` : ''}${t.trust_line ? `<p class="s-trust">${esc(t.trust_line)}</p>` : ''}<p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>`,
     fixed, fixedLabel,
     zones,
     theme_schema: themeSchema,
@@ -1888,7 +1901,7 @@ ${uiBlocks(store, 'top')}
 ${storeHeader(store, t)}
 ${uiBlocks(store, 'bottom')}
 <main class="s-page"><h1>${esc(pg.title)}</h1><div class="s-page-body">${pg.content}</div></main>
-<footer class="s-footer">${socialLinks(store)}${t.footer_text ? `<p>${esc(t.footer_text)}</p>` : ''}<p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>
+<footer class="s-footer">${socialLinks(store)}${footerPayments(t)}${t.footer_text ? `<p>${esc(t.footer_text)}</p>` : ''}<p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>
 ${storeScripts(store)}
 </body></html>`;
 }

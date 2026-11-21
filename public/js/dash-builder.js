@@ -41,10 +41,9 @@ const B_PRESETS = {
       ['العروض والخصومات', [['كيف أعرف عن العروض الجديدة؟', 'تابع صفحة المتجر وقسم العروض باستمرار.'], ['هل يوجد خصم على الكميات؟', 'تتوفر خصومات خاصة على الطلبات الكبيرة.'], ['هل يمكن استخدام أكثر من كوبون؟', 'يُستخدم كوبون واحد لكل طلب.']]],
       ['الضمان والجودة', [['ما مدة الضمان؟', 'ضمان استبدال ضد عيوب الصناعة حسب نوع المنتج.'], ['كيف أطلب الضمان؟', 'تواصل معنا بصورة العيب ورقم الطلب.'], ['هل الفحص متاح عند الاستلام؟', 'عاين طلبك قبل الدفع حسب شركة الشحن.']]],
     ];
-    const styles = [['simple', 'بسيط'], ['boxed', 'صناديق'], ['columns', 'عمودان'], ['numbered', 'مرقّم']];
+    const styles = [['simple', 'بسيط'], ['boxed', 'صناديق'], ['columns', 'عمودان'], ['numbered', 'مرقّم'], ['minimal', 'مينيمال']];
     const out = [];
     for (const [v, vl] of styles) for (const [t, items] of topics) out.push([t + ' (' + vl + ')', 'شكل ' + vl + ' عن ' + t, { variant: v, title: 'أسئلة عن ' + t, items }]);
-    for (const [t, items] of topics) out.push([t + ' (مختصر)', 'إجابات قصيرة عن ' + t, { variant: 'simple', title: t, items: items.slice(0, 3).map(([q, a]) => ({ q, a: a.split('،')[0].split('.')[0] + '.' })) }]);
     return out;
   })(),
   features: (() => {
@@ -66,10 +65,12 @@ const B_PRESETS = {
   })(),
   reviews: (() => {
     const out = [];
-    const cardsSets = [[6, 'آراء عملائنا'], [3, 'آخر التقييمات'], [4, 'ماذا قالوا عنا'], [8, 'تقييمات موثقة'], [2, 'أبرز الآراء'], [5, 'تجارب المشترين']];
-    const compactSets = [[8, 'ماذا قالوا عنا'], [5, ''], [10, 'كل التقييمات'], [4, 'آراء سريعة'], [6, 'من عملائنا']];
-    for (const [limit, title] of cardsSets) out.push(['كروت آراء — ' + (title || 'بدون عنوان'), 'كروت تعرض ' + limit + ' تقييمات', { variant: 'cards', title, limit }]);
+    const cardsSets = [[6, 'آراء عملائنا'], [3, 'آخر التقييمات'], [4, 'ماذا قالوا عنا'], [8, 'تقييمات موثقة']];
+    const compactSets = [[8, 'ماذا قالوا عنا'], [5, ''], [10, 'كل التقييمات'], [4, 'آراء سريعة']];
+    const quoteSets = [[3, 'اقتباسات العملاء'], [2, 'أقوى الآراء'], [4, 'شهادات موثقة']];
+    for (const [limit, title] of cardsSets) out.push(['كروت آراء — ' + title, 'كروت تعرض ' + limit + ' تقييمات', { variant: 'cards', title, limit }]);
     for (const [limit, title] of compactSets) out.push(['قائمة مضغوطة — ' + (title || 'بدون عنوان'), 'قائمة تعرض ' + limit + ' تقييمات', { variant: 'compact', title, limit }]);
+    for (const [limit, title] of quoteSets) out.push(['اقتباسات — ' + title, 'اقتباسات كبيرة تعرض ' + limit + ' تقييمات', { variant: 'quote', title, limit }]);
     return out;
   })(),
   categories: [
@@ -82,8 +83,8 @@ const B_PRESETS = {
     ['شبكة بلا عنوان', 'كروت نظيفة', { variant: 'grid', title: '' }],
     ['شبكة أقسامنا', 'كروت بعنوان بسيط', { variant: 'grid', title: 'أقسامنا' }],
     ['كروت صور', 'بطاقات بصور مصغرة', { variant: 'cards', title: 'تصفح الأقسام' }],
-    ['كروت صور بعنوان', 'بطاقات مصورة بعنوان', { variant: 'cards', title: 'تسوق حسب القسم' }],
-    ['كروت صور نظيفة', 'بطاقات مصورة بلا عنوان', { variant: 'cards', title: '' }],
+    ['قائمة أقسام', 'صفوف عمودية بأسهم', { variant: 'list', title: 'الأقسام' }],
+    ['قائمة بلا عنوان', 'صفوف عمودية نظيفة', { variant: 'list', title: '' }],
   ],
   marquee: [
     ['شريط ثقة داكن', 'عبارات ثقة أساسية', { items: ['شحن سريع لكل المحافظات', 'الدفع عند الاستلام', 'إرجاع سهل خلال 14 يوم'], speed: 22, bg: '#141924', color: '#ffffff' }],
@@ -99,7 +100,7 @@ const B_PRESETS = {
   blog: [
     ['شبكة مقالات', 'أحدث 3 مقالات', { variant: 'grid', title: 'من المدونة', limit: 3 }],
     ['قائمة', 'مقالات بشكل قائمة', { variant: 'list', title: 'آخر المقالات', limit: 4 }],
-    ['بدون عنوان', 'شبكة نظيفة', { variant: 'grid', title: '', limit: 3 }],
+    ['مجلة', 'مقال رئيسي مع مقالات جانبية', { variant: 'mag', title: 'من المدونة', limit: 4 }],
   ],
 };
 // theme settings drawer groups: [group, [[key, label, kind, default]]]
@@ -164,6 +165,19 @@ const B_THEME_GROUPS = [
     [null, 'السلة', 'sep'],
     ['cart_suggest', 'إظهار منتجات مقترحة أسفل منتجات السلة', 'check', false],
     ['cart_suggest_title', 'عنوان المنتجات المقترحة في السلة', 'text', ''],
+    [null, 'الهيرو', 'sep'],
+    ['hero_subtitle_color', 'لون النص الفرعي للهيرو', 'color_opt'],
+    ['hero_cta_bg', 'لون خلفية زر الهيرو', 'color_opt'],
+    ['hero_cta_color', 'لون نص زر الهيرو', 'color_opt'],
+    ['hero_cta_weight', 'سماكة خط زر الهيرو', 'select', [['', 'افتراضي'], ['500', 'عادي (500)'], ['600', 'SemiBold (600)'], ['700', 'Bold (700)'], ['800', 'ExtraBold (800)']]],
+    [null, 'قائمة الموبايل', 'sep'],
+    ['mobile_menu_contact', 'إظهار رسالة تواصل أسفل قائمة الموبايل', 'check', false],
+    ['mobile_menu_msg_ar', 'رسالة التواصل بالعربية', 'text', ''],
+    ['mobile_menu_msg_en', 'رسالة التواصل بالإنجليزية', 'text', ''],
+    ['mobile_menu_phone', 'رقم الهاتف في القائمة (اتركه فارغاً لهاتف المتجر)', 'text', ''],
+    [null, 'وسائل الدفع', 'sep'],
+    ['footer_payments', 'إظهار وسائل الدفع في الفوتر', 'check', false],
+    ['footer_payments_list', 'وسائل الدفع المعروضة (افصل بينها بفاصلة)', 'text', ''],
     [null, 'التخطيط', 'sep'],
     ['main_padding_top', 'الحشوة العلوية لمحتوى الصفحة (بكسل)', 'text', ''],
     ['cats_strip_bg', 'لون خلفية شريط الفئات', 'color_opt'],
