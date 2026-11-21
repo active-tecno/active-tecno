@@ -723,7 +723,7 @@ function adminShell() {
 
 // ---------- storefront ----------
 function themeVars(t) {
-  return `--sp:${t.primary || '#141924'};--sa:${t.accent || '#27cd27'};--sbg:${t.bg || '#fff'};--ssf:${t.surface || '#F6F8FC'};--sr:${t.radius ?? 16}px;--p:${t.primary || '#141924'};--sf:${t.surface || '#F6F8FC'};--anbg:${t.announce_bg || '#F3E8FF'};--ancol:${t.announce_color || '#141924'}`;
+  return `--sp:${t.primary || '#141924'};--sa:${t.accent || '#27cd27'};--sbg:${t.bg || '#fff'};--ssf:${t.surface || '#F6F8FC'};--sr:${t.radius ?? 16}px;--p:${t.primary || '#141924'};--sf:${t.surface || '#F6F8FC'};--anbg:${t.announce_bg || t.accent || '#27cd27'};--ancol:${t.announce_color || '#fff'}`;
 }
 function pixelSnippets(store) {
   let px = {}; try { px = (JSON.parse(store.theme_settings || '{}').pixels) || {}; } catch (e) {}
@@ -784,7 +784,7 @@ IC.menu = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-wid
 function storeHeader(store, t, cats = []) {
   const lay = eoLayout(store);
   if (!lay) {
-    return `${store.announcement ? `<div class="s-announce">${esc(store.announcement)}</div>` : ''}
+    return `${store.announcement && !t.hide_announcement ? `<div class="s-announce">${esc(store.announcement)}</div>` : ''}
 <header class="s-header ${t.header === 'split' ? 'split' : ''}">
   <a class="s-brand" href="/s/${esc(store.slug)}"><span class="s-logo">${esc((store.logo_text || store.name).trim().charAt(0))}</span><span>${esc(store.name)}</span></a>
   <button class="s-cart-btn" onclick="toggleCart(true)" aria-label="السلة">${IC.cart}<span class="s-cart-count" id="cartCount">0</span></button>
@@ -799,7 +799,7 @@ function storeHeader(store, t, cats = []) {
   const linksHtml = navLinks.map(l => `<a href="${esc(l.href)}">${esc(l.label)}</a>`).join('');
   const announce = `<div class="s-announce">${esc(store.announcement || 'شحن سريع لكل المحافظات والدفع عند الاستلام')}</div>`;
   if (lay === 'sphinx') {
-    return `${store.announcement ? announce : ''}
+    return `${store.announcement && !t.hide_announcement ? announce : ''}
 <header class="s-header eo sphinx">
   <div class="sh-row">${brand}<div class="sh-search">${IC.search}<input id="hSearch" placeholder="ابحث عن منتج..."></div>${cartBtn}</div>
   <nav class="sh-links">${linksHtml}</nav>
@@ -992,7 +992,7 @@ ${renderZone(store, 'home', 'below_header', ctx)}
 ${renderZone(store, 'home', 'content', ctx)}
 ${store.free_shipping_over ? `<div class="s-freeship">${IC.truck}شحن مجاني للطلبات فوق ${egp(store.free_shipping_over)}</div>` : ''}
 ${renderZone(store, 'home', 'above_footer', ctx)}
-<footer class="s-footer">${socialLinks(store)}<p>يعمل بواسطة <a href="/">اكتف اوردر</a> — الدفع عند الاستلام متاح</p></footer>
+<footer class="s-footer">${socialLinks(store)}${t.footer_text ? `<p>${esc(t.footer_text)}</p>` : ''}<p>يعمل بواسطة <a href="/">اكتف اوردر</a> — الدفع عند الاستلام متاح</p></footer>
 ${renderZone(store, 'home', 'below_footer', ctx)}
 ${cartDrawer(store)}
 ${storeScripts(store)}
@@ -1014,6 +1014,8 @@ function productPage(store, p, t, owner) {
   const similar = S.hide_similar ? [] : db.prepare(`SELECT id, name, price, compare_at_price, stock, category, images FROM products WHERE store_id = ? AND status = 'active' AND id != ? AND COALESCE(json_extract(settings,'$.hidden_product'),0) = 0 ORDER BY CASE WHEN category = ? THEN 0 ELSE 1 END, priority ASC, created_at DESC LIMIT 8`).all(store.id, p.id, p.category || '');
   const reviews = S.reviews_enabled ? db.prepare(`SELECT customer_name, rating, text, created_at FROM reviews WHERE product_id = ? AND status = 'published' ORDER BY id DESC LIMIT 20`).all(p.id) : [];
   const lay = eoLayout(store);
+  const ctxProds = db.prepare(`SELECT id, name, price, compare_at_price, stock, category, images FROM products WHERE store_id = ? AND status = 'active' AND COALESCE(json_extract(settings,'$.hidden_product'),0) = 0 ORDER BY created_at DESC`).all(store.id);
+  const ctx = { products: ctxProds, cats: [...new Set(ctxProds.map(x => x.category).filter(Boolean))], lay, t };
   const qtyCtl = out || S.hide_qty_counter ? '' : `<div class="pd-qty"><button type="button" onclick="pdQty(-1)">−</button><span id="pdQty">1</span><button type="button" onclick="pdQty(1)">+</button></div>`;
   const qtyVal = `+(document.getElementById('pdQty')?.textContent || 1)`;
   const orderFormHtml = out ? '' : `
@@ -1048,7 +1050,9 @@ function productPage(store, p, t, owner) {
 <body class="store pd-adv ${t.dark ? 'dark' : ''} t-${esc(store.theme_id)}">
 ${demoBar(store)}
 ${owner ? `<div class="s-ownerbar">وضع المعاينة — <a href="/app">العودة للوحة التحكم</a></div>` : ''}
+${renderZone(store, 'product', 'above_header', ctx)}
 ${S.hide_header ? '' : storeHeader(store, t)}
+${renderZone(store, 'product', 'below_header', ctx)}
 <main class="pd">
 <div class="pd-gallery"><img id="pdImg" src="${esc(imgs[0] || ph(p.name))}" alt="${esc(p.name)}">
 ${imgs.length > 1 ? `<div class="pd-thumbs">${imgs.map((im, i) => `<img src="${esc(im)}" onclick="document.getElementById('pdImg').src=this.src" class="${i === 0 ? 'on' : ''}">`).join('')}</div>` : ''}</div>
@@ -1075,7 +1079,10 @@ ${reviews.length ? reviews.map(r => `<div class="pd-review"><div class="pd-revie
 <label>تعليقك (اختياري)<textarea name="text" maxlength="1000"></textarea></label>
 <button type="submit" class="s-btn">إرسال التقييم</button><div id="rvMsg"></div></form></section>` : ''}
 ${similar.length ? `<section class="pd-similar wrap"><h2>منتجات مشابهة</h2><div class="s-grid">${similar.map(sp => productCardHTML(store, lay, sp)).join('')}</div></section>` : ''}
-<footer class="s-footer">${socialLinks(store)}<p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>
+${renderZone(store, 'product', 'content', ctx)}
+${renderZone(store, 'product', 'above_footer', ctx)}
+<footer class="s-footer">${socialLinks(store)}${t.footer_text ? `<p>${esc(t.footer_text)}</p>` : ''}<p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>
+${renderZone(store, 'product', 'below_footer', ctx)}
 ${S.sticky_buy && !out ? `<div class="pd-sticky"><img src="${esc(imgs[0] || '')}" alt=""><div class="pd-sticky-info"><b>${esc(p.name)}</b><span>${money(p.price)}</span></div><button class="s-btn buy" onclick="${S.buy_same_page ? `document.getElementById('pdOrder').scrollIntoView({behavior:'smooth'})` : `buyNow(${p.id}, '${jsName}', ${p.price}, ${JSON.stringify(imgs[0] || '')}, ${qtyVal})`}">${esc(buyText)}</button></div>` : ''}
 ${cartDrawer(store)}
 ${storeScripts(store)}
@@ -1123,10 +1130,14 @@ cdTick();setInterval(cdTick,1000);` : ''}
 
 function checkoutPage(store, t, owner) {
   const govs = ['القاهرة', 'الجيزة', 'الإسكندرية', 'الدقهلية', 'الشرقية', 'الغربية', 'المنوفية', 'القليوبية', 'البحيرة', 'كفر الشيخ', 'دمياط', 'بورسعيد', 'الإسماعيلية', 'السويس', 'الفيوم', 'بني سويف', 'المنيا', 'أسيوط', 'سوهاج', 'قنا', 'الأقصر', 'أسوان', 'البحر الأحمر', 'مطروح', 'شمال سيناء', 'جنوب سيناء', 'طنطا', 'المنصورة', 'الزقازيق'];
+  const ctxProds = db.prepare(`SELECT id, name, price, compare_at_price, stock, category, images FROM products WHERE store_id = ? AND status = 'active' AND COALESCE(json_extract(settings,'$.hidden_product'),0) = 0 ORDER BY created_at DESC`).all(store.id);
+  const ctx = { products: ctxProds, cats: [...new Set(ctxProds.map(x => x.category).filter(Boolean))], lay: eoLayout(store), t };
   return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, `إتمام الطلب | ${store.name}`)}</head>
 <body class="store ${t.dark ? 'dark' : ''} t-${esc(store.theme_id)}">
 ${demoBar(store)}
+${renderZone(store, 'checkout', 'above_header', ctx)}
 ${storeHeader(store, t)}
+${renderZone(store, 'checkout', 'below_header', ctx)}
 <main class="co">
 <h1>إتمام الطلب</h1>
 <p class="co-sub">خطوة واحدة وطلبك في الطريق إليك</p>
@@ -1152,7 +1163,10 @@ ${demoFormNotice(store)}
 </form>
 <aside class="co-summary" id="coSummary"></aside>
 </div></main>
-<footer class="s-footer"><p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>
+${renderZone(store, 'checkout', 'content', ctx)}
+${renderZone(store, 'checkout', 'above_footer', ctx)}
+<footer class="s-footer">${socialLinks(store)}${t.footer_text ? `<p>${esc(t.footer_text)}</p>` : ''}<p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>
+${renderZone(store, 'checkout', 'below_footer', ctx)}
 ${storeScripts(store)}
 <script>track('begin_checkout'); renderCheckout(); loadPayMethods();</script>
 </body></html>`;
@@ -1647,4 +1661,47 @@ ${storeHeader(store, t)}
 </body></html>`;
 }
 
-module.exports = { landing, login: loginPage, register: registerPage, appShell, adminShell, storefront, productPage, checkoutPage, funnelPage, orderPage, verifiedPage, policiesPage, categoryPage, storeBlogIndex, storeBlogPost, comingSoon, notFound, onboarding, egp, esc, pricingPage, themesPage, blogIndex, blogPostPage, blogStaticPage, BLOG_POSTS };
+// ---------- builder live render (canvas preview for the visual editor) ----------
+function productMainPreview(store, t, p) {
+  if (!p) return `<div class="s-empty" style="padding:40px">لا توجد منتجات نشطة للمعاينة — أضف منتجاً أولاً</div>`;
+  const imgs = JSON.parse(p.images || '[]');
+  return `<main class="pd"><div class="pd-gallery"><img src="${esc(imgs[0] || ph(p.name))}" alt="${esc(p.name)}"></div>
+<div class="pd-info">${p.category ? `<span class="pd-cat">${esc(p.category)}</span>` : ''}<h1>${esc(p.name)}</h1>
+<div class="pd-price"><b>${egp(p.price)}</b>${p.compare_at_price ? `<s>${egp(p.compare_at_price)}</s>` : ''}</div>
+<button class="s-btn btn-lg full buy" type="button">اضغط هنا للشراء</button></div></main>`;
+}
+function checkoutFormPreview(store, t) {
+  return `<main class="co"><h1>إتمام الطلب</h1><p class="co-sub">خطوة واحدة وطلبك في الطريق إليك</p>
+<div class="co-grid"><form class="co-form"><h3>بيانات التوصيل</h3>
+<label>الاسم بالكامل<input disabled placeholder="مثال: مريم أحمد"></label>
+<label>رقم الموبايل<input disabled dir="ltr" placeholder="01xxxxxxxxx"></label>
+<label>المحافظة<select disabled><option>القاهرة</option></select></label>
+<label>العنوان بالتفصيل<textarea disabled placeholder="الشارع، رقم العمارة، الدور، الشقة"></textarea></label>
+<button type="button" class="s-btn btn-lg full buy">تأكيد الطلب — دفع عند الاستلام</button></form></div></main>`;
+}
+function builderRender(store, t, page) {
+  const lay = eoLayout(store);
+  const products = db.prepare(`SELECT id, name, price, compare_at_price, stock, category, images FROM products WHERE store_id = ? AND status = 'active' AND COALESCE(json_extract(settings,'$.hidden_product'),0) = 0 ORDER BY created_at DESC`).all(store.id);
+  const cats = [...new Set(products.map(p => p.category).filter(Boolean))];
+  const ctx = { products, cats, lay, t };
+  const zones = {};
+  for (const z of ['above_header', 'below_header', 'content', 'above_footer', 'below_footer']) {
+    zones[z] = getSections(store, page).filter(s => s.zone === z)
+      .map(s => ({ id: s.id, type: s.type, name: SECTION_NAMES[s.type] || s.type, enabled: !!s.enabled, html: s.enabled ? renderSection(store, s, ctx) : '' }));
+  }
+  let fixed = '', fixedLabel = '';
+  if (page === 'product') { fixed = productMainPreview(store, t, products[0]); fixedLabel = 'قالب صفحة المنتج (ثابت)' ; }
+  if (page === 'checkout') { fixed = checkoutFormPreview(store, t); fixedLabel = 'نموذج الشراء (ثابت)'; }
+  return {
+    page,
+    vars: themeVars(t),
+    dark: !!t.dark,
+    themeId: store.theme_id || '',
+    header: storeHeader(store, t, cats),
+    footer: `<footer class="s-footer">${socialLinks(store)}${t.footer_text ? `<p>${esc(t.footer_text)}</p>` : ''}<p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>`,
+    fixed, fixedLabel,
+    zones,
+  };
+}
+
+module.exports = { landing, login: loginPage, register: registerPage, appShell, adminShell, storefront, productPage, checkoutPage, funnelPage, orderPage, verifiedPage, policiesPage, categoryPage, storeBlogIndex, storeBlogPost, comingSoon, notFound, onboarding, egp, esc, pricingPage, themesPage, blogIndex, blogPostPage, blogStaticPage, BLOG_POSTS, builderRender };

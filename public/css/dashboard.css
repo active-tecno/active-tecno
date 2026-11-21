@@ -680,3 +680,46 @@ select.d-input { cursor: pointer; }
 .b-group { border-top: 1px solid var(--line); padding: 6px 0; }
 .b-group summary { cursor: pointer; font-weight: 700; font-size: 13px; padding: 4px 0; }
 .b-item { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; font-size: 13px; }
+
+/* ---------- H2 visual builder chrome ---------- */
+.b2 { position: fixed; inset: 0; z-index: 400; background: #0b111d; display: flex; flex-direction: column; }
+.b2-top { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #131b2c; border-bottom: 1px solid #ffffff12; color: #e6ebf5; flex-wrap: wrap; }
+.b2-title { font-size: 14.5px; }
+.b2-sel { background: #ffffff10; color: #e6ebf5; border: 1px solid #ffffff1e; border-radius: 9px; padding: 7px 10px; font-family: inherit; font-size: 13px; }
+.b2-saved { font-size: 11.5px; color: #7c8aa5; margin-inline-start: 6px; }
+.b2-spacer { flex: 1; }
+.b2-tbtn { display: inline-flex; align-items: center; gap: 6px; background: #ffffff10; color: #e6ebf5; border: 1px solid #ffffff1a; border-radius: 9px; padding: 7px 13px; font-family: inherit; font-size: 12.5px; cursor: pointer; text-decoration: none; }
+.b2-tbtn:hover { background: #ffffff1c; }
+.b2-tbtn.on { background: #27cd2726; border-color: #27cd2766; color: #7ce97c; }
+.b2-tbtn.primary { background: #27cd27; border-color: #27cd27; color: #0b111d; font-weight: 700; }
+.b2-tbtn svg { width: 15px; height: 15px; }
+.b2-main { flex: 1; display: flex; min-height: 0; }
+.b2-palette { width: 235px; background: #101828; color: #dde4f0; overflow-y: auto; padding: 14px 12px; border-inline-end: 1px solid #ffffff10; flex-shrink: 0; }
+.b2-palette h3 { font-size: 14px; margin-bottom: 4px; }
+.b2-pal-hint { font-size: 11.5px; color: #7c8aa5; margin-bottom: 10px; line-height: 1.6; }
+.b2-group { margin-bottom: 6px; }
+.b2-group summary { cursor: pointer; font-size: 13px; font-weight: 600; padding: 8px 6px; border-radius: 8px; }
+.b2-group summary:hover { background: #ffffff0a; }
+.b2-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #ffffff08; border: 1px solid #ffffff12; border-radius: 10px; margin: 6px 2px; cursor: grab; font-size: 12.5px; }
+.b2-item:active { cursor: grabbing; }
+.b2-item:hover { border-color: #27cd2755; background: #27cd2712; }
+.b2-add { background: #27cd2722; color: #7ce97c; border: 0; width: 22px; height: 22px; border-radius: 7px; cursor: pointer; font-size: 14px; line-height: 1; }
+.b2-add:hover { background: #27cd2744; }
+.b2-canvas-wrap { flex: 1; overflow: auto; padding: 20px; min-width: 0; }
+#b2Host { display: block; background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 24px 70px #000a; margin: 0 auto; transition: max-width .25s; }
+.b2-canvas-wrap.phone #b2Host { max-width: 390px; }
+.b2-drawer { width: 300px; background: #101828; color: #dde4f0; overflow-y: auto; padding: 16px 14px; border-inline-start: 1px solid #ffffff10; flex-shrink: 0; }
+.b2-drawer-empty { color: #7c8aa5; font-size: 13px; text-align: center; padding: 60px 10px; line-height: 2; }
+.b2-drawer-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; font-size: 14px; }
+.b2-x { background: #ffffff10; border: 0; color: #dde4f0; width: 26px; height: 26px; border-radius: 8px; cursor: pointer; }
+.b2-x:hover { background: #ffffff22; }
+.b2-label { display: block; font-size: 12px; color: #9aa7c0; margin: 12px 0 5px; }
+.b2-input { width: 100%; background: #ffffff0c; border: 1px solid #ffffff1a; color: #eef2fa; border-radius: 9px; padding: 9px 11px; font-family: inherit; font-size: 13px; }
+.b2-input:focus { outline: none; border-color: #27cd2788; }
+.b2-color { width: 100%; height: 36px; background: #ffffff0c; border: 1px solid #ffffff1a; border-radius: 9px; padding: 3px; cursor: pointer; }
+.b2-check { display: flex; align-items: center; gap: 8px; font-size: 13px; margin: 12px 0; cursor: pointer; }
+.b2-tgroup { margin-bottom: 8px; border: 1px solid #ffffff12; border-radius: 11px; padding: 4px 10px 10px; }
+.b2-tgroup summary { cursor: pointer; font-size: 13px; font-weight: 700; padding: 8px 2px; }
+.b2-save { width: 100%; margin-top: 16px; background: #27cd27; color: #0b111d; border: 0; border-radius: 10px; padding: 11px; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.b2-save:hover { filter: brightness(1.08); }
+.b2-muted { color: #7c8aa5; font-size: 12.5px; }

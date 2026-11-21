@@ -409,6 +409,23 @@ const api = {
     db.prepare('DELETE FROM store_sections WHERE id = ? AND store_id = ?').run(p.id, getStoreForUser(user).id);
     json(res, 200, { ok: true });
   },
+  'POST /api/sections/reorder': async (req, res, user) => {
+    const b = await readJSON(req); if (!b || !Array.isArray(b.ids)) return json(res, 400, { error: 'بيانات غير صالحة' });
+    const store = getStoreForUser(user);
+    const page = String(b.page || 'home'); const zone = String(b.zone || 'content');
+    const upd = db.prepare('UPDATE store_sections SET zone = ?, position = ? WHERE id = ? AND store_id = ? AND page = ?');
+    b.ids.forEach((id, i) => upd.run(zone, i + 1, id, store.id, page));
+    json(res, 200, { ok: true });
+  },
+  'GET /api/builder/render': (req, res, user) => {
+    const url = new URL(req.url, 'http://x'); const page = url.searchParams.get('page') || 'home';
+    const store = getStoreForUser(user);
+    const theme = db.prepare('SELECT * FROM themes WHERE id = ?').get(store.theme_id);
+    const tsFull = JSON.parse(store.theme_settings || '{}');
+    const { pixels, payments, couriers, ...themeOverrides } = tsFull;
+    const themeConfig = { ...(theme ? JSON.parse(theme.config) : {}), ...themeOverrides };
+    json(res, 200, views.builderRender(store, themeConfig, page));
+  },
 
   // ---------- F2: products cluster ----------
   'GET /api/categories': (req, res, user) => json(res, 200, { categories: db.prepare('SELECT * FROM categories WHERE store_id = ? ORDER BY priority ASC, name').all(getStoreForUser(user).id) }),
