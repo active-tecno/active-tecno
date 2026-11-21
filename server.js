@@ -370,7 +370,7 @@ const api = {
   },
 
   // ---------- F2: products cluster ----------
-  'GET /api/categories': (req, res, user) => json(res, 200, { categories: db.prepare('SELECT * FROM categories WHERE store_id = ? ORDER BY priority DESC, name').all(getStoreForUser(user).id) }),
+  'GET /api/categories': (req, res, user) => json(res, 200, { categories: db.prepare('SELECT * FROM categories WHERE store_id = ? ORDER BY priority ASC, name').all(getStoreForUser(user).id) }),
   'POST /api/categories': async (req, res, user) => {
     const b = await readJSON(req); if (!b || !String(b.name || '').trim()) return json(res, 400, { error: 'اسم القسم مطلوب' });
     const store = getStoreForUser(user);

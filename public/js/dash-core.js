@@ -2,6 +2,7 @@
 const $ = s => document.querySelector(s);
 const egp = n => `${Number(n || 0).toLocaleString('ar-EG')} ج.م`;
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmtDateNum = d => { const dt = new Date(d.replace(' ', 'T') + (d.includes('Z') || d.includes('+') ? '' : 'Z')); return (dt.getMonth()+1) + '/' + dt.getDate() + '/' + dt.getFullYear(); };
 const fmtDate = d => new Date(d.replace(' ', 'T') + (d.includes('Z') || d.includes('+') ? '' : 'Z')).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
 async function api(path, opts = {}) {

@@ -911,7 +911,7 @@ function productPage(store, p, t, owner) {
   const buyText = (S.buy_button_text || '').trim() || 'اضغط هنا للشراء';
   const fvMin = Math.max(1, +S.fake_visitors_min || 20), fvMax = Math.max(fvMin, +S.fake_visitors_max || 70);
   const jsName = esc(p.name).replace(/'/g, '');
-  const similar = S.hide_similar ? [] : db.prepare(`SELECT id, name, price, compare_at_price, stock, category, images FROM products WHERE store_id = ? AND status = 'active' AND id != ? AND COALESCE(json_extract(settings,'$.hidden_product'),0) = 0 ORDER BY CASE WHEN category = ? THEN 0 ELSE 1 END, priority DESC, created_at DESC LIMIT 8`).all(store.id, p.id, p.category || '');
+  const similar = S.hide_similar ? [] : db.prepare(`SELECT id, name, price, compare_at_price, stock, category, images FROM products WHERE store_id = ? AND status = 'active' AND id != ? AND COALESCE(json_extract(settings,'$.hidden_product'),0) = 0 ORDER BY CASE WHEN category = ? THEN 0 ELSE 1 END, priority ASC, created_at DESC LIMIT 8`).all(store.id, p.id, p.category || '');
   const reviews = S.reviews_enabled ? db.prepare(`SELECT customer_name, rating, text, created_at FROM reviews WHERE product_id = ? AND status = 'published' ORDER BY id DESC LIMIT 20`).all(p.id) : [];
   const lay = eoLayout(store);
   const qtyCtl = out || S.hide_qty_counter ? '' : `<div class="pd-qty"><button type="button" onclick="pdQty(-1)">−</button><span id="pdQty">1</span><button type="button" onclick="pdQty(1)">+</button></div>`;

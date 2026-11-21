@@ -12,12 +12,14 @@ registerView('products', async () => {
       <button class="btn" onclick="go('product-feed')">${I('feed')} Product Feed</button>
       <button class="btn" onclick="importProducts('json')">${I('download')} استيراد من ملف JSON</button>
       <button class="btn" onclick="importProducts('excel')">${I('download')} استيراد من ملف Excel</button>
-      <button class="btn dark" onclick="go('products/create')">${I('plus')} اضافة منتج</button>`)}
+`)}
     <div class="p-guides">
-      <span class="muted">شاهد الشرح قبل البدء:</span>
+      <button class="btn dark" onclick="go('products/create')">${I('plus')} اضافة منتج</button>
+      <span style="flex:1"></span>
       <button class="btn sm" onclick="openGuide('simple')">${I('video')} كيفية انشاء منتج بسيط</button>
       <button class="btn sm" onclick="openGuide('variants')">${I('video')} كيفية انشاء منتج متعدد الخواص</button>
     </div>
+    <p class="muted" style="margin:0 0 10px;font-size:12.5px">عند انشاء أو تعديل منتج راجع الاعدادات المتقدمة — فيها خيارات ترفع مبيعاتك.</p>
     ${products.length ? `
       <div class="p-search-row">
         <div class="d-search">${I('search')}<input id="pSearch" placeholder="ابحث باسم المنتج" oninput="P_Q=this.value;P_PAGE=1;renderPTable()"></div>
@@ -63,7 +65,7 @@ function renderPTable() {
       <td>${p.status === 'active' ? '<span class="p-status on">نشط</span>' : '<span class="p-status">مسودة</span>'}</td>
       <td>${p.stock_tracking ? (p.stock > 0 ? p.stock + ' قطعة' : '<span class="chip st-cancelled">نفذ المخزون</span>') : '<span class="muted">غير متتبع</span>'}</td>
       <td><b>${egp(p.price)}</b>${p.compare_at_price ? `<div class="muted sm strike">${egp(p.compare_at_price)}</div>` : ''}</td>
-      <td class="muted">${fmtDate(p.created_at)}</td>
+      <td class="muted">${fmtDateNum(p.created_at)}</td>
       <td class="acts">
         <button class="btn sm" onclick="go('products/create?id=${p.id}')">${I('pen')} تعديل</button>
         <button class="btn sm icon" title="استنساخ المنتج" onclick="dupProduct(${p.id})">${I('copy')}</button>
@@ -196,7 +198,7 @@ registerView('products/create', async () => {
       <div class="pf-side">
         <div class="d-card"><h3>التنظيم</h3>
           <label class="d-label">الاقسام</label><select id="pf-cat" class="d-input"><option value="">بدون قسم</option>${catOpts}</select>
-          <label class="d-label">الاولوية في الظهور</label><input id="pf-priority" type="number" class="d-input" value="${p?.priority ?? 0}">
+          <label class="d-label">الاولوية في الظهور</label><input id="pf-priority" type="number" class="d-input" value="${p?.priority ?? 0}"><p class="muted" style="font-size:11.5px;margin:4px 0 0">الرقم الأقل يظهر أولاً: منتج أولويته 7 يظهر قبل 9.</p>
           <div class="muted sm">كلما زاد الرقم ظهر المنتج قبل غيره في الأقسام والصفحة الرئيسية.</div>
         </div>
         <div class="d-card"><h3>عمل لاندينج بيدج احترافية للمنتج</h3>
