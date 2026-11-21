@@ -554,23 +554,13 @@ body:has(.pd-sticky) main.pd { padding-bottom: 80px; }
 .v-icons .cat-ico { width: 44px; height: 44px; border-radius: 12px; background: var(--ssf); display: grid; place-items: center; color: var(--sa); }
 .v-icons .cat-ico svg { width: 20px; height: 20px; }
 
-/* per-theme photo hero treatments */
-.hv-photo--void { background: color-mix(in srgb, var(--sa) 24%, #fff) !important; align-items: center; text-align: center; }
-.hv-photo--void .hv-p-in h1, .hv-photo--void .hv-p-in p { color: var(--sp); text-shadow: none; }
-.hv-photo--void .hv-p-in { margin: 0 auto; }
-.hv-photo--void .s-hero-cta { justify-content: center; }
-.hv-photo--blast { background: linear-gradient(160deg, var(--sa), color-mix(in srgb, var(--sa) 55%, #7a0000)) !important; align-items: center; text-align: center; }
-.hv-photo--blast .hv-p-in { margin: 0 auto; }
-.hv-photo--blast .s-hero-cta { justify-content: center; }
-.hv-photo--blast .hv-p-in h1 { font-size: clamp(30px, 5vw, 52px); }
-.hv-photo--hype { background: radial-gradient(ellipse 60% 90% at 70% 20%, color-mix(in srgb, var(--sa) 45%, transparent), transparent), var(--sp) !important; align-items: center; text-align: center; }
-.hv-photo--hype .hv-p-in { margin: 0 auto; }
-.hv-photo--hype .s-hero-cta { justify-content: center; }
-.hv-photo--hype .s-btn { box-shadow: 0 0 24px color-mix(in srgb, var(--sa) 65%, transparent); }
-.hv-photo--sphinx { background: linear-gradient(to top, color-mix(in srgb, var(--sp) 88%, transparent), color-mix(in srgb, var(--sp) 40%, transparent)), linear-gradient(120deg, #3d5a45, #22302a) !important; }
-.hv-photo--luxify { background: linear-gradient(to top, rgba(0,0,0,.72), rgba(0,0,0,.15)), linear-gradient(115deg, #4a3f35, #191512) !important; }
-.hv-photo--luxify .hv-p-in { padding-bottom: 56px; }
-.hv-photo--phoenix { background: var(--ssf) !important; align-items: center; }
-.hv-photo--phoenix .hv-p-in h1, .hv-photo--phoenix .hv-p-in p { color: var(--sp); text-shadow: none; }
-.hv-photo--trendy { background: linear-gradient(100deg, var(--sp) 55%, color-mix(in srgb, var(--sa) 80%, var(--sp))) !important; }
+/* per-theme photo hero treatments: image-led heroes with scrim + per-theme text placement */
+.hv-photo { min-height: min(72vh, 540px); display: flex; align-items: flex-end; background-size: cover; background-position: center; }
+.hv-p-in { padding: 44px 36px; max-width: 660px; }
+.hv-p-in h1 { color: #fff; text-shadow: 0 2px 18px rgba(0,0,0,.5); font-size: clamp(28px, 4.6vw, 50px); }
+.hv-p-in p { color: rgba(255,255,255,.94); text-shadow: 0 1px 10px rgba(0,0,0,.4); }
+.hv-photo--blast, .hv-photo--hype { align-items: center; text-align: center; }
+.hv-photo--blast .hv-p-in, .hv-photo--hype .hv-p-in { margin: 0 auto; }
+.hv-photo--blast .s-hero-cta, .hv-photo--hype .s-hero-cta { justify-content: center; }
 .hv-photo--trendy .hv-p-in { max-width: 520px; }
+.hv-photo--phoenix { background-position: center 30%; }

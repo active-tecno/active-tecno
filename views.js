@@ -1,5 +1,8 @@
 // views.js — server-rendered pages (landing, auth, storefront). Dashboard/admin are SPA shells.
 const { db } = require('./db');
+const fs = require('fs');
+const path = require('path');
+function themeHeroImg(lay) { if (!lay) return ''; const p = path.join(__dirname, 'public', 'theme-heroes', `eo-${lay}.jpg`); return fs.existsSync(p) ? `/public/theme-heroes/eo-${lay}.jpg` : ''; }
 
 
 const GOVS = ['القاهرة', 'الجيزة', 'الإسكندرية', 'الدقهلية', 'الشرقية', 'الغربية', 'المنوفية', 'القليوبية', 'البحيرة', 'كفر الشيخ', 'دمياط', 'بورسعيد', 'الإسماعيلية', 'السويس', 'الفيوم', 'بني سويف', 'المنيا', 'أسيوط', 'سوهاج', 'قنا', 'الأقصر', 'أسوان', 'البحر الأحمر', 'مطروح', 'شمال سيناء', 'جنوب سيناء', 'طنطا', 'المنصورة', 'الزقازيق'];
@@ -932,13 +935,13 @@ function renderSection(store, s, ctx) {
       const bg = st.img ? ` style="background-image:url('${escAttr(st.img)}');background-size:cover;background-position:center"` : '';
       if (hv === 'minimal') return `<section class="s-hero hv-minimal"${bg}><div class="hv-m-in"><h1>${title}</h1><p>${sub}</p><div class="s-hero-cta">${cta}</div></div></section>`;
       if (hv === 'split') {
-        const img0 = st.img || (products[0] ? (JSON.parse(products[0].images || '[]')[0] || '') : '');
+        const img0 = st.img || themeHeroImg(lay) || (products[0] ? (JSON.parse(products[0].images || '[]')[0] || '') : '');
         return `<section class="s-hero hv-split"><div class="hv-s-text"><h1>${title}</h1><p>${sub}</p><div class="s-hero-cta">${cta}</div></div>${img0 ? `<div class="hv-s-img"><img src="${escAttr(img0)}" alt="" loading="lazy"></div>` : ''}</section>`;
       }
 
-      if (hv === 'banner') return `<section class="s-hero hv-banner"${bg}><div class="hv-b-in"><span class="hv-b-kicker">${esc(store.name)}</span><h1>${title}</h1><p>${sub}</p><div class="s-hero-cta">${cta}</div></div></section>`;
+      if (hv === 'banner') { const bgh = st.img ? bg : (themeHeroImg(lay) ? ` style="background-image:linear-gradient(to top, color-mix(in srgb, var(--sp) 72%, transparent), color-mix(in srgb, var(--sp) 22%, transparent)), url('${themeHeroImg(lay)}');background-size:cover;background-position:center"` : bg); return `<section class="s-hero hv-banner"${bgh}><div class="hv-b-in"><span class="hv-b-kicker">${esc(store.name)}</span><h1>${title}</h1><p>${sub}</p><div class="s-hero-cta">${cta}</div></div></section>`; }
       if (hv === 'photo') {
-        const him = st.img || '';
+        const him = st.img || themeHeroImg(lay);
         const style = him ? ` style="background-image:linear-gradient(to top, color-mix(in srgb, var(--sp) 78%, transparent), color-mix(in srgb, var(--sp) 25%, transparent)), url('${escAttr(him)}');background-size:cover;background-position:center"` : ` style="background:linear-gradient(135deg, var(--sp) 0%, color-mix(in srgb, var(--sa) 70%, var(--sp)) 100%)"`;
         return `<section class="s-hero hv-photo hv-photo--${escAttr(lay || 'default')}"${style}><div class="hv-p-in"><h1>${title}</h1><p>${sub}</p><div class="s-hero-cta">${cta}</div></div></section>`;
       }
