@@ -218,7 +218,7 @@ function ntfRender() {
   const from = (NTF.page - 1) * NTF.per, to = Math.min(total, from + NTF.per);
   wrap.innerHTML = `<div class="d-card ntf-list">
     ${NTF.items.slice(from, to).map((n, k) => `
-    <div class="ntf-row2">
+    <div class="ntf-row2 ${n.unread ? 'unread' : ''}">
       <span class="n-ic">${I('bell')}${n.unread ? '<i class="n-dot"></i>' : ''}</span>
       <div class="n-body">
         <b class="n-text clamp">${esc(n.text)}</b>
