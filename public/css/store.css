@@ -599,3 +599,8 @@ body:has(.pd-sticky) main.pd { padding-bottom: 80px; }
 .s-hero.hv-photo--sphinx .s-hero-cta { justify-content: center; }
 .t-eo-sphinx .sh-links { display: flex; justify-content: center; gap: 20px; width: 100%; padding: 10px 16px 14px; font-size: 14px; font-weight: 600; flex-wrap: wrap; }
 .t-eo-sphinx .s-header.eo.sphinx { display: block; }
+
+/* uploaded logo image replaces the letter avatar */
+.s-logo-img { width: 38px; height: 38px; border-radius: 12px; object-fit: contain; background: #fff; }
+.s-header.eo .s-logo-img { width: 34px; height: 34px; border-radius: 8px; }
+.fn-brand .s-logo-img { width: 34px; height: 34px; border-radius: 10px; }

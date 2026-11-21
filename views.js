@@ -29,6 +29,10 @@ const IC = {
 };
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// Store brand mark: uploaded logo image (theme_settings.logo_img) wins over the letter avatar
+const brandMark = (store, t, cls = 's-logo') => (t && t.logo_img)
+  ? `<img class="${cls} s-logo-img" src="${esc(t.logo_img)}" alt="${esc(store.name)}">`
+  : `<span class="${cls}">${esc((store.logo_text || store.name).trim().charAt(0))}</span>`;
 const egp = n => `${Number(n || 0).toLocaleString('ar-EG')} ج.م`;
 // placeholder image for products without one
 const ph = (name = '?') => 'data:image/svg+xml;base64,' + Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#141924"/><stop offset="1" stop-color="#27cd27"/></linearGradient></defs><rect width="800" height="800" fill="url(#g)"/><text x="400" y="460" font-size="260" text-anchor="middle" font-family="sans-serif" font-weight="700" fill="rgba(255,255,255,.85)">${name.trim().charAt(0)}</text></svg>`).toString('base64');
@@ -789,11 +793,11 @@ function storeHeader(store, t, cats = []) {
   if (!lay) {
     return `${store.announcement && !t.hide_announcement ? `<div class="s-announce">${esc(store.announcement)}</div>` : ''}
 <header class="s-header ${t.header === 'split' ? 'split' : ''}">
-  <a class="s-brand" href="/s/${esc(store.slug)}"><span class="s-logo">${esc((store.logo_text || store.name).trim().charAt(0))}</span><span>${esc(store.name)}</span></a>
+  <a class="s-brand" href="/s/${esc(store.slug)}">${brandMark(store, t)}<span>${esc(store.name)}</span></a>
   <button class="s-cart-btn" onclick="toggleCart(true)" aria-label="السلة">${IC.cart}<span class="s-cart-count" id="cartCount">0</span></button>
 </header>`;
   }
-  const brand = `<a class="s-brand" href="/s/${esc(store.slug)}"><span class="s-logo">${esc((store.logo_text || store.name).trim().charAt(0))}</span><span class="s-brand-name">${esc(store.name)}</span></a>`;
+  const brand = `<a class="s-brand" href="/s/${esc(store.slug)}">${brandMark(store, t)}<span class="s-brand-name">${esc(store.name)}</span></a>`;
   const cartBtn = `<button class="s-cart-btn" onclick="toggleCart(true)" aria-label="السلة">${IC.cart}<span class="s-cart-count" id="cartCount">0</span></button>`;
   const ctaBtn = t.header_cta_text ? `<a class="s-btn s-header-cta" href="${esc(t.header_cta_link || '#products')}">${esc(t.header_cta_text)}</a>` : '';
   const searchBtn = `<button class="s-icon-btn" aria-label="بحث" onclick="document.getElementById('products')?.scrollIntoView({behavior:'smooth'})">${IC.search}</button>`;
@@ -1004,7 +1008,8 @@ ${store.whatsapp ? `<a class="s-btn ghost" href="https://wa.me/${escAttr(store.w
     case 'product_grid': {
       let list = products; if (st.sort === 'price_asc') list = [...products].sort((a, b) => a.price - b.price); if (st.sort === 'price_desc') list = [...products].sort((a, b) => b.price - a.price);
       list = list.slice(0, st.limit || 24);
-      return `${st.title ? `<h2 class="s-sec-t">${esc(st.title)}</h2>` : ''}<main class="s-grid">${list.map(p => productCardHTML(store, lay, p, ctx.t)).join('') || `<div class="s-empty">لا توجد منتجات بعد</div>`}</main>`;
+      const gridTitle = st.title || (lay === 'fasty' ? 'أحدث المنتجات' : '');
+      return `${gridTitle ? `<h2 class="s-sec-t">${esc(gridTitle)}</h2>` : ''}<main class="s-grid">${list.map(p => productCardHTML(store, lay, p, ctx.t)).join('') || `<div class="s-empty">لا توجد منتجات بعد</div>`}</main>`;
     }
     case 'product_list': {
       const list = products.slice(0, st.limit || 10);
@@ -1255,7 +1260,7 @@ function funnelPage(store, funnel, p, t, owner) {
 <body class="store funnel ${t.dark ? 'dark' : ''}">
 ${demoBar(store)}
 ${owner ? `<div class="s-ownerbar">وضع المعاينة — <a href="/app#/funnels">العودة للوحة التحكم</a></div>` : ''}
-<header class="fn-brand"><span class="s-logo">${esc((store.logo_text || store.name).trim().charAt(0))}</span><b>${esc(store.name)}</b></header>
+<header class="fn-brand">${brandMark(store, t)}<b>${esc(store.name)}</b></header>
 <main class="fn">
 <section class="fn-hero">
   <div class="fn-gallery"><img id="fnImg" src="${esc(imgs[0] || ph(p.name))}" alt="${esc(p.name)}">

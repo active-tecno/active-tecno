@@ -34,14 +34,18 @@ registerView('settings', async () => {
   return settingsShell('settings', 'إعدادات المتجر', 'البيانات الأساسية وحماية الطلبات', `
     <div class="card"><h3>إعدادات المتجر</h3>
       <p class="muted small">يمكنك تغيير لون واسم المتجر بسهولة وربط دومينك الخاص وتغيير العملة</p>
-      <div class="f-grid" style="margin-top:12px">
+      <div class="f-grid f-one" style="margin-top:12px">
       <div class="f-field"><label>لغة لوحة التحكم</label><select id="stLang"><option value="ar" ${lang === 'ar' ? 'selected' : ''}>العربية</option><option value="en" ${lang === 'en' ? 'selected' : ''}>English</option></select></div>
       <div class="f-field"><label>عنوان الموقع الرئيسي</label><input id="stName" value="${esc(STORE.name)}"></div>
-      <div class="f-field full"><label>الجزء الإعلاني من الهيدر</label><input id="stAnnounce" value="${esc(STORE.announcement || '')}" placeholder="محتوى الجزء العلوي من الهيدر"></div>
+      <div class="f-field"><label>الجزء الإعلاني من الهيدر</label><input id="stAnnounce" value="${esc(STORE.announcement || '')}" placeholder="محتوى الجزء العلوي من الهيدر"></div>
       <div class="f-field"><label>لون الموقع</label><div style="display:flex;align-items:center;gap:8px"><input id="stPrimary" dir="ltr" value="${esc(ts.primary || '#141924')}"><input type="color" value="${esc(ts.primary || '#141924')}" oninput="$('#stPrimary').value=this.value" style="width:42px;height:38px;padding:2px"></div></div>
-      <div class="f-field"><label>لوجو الموقع</label><div style="display:flex;align-items:center;gap:10px"><span class="o-avatar" style="width:52px;height:52px;border-radius:12px;font-size:22px" id="stLogoPrev">${esc((STORE.logo_text || STORE.name).trim().charAt(0))}</span><input id="stLogo" value="${esc(STORE.logo_text || '')}" placeholder="حرف اللوجو" oninput="$('#stLogoPrev').textContent=(this.value.trim()||'${esc(STORE.name.trim().charAt(0))}').charAt(0)"></div></div>
+      <div class="f-field"><label>لوجو الموقع</label><div style="display:flex;align-items:center;gap:12px">
+        ${ts.logo_img ? `<img id="stLogoImg" src="${esc(ts.logo_img)}" style="width:64px;height:64px;border-radius:14px;object-fit:contain;border:1px solid var(--line);background:#fff">` : `<span class="o-avatar" id="stLogoImg" style="width:64px;height:64px;border-radius:14px;font-size:26px">${esc((STORE.logo_text || STORE.name).trim().charAt(0))}</span>`}
+        <div style="display:grid;gap:8px"><label class="btn btn-soft btn-sm" style="cursor:pointer">رفع صورة<input type="file" id="stLogoFile" accept="image/png,image/jpeg,image/webp,image/svg+xml" style="display:none" onchange="logoFileChosen(this)"></label>
+        ${ts.logo_img ? `<button class="btn btn-danger-soft btn-sm" onclick="logoImgData='';$('#stLogoImg').outerHTML='<span class=o-avatar id=stLogoImg style=\"width:64px;height:64px;border-radius:14px;font-size:26px\">${esc((STORE.logo_text || STORE.name).trim().charAt(0))}</span>'">إزالة اللوجو</button>` : ''}</div>
+      </div><p class="hint">PNG أو JPG أو SVG بحد أقصى 2 ميجا — يظهر في هيدر المتجر بدلاً من حرف الاسم</p></div>
     </div><div class="m-actions"><button class="btn btn-teal" onclick="saveGeneral()">حفظ</button></div></div>
-    <div class="card"><h3>البيانات الأساسية</h3><div class="f-grid">
+    <div class="card"><h3>البيانات الأساسية</h3><div class="f-grid f-one">
       <div class="f-field"><label>رابط المتجر</label><div style="display:flex;align-items:center;gap:6px"><span class="muted mono small">/s/</span><input id="stSlug" dir="ltr" value="${esc(STORE.slug)}"></div></div>
       <div class="f-field full"><label>وصف المتجر</label><textarea id="stDesc" rows="2">${esc(STORE.description || '')}</textarea></div>
       <div class="f-field"><label>هاتف المتجر</label><input id="stPhone" dir="ltr" value="${esc(STORE.phone || '')}"></div>
@@ -52,12 +56,27 @@ registerView('settings', async () => {
       <div class="frow" style="margin-top:10px"><input id="stMaxItems" type="number" min="0" dir="ltr" style="max-width:140px" value="${esc(s.max_items || '0')}"><button class="btn btn-soft" onclick="saveStoreSetting('max_items', $('#stMaxItems').value)">حفظ</button></div>
     </div>`);
 });
+let logoImgData;
+function logoFileChosen(input) {
+  const f = input.files && input.files[0];
+  if (!f) return;
+  if (f.size > 2e6) return toast('الصورة أكبر من 2 ميجا', 'err');
+  const r = new FileReader();
+  r.onload = () => {
+    logoImgData = r.result;
+    const prev = $('#stLogoImg');
+    if (prev) prev.outerHTML = `<img id="stLogoImg" src="${logoImgData}" style="width:64px;height:64px;border-radius:14px;object-fit:contain;border:1px solid var(--line);background:#fff">`;
+    toast('تم اختيار اللوجو — اضغط حفظ لتطبيقه');
+  };
+  r.readAsDataURL(f);
+}
 async function saveGeneral() {
   const lang = $('#stLang').value;
   let ts = {}; try { ts = JSON.parse(STORE.theme_settings || '{}'); } catch (_) {}
   ts.primary = $('#stPrimary').value.trim() || '#141924';
-  const d = await api('/api/store', { method: 'PUT', body: { name: $('#stName').value.trim(), announcement: $('#stAnnounce').value.trim(), logo_text: $('#stLogo').value.trim(), theme_settings: ts } });
-  STORE = d.store;
+  if (logoImgData !== undefined) { if (logoImgData) ts.logo_img = logoImgData; else delete ts.logo_img; }
+  const d = await api('/api/store', { method: 'PUT', body: { name: $('#stName').value.trim(), announcement: $('#stAnnounce').value.trim(), theme_settings: ts } });
+  STORE = d.store; logoImgData = undefined;
   if (lang !== (localStorage.getItem('dLang') || 'ar')) { localStorage.setItem('dLang', lang); location.reload(); return; }
   toast('تم الحفظ'); route();
 }

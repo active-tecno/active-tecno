@@ -791,3 +791,22 @@ select.d-input { cursor: pointer; }
 .risk-high { color: #dc2626; } .risk-mid { color: #d97706; } .risk-low { color: #059669; }
 .o-date { line-height: 1.5; white-space: nowrap; }
 .o-addr { max-width: 220px; line-height: 1.6; }
+
+/* EO orders density + full width + filter strip */
+.d-main { max-width: 1600px; }
+.f-one { grid-template-columns: 1fr; }
+.ord-filter-row { display: none; }
+.ord-filter-row.show { display: flex; }
+.ord-filter-btn { border-style: dashed; }
+.ord-table-wrap { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-md); overflow: auto; }
+.ord-tbl { min-width: 100%; }
+.ord-tbl th { padding: 9px 12px; }
+.ord-tbl td { padding: 8px 12px; font-size: 13px; }
+.o-gauge { display: inline-flex; gap: 2.5px; align-items: center; }
+.o-gauge i { width: 7px; height: 14px; border-radius: 3px; background: var(--line); }
+.o-gauge.risk-low i:nth-child(1) { background: #059669; }
+.o-gauge.risk-mid i:nth-child(-n+2) { background: #d97706; }
+.o-gauge.risk-high i { background: #dc2626; }
+.ord-tabs { align-items: center; }
+.ord-tab svg { width: 14px; height: 14px; vertical-align: -2px; }
+.ord-tab { align-self: center; }

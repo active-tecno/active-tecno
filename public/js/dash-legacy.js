@@ -24,20 +24,21 @@ async function viewOrders() {
     `<a class="btn btn-soft btn-sm" href="/api/orders-export.csv${ordersStatusFilter ? '?status=' + ordersStatusFilter : ''}" download>${I('download')} تصدير</a>
      <div class="pill-tabs"><button class="${ordersView === 'list' ? 'on' : ''}" onclick="ordersView='list';route()">قائمة</button><button class="${ordersView === 'board' ? 'on' : ''}" onclick="ordersView='board';route()">لوحة</button></div>`) +
     `<div class="ord-tabs" id="ordTabs">${renderOrderTabs(d.orders)}</div>
-     <div class="frow"><input type="search" id="ordQ" placeholder="ابحث برقم الطلب، الاسم أو الهاتف…" oninput="filterOrders(this.value)"></div>
+     <div class="frow ord-filter-row" id="ordFilterRow"><input type="search" id="ordQ" placeholder="ابحث برقم الطلب، الاسم أو الهاتف…" oninput="filterOrders(this.value)"></div>
      <div id="ordersWrap">${renderOrders(d.orders)}</div>`);
 }
 function renderOrderTabs(all) {
   const counts = {}; all.forEach(o => counts[o.status] = (counts[o.status] || 0) + 1);
   const tab = (key, label, n) => `<button class="ord-tab ${ordersStatusFilter === key ? 'on' : ''}" onclick="ordersStatusFilter='${key}';route()">${label}${n != null ? ` <span class="n">${n}</span>` : ''}</button>`;
-  return tab('', 'كل الطلبات', all.length) + Object.keys(STATUS).map(s => tab(s, STATUS[s].ar, counts[s] || 0)).join('');
+  return `<button class="ord-tab ord-filter-btn" onclick="const r=$('#ordFilterRow');r.classList.toggle('show');this.classList.toggle('on')">${I('filter') || ''} إضافة فلتر</button>`
+    + tab('', 'كل الطلبات', all.length) + Object.keys(STATUS).map(s => tab(s, STATUS[s].ar, counts[s] || 0)).join('');
 }
 function renderOrders(orders, all) {
   all = all || orders;
   if (ordersStatusFilter) orders = orders.filter(o => o.status === ordersStatusFilter);
   if (!orders.length) return `<div class="card"><div class="empty"><div class="big">${ICONS.orders}</div><b>لا توجد طلبات بعد</b><p>شارك رابط متجرك وستظهر الطلبات هنا فوراً</p><a class="btn btn-teal" href="/s/${esc(STORE.slug)}" target="_blank">افتح متجرك</a></div></div>`;
   if (ordersView === 'list') {
-    return `<div class="card tbl-wrap"><table class="tbl ord-tbl"><thead><tr><th><input type="checkbox" disabled></th><th>المعرّف</th><th>العميل</th><th>العنوان</th><th>المبلغ الاجمالي</th><th>حالة الطلب</th><th>الدولة</th><th>تاريخ الطلب</th></tr></thead><tbody>
+    return `<div class="ord-table-wrap"><table class="tbl ord-tbl"><thead><tr><th><input type="checkbox" disabled></th><th>المعرّف</th><th>العميل</th><th>العنوان</th><th>المبلغ الاجمالي</th><th>حالة الطلب</th><th>مستوى الخطورة</th><th>الدولة</th><th>تاريخ الطلب</th></tr></thead><tbody>
       ${orders.map(o => {
         const r = orderRisk(o, all);
         return `<tr onclick="openOrder(${o.id})" style="cursor:pointer">
@@ -47,6 +48,7 @@ function renderOrders(orders, all) {
         <td class="muted small o-addr">${esc((o.customer_address || '') + (o.governorate ? '، ' + o.governorate : '')).slice(0, 45)}</td>
         <td><b>${Math.round(o.total)} ج.م</b></td>
         <td>${stChip(o.status)}</td>
+        <td><span class="o-gauge ${r.cls}" title="${r.label}"><i></i><i></i><i></i></span></td>
         <td class="muted">EG</td>
         <td class="small">${fmtDateUS(o.created_at)}</td></tr>`;
       }).join('')}</tbody></table></div>`;
