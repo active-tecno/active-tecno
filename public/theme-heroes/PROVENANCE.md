@@ -20,3 +20,5 @@ All images sourced from Unsplash (https://unsplash.com/license — free to use, 
 | eo-luxify.jpg | 1523170335258-f5ed11844a49 | https://unsplash.com/photos/1523170335258-f5ed11844a49 |
 | eo-phoenix.jpg | 1441984904996-e0b6ba687e04 | https://unsplash.com/photos/1441984904996-e0b6ba687e04 |
 | eo-default.jpg | 1472851294608-062f824d29cc | https://unsplash.com/photos/1472851294608-062f824d29cc |
+| eo-brutal.jpg | 1550246140-29f40b909e5a | https://unsplash.com/photos/1550246140-29f40b909e5a |
+| eo-avyro.jpg | 1483985988355-763728e1935b | https://unsplash.com/photos/1483985988355-763728e1935b |

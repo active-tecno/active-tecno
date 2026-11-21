@@ -876,9 +876,9 @@ function storeHeader(store, t, cats = []) {
   <div class="hk-row"><span class="hk-phone">${store.phone ? `عندك استفسار؟ ${esc(store.phone)}` : ''}</span>${brand}<div class="hk-icons">${searchBtn}${cartBtn}<span class="fh-total" id="cartTotalHead"></span></div></div>
 </header>`;
   }
-  if (lay === 'phoenix') {
+  if (lay === 'phoenix' || lay === 'avyro') {
     return `${store.announcement && !t.hide_announcement ? announce : ''}
-<header class="s-header eo sphinx phoenix">
+<header class="s-header eo sphinx ${lay}">
   <div class="sh-row">${brand}<div class="sh-search">${IC.search}<input id="hSearch" placeholder="ابحث عن منتج..."></div>${cartBtn}</div>
   <nav class="sh-links">${linksHtml}</nav>
 </header>`;

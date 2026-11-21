@@ -68,7 +68,11 @@ const THEMES = [
   { id: 'eo-shine', name_ar: 'شاين', category: 'عام', is_premium: 0, price: 0,
     config: { primary: '#141924', accent: '#5334EB', bg: '#FFFFFF', surface: '#F5F4FE', radius: 14, header: 'eo', card: 'flat', font: 'Inter', announce_bg: '#5334EB', announce_color: '#FFFFFF' } },
   { id: 'eo-clear', name_ar: 'كلير', category: 'عام', is_premium: 0, price: 0,
-    config: { primary: '#141924', accent: '#141924', bg: '#FFFFFF', surface: '#FAFAFA', radius: 8, header: 'eo', card: 'flat', font: 'Inter', announce_bg: '#F5F5F5', announce_color: '#141924' } }
+    config: { primary: '#141924', accent: '#141924', bg: '#FFFFFF', surface: '#FAFAFA', radius: 8, header: 'eo', card: 'flat', font: 'Inter', announce_bg: '#F5F5F5', announce_color: '#141924' } },
+  { id: 'eo-brutal', name_ar: 'بروتال', category: 'عام', is_premium: 0, price: 0,
+    config: { primary: '#111111', accent: '#111111', bg: '#FFFFFF', surface: '#F2F2F2', radius: 0, header: 'eo', card: 'brutal', font: 'Inter', announce_bg: '#111111', announce_color: '#C8F31D' } },
+  { id: 'eo-avyro', name_ar: 'فوينكس أفيرو', category: 'أزياء', is_premium: 0, price: 0,
+    config: { primary: '#2B2622', accent: '#2B2622', bg: '#F4EFE8', surface: '#FFFFFF', radius: 10, header: 'eo', card: 'shadow', font: 'IBM Plex Sans Arabic', announce_bg: '#2B2622', announce_color: '#F4EFE8' } }
 ];
 
 function productImage(name, hue) {
@@ -87,13 +91,15 @@ function seed() {
     'eo-default': ['متجر عام'], 'eo-sphinx': ['المنزل والمطبخ'], 'eo-fasty': ['ملابس وأزياء'], 'eo-luxify': ['إكسسوارات ومجوهرات', 'مستحضرات تجميل'], 'eo-nue': ['ملابس وأزياء', 'أحذية وشنط'],
     'eo-void': ['مستحضرات تجميل', 'عطور'], 'eo-nature': ['ساعات ونظارات'], 'eo-blast': ['مستلزمات الأطفال', 'الألعاب والهوايات'], 'eo-hype': ['الإلكترونيات'],
     'eo-vantage-el': ['الإلكترونيات'], 'eo-vantage-cos': ['مستحضرات تجميل'], 'eo-trendy': ['ملابس وأزياء'], 'eo-elegance': ['ملابس وأزياء', 'مستحضرات تجميل'],
-    'eo-phoenix': ['متجر عام', 'ملابس وأزياء'], 'eo-shine': ['مستحضرات تجميل'], 'eo-clear': ['متجر عام']
+    'eo-phoenix': ['متجر عام', 'ملابس وأزياء'], 'eo-shine': ['مستحضرات تجميل'], 'eo-clear': ['متجر عام'],
+    'eo-brutal': ['ملابس وأزياء', 'الألعاب والهوايات'], 'eo-avyro': ['ملابس وأزياء', 'إكسسوارات ومجوهرات']
   };
   const HERO_CARD = {
     'eo-default': ['classic', 'flat', 'pills'], 'eo-sphinx': ['photo', 'shadow', 'cards'], 'eo-fasty': ['none', 'bordered', 'none'], 'eo-luxify': ['photo', 'shadow', 'pills'], 'eo-nue': ['promo', 'brutal', 'circles'],
     'eo-void': ['photo', 'shadow', 'circles'], 'eo-nature': ['split', 'flat', 'cards'], 'eo-blast': ['photo', 'pill', 'icons'], 'eo-hype': ['photo', 'bordered', 'cards'],
     'eo-vantage-el': ['minimal', 'bordered', 'pills'], 'eo-vantage-cos': ['split', 'shadow', 'circles'], 'eo-trendy': ['photo', 'bordered', 'circles'], 'eo-elegance': ['banner', 'shadow', 'circles'],
-    'eo-phoenix': ['photo', 'flat', 'cards'], 'eo-shine': ['banner', 'pill', 'circles'], 'eo-clear': ['minimal', 'bordered', 'pills']
+    'eo-phoenix': ['photo', 'flat', 'cards'], 'eo-shine': ['banner', 'pill', 'circles'], 'eo-clear': ['minimal', 'bordered', 'pills'],
+    'eo-brutal': ['banner', 'brutal', 'cards'], 'eo-avyro': ['split', 'shadow', 'pills']
   };
   const themeStmt = db.prepare(`INSERT INTO themes (id, name_ar, category, is_premium, price, config)
     VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET name_ar = excluded.name_ar, category = excluded.category, is_premium = excluded.is_premium, price = excluded.price, config = excluded.config`);
@@ -118,7 +124,7 @@ function seed() {
   const publishedUntil = new Date(Date.now() + 22 * 86400000).toISOString().slice(0, 10);
   const store = db.prepare(`INSERT INTO stores (user_id, name, slug, description, phone, whatsapp, theme_id, announcement, free_shipping_over, is_published, published_until)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`)
-    .run(merchant.lastInsertRowid, 'متجر نورا', 'noura', 'أزياء نسائية عصرية — عبايات، حقائب وإكسسوارات مختارة بعناية. شحن سريع لكل المحافظات والدفع عند الاستلام.', '01055512345', '201055512345', 'modern', 'شحن مجاني للطلبات فوق 600 ج.م ⚡', 600, publishedUntil);
+    .run(merchant.lastInsertRowid, 'متجر نورا', 'noura', 'أزياء نسائية عصرية — عبايات، حقائب وإكسسوارات مختارة بعناية. شحن سريع لكل المحافظات والدفع عند الاستلام.', '01055512345', '', 'modern', 'شحن مجاني للطلبات فوق 600 ج.م ⚡', 600, publishedUntil);
   const storeId = store.lastInsertRowid;
 
   const products = [
