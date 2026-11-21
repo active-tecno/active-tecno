@@ -739,6 +739,40 @@ function adminShell() {
 function themeVars(t) {
   return `--sp:${t.primary || '#141924'};--sa:${t.accent || '#27cd27'};--sbg:${t.bg || '#fff'};--ssf:${t.surface || '#F6F8FC'};--sr:${t.radius ?? 16}px;--p:${t.primary || '#141924'};--sf:${t.surface || '#F6F8FC'};--anbg:${t.announce_bg || t.accent || '#27cd27'};--ancol:${t.announce_color || '#fff'}`;
 }
+// Explicit theme-setting overrides (إعدادات الثيم): emitted only for keys the merchant set,
+// as a late <style> with !important so they win over per-theme CSS.
+function themeOverrides(t) {
+  if (!t) return '';
+  const rules = [];
+  const col = v => /^#[0-9a-fA-F]{3,8}$/.test(v || '') ? v : null;
+  const ratio = v => /^\d+(\.\d+)?\s*\/\s*\d+(\.\d+)?$/.test(v || '') ? v : null;
+  const add = (key, fn) => { const v = t[key]; if (v !== undefined && v !== null && v !== '') { const r = fn(v); if (r) rules.push(r); } };
+  add('header_bg', v => col(v) && `.s-header{background:${v}!important}`);
+  add('header_color', v => col(v) && `.s-header,.s-header a,.s-header .s-cart-btn{color:${v}!important}`);
+  add('footer_bg', v => col(v) && `.s-footer{background:${v}!important}`);
+  add('footer_color', v => col(v) && `.s-footer,.s-footer a{color:${v}!important}`);
+  add('prod_name_color', v => col(v) && `.p-card .p-info h3,.pd-info h1{color:${v}!important}`);
+  add('price_color', v => col(v) && `.p-price b,.pd-price b{color:${v}!important}`);
+  add('sale_price_color', v => col(v) && `.p-price s,.pd-price s{color:${v}!important}`);
+  add('site_text_color', v => col(v) && `body.store{color:${v}!important}`);
+  add('input_border_color', v => col(v) && `.co-form input,.co-form select,.co-form textarea,.s-newsletter input{border-color:${v}!important}`);
+  add('input_bg_color', v => col(v) && `.co-form input,.co-form select,.co-form textarea,.s-newsletter input{background:${v}!important}`);
+  add('input_text_color', v => col(v) && `.co-form input,.co-form select,.co-form textarea,.s-newsletter input{color:${v}!important}`);
+  add('checkout_bg_color', v => col(v) && `.co-form{background:${v}!important}`);
+  add('checkout_title_color', v => col(v) && `.co-form h3,.co-form label{color:${v}!important}`);
+  add('buy_bg_color', v => col(v) && `.s-btn.buy{background:${v}!important}`);
+  add('buy_text_color', v => col(v) && `.s-btn.buy{color:${v}!important}`);
+  add('buy_border_color', v => col(v) && `.s-btn.buy{border:1.5px solid ${v}!important}`);
+  add('cart_bg_color', v => col(v) && `.s-cart-btn{background:${v}!important}`);
+  add('cart_text_color', v => col(v) && `.s-cart-btn{color:${v}!important}`);
+  add('cart_border_color', v => col(v) && `.s-cart-btn{border:1.5px solid ${v}!important}`);
+  add('cat_card_ratio', v => ratio(v) && `.v-cards .cat-thumb{aspect-ratio:${v}!important}`);
+  add('grid_card_ratio', v => ratio(v) && `.p-img{aspect-ratio:${v}!important}`);
+  add('main_padding_top', v => /^\d{1,3}$/.test(String(v)) && `.store main{padding-top:${v}px!important}`);
+  add('cats_strip_bg', v => col(v) && `.s-cats{background:${v}!important}`);
+  add('cats_strip_color', v => col(v) && `.s-cats a,.s-cats .s-cat{color:${v}!important}`);
+  return rules.length ? `<style>${rules.join('\n')}</style>` : '';
+}
 function pixelSnippets(store) {
   let px = {}; try { px = (JSON.parse(store.theme_settings || '{}').pixels) || {}; } catch (e) {}
   let out = '';
@@ -802,7 +836,7 @@ ${meta}
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Rubik:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/public/css/store.css">
-<style>:root{${themeVars(t)}}</style>${isDemo(store) ? '' : pixelSnippets(store)}${designAssets(store).filter(a => a.enabled && a.kind === 'css').map(a => `<link rel="stylesheet" href="${esc(a.url)}">`).join('')}${headCode}`;
+<style>:root{${themeVars(t)}}</style>${themeOverrides(t)}${isDemo(store) ? '' : pixelSnippets(store)}${designAssets(store).filter(a => a.enabled && a.kind === 'css').map(a => `<link rel="stylesheet" href="${esc(a.url)}">`).join('')}${headCode}`;
 }
 function socialLinks(store) {
   let s = {}; try { s = JSON.parse(storeSettingsKV(store).social || '{}'); } catch (_) {}
@@ -912,7 +946,7 @@ function productCardHTML(store, lay, p, t) {
   const imgs = JSON.parse(p.images || '[]');
   const off = p.compare_at_price && p.compare_at_price > p.price ? Math.round(100 - p.price * 100 / p.compare_at_price) : 0;
   const badgeStyle = (t.sale_badge_bg_color || t.sale_badge_text_color) ? ` style="background:${esc(t.sale_badge_bg_color || '')};color:${esc(t.sale_badge_text_color || '')}"` : '';
-  const badge = off && t.show_sale_badge === false ? ''
+  const badge = off && (t.show_sale_badge === false || t.hide_sale_badge) ? ''
     : off ? (t.custom_badge_title ? `<span class="p-off"${badgeStyle}>${esc(t.custom_badge_title)}</span>`
     : (lay === 'fasty' || lay === 'luxify' ? `<span class="p-off"${badgeStyle}>تخفيضات</span>` : `<span class="p-off"${badgeStyle}>-${off}%</span>`)) : '';
   const cardBg = t.card_background_product ? ` style="background:${esc(t.card_background_product)};color:${esc(t.card_background_product_color || 'inherit')}"` : '';
@@ -944,7 +978,7 @@ ${uiBlocks(store, 'top')}${storeHeader(store, t, allCats)}${uiBlocks(store, 'bot
 ${products.length ? `<div class="s-grid">${products.map(p => productCardHTML(store, lay, p, t)).join('')}</div>` : `<div class="s-empty">لا توجد منتجات في هذا القسم حالياً — <a href="/s/${esc(store.slug)}">تصفح كل المنتجات</a></div>`}
 </main>
 <footer class="s-footer">${socialLinks(store)}<p>يعمل بواسطة <a href="/">اكتف اوردر</a> — الدفع عند الاستلام متاح</p></footer>
-${cartDrawer(store)}
+${cartDrawer(store, t)}
 ${storeScripts(store)}
 </body></html>`;
 }
@@ -1062,7 +1096,7 @@ ${store.whatsapp ? `<a class="s-btn ghost" href="https://wa.me/${escAttr(store.w
     case 'html_code': return st.html || '';
     case 'faq': return `${st.title ? `<h2 class="s-sec-t">${esc(st.title)}</h2>` : ''}<div class="s-faq v-${esc(st.variant || 'simple')}">${(st.items || []).map(x => `<details><summary>${esc(x.q || '')}</summary><p>${esc(x.a || '')}</p></details>`).join('')}</div>`;
     case 'features': return `${st.title ? `<h2 class="s-sec-t">${esc(st.title)}</h2>` : ''}<div class="s-features v-${esc(st.variant || 'cards')}">${(st.items || []).map(x => `<div class="s-feat"><b>${esc(x.title || '')}</b><p>${esc(x.text || '')}</p></div>`).join('')}</div>`;
-    case 'newsletter': return `<section class="s-newsletter"><h3>${esc(st.title)}</h3><p>${esc(st.desc || '')}</p><form id="nlForm"><input type="email" id="nlEmail" placeholder="بريدك الإلكتروني" required dir="ltr"><button class="s-btn" type="submit">اشترك</button></form><div id="nlMsg"></div></section>`;
+    case 'newsletter': return `<section class="s-newsletter${t.newsletter_hide_mobile ? ' nl-hide-mobile' : ''}"><h3>${esc(t.newsletter_title || st.title)}</h3><p>${esc(t.newsletter_desc || st.desc || '')}</p><form id="nlForm"><input type="email" id="nlEmail" placeholder="بريدك الإلكتروني" required dir="ltr"><button class="s-btn" type="submit">اشترك</button></form><div id="nlMsg"></div></section>`;
     case 'reviews': {
       const revs = db.prepare("SELECT customer_name, rating, text FROM reviews WHERE store_id = ? AND status = 'published' ORDER BY created_at DESC LIMIT ?").all(store.id, st.limit || 6);
       if (!revs.length) return '';
@@ -1110,7 +1144,7 @@ ${store.free_shipping_over ? `<div class="s-freeship">${IC.truck}شحن مجان
 ${renderZone(store, 'home', 'above_footer', ctx)}
 <footer class="s-footer">${socialLinks(store)}${t.footer_text ? `<p>${esc(t.footer_text)}</p>` : ''}${t.trust_line ? `<p class="s-trust">${esc(t.trust_line)}</p>` : ''}<p>يعمل بواسطة <a href="/">اكتف اوردر</a> — الدفع عند الاستلام متاح</p></footer>
 ${renderZone(store, 'home', 'below_footer', ctx)}
-${cartDrawer(store)}
+${cartDrawer(store, t)}
 ${storeScripts(store)}
 <script>track('page_view');</script>
 </body></html>`;
@@ -1200,7 +1234,7 @@ ${renderZone(store, 'product', 'above_footer', ctx)}
 <footer class="s-footer">${socialLinks(store)}${t.footer_text ? `<p>${esc(t.footer_text)}</p>` : ''}<p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>
 ${renderZone(store, 'product', 'below_footer', ctx)}
 ${S.sticky_buy && !out ? `<div class="pd-sticky"><img src="${esc(imgs[0] || '')}" alt=""><div class="pd-sticky-info"><b>${esc(p.name)}</b><span>${money(p.price)}</span></div><button class="s-btn buy" onclick="${S.buy_same_page ? `document.getElementById('pdOrder').scrollIntoView({behavior:'smooth'})` : `buyNow(${p.id}, '${jsName}', ${p.price}, ${JSON.stringify(imgs[0] || '')}, ${qtyVal})`}">${esc(buyText)}</button></div>` : ''}
-${cartDrawer(store)}
+${cartDrawer(store, t)}
 ${storeScripts(store)}
 <script>track('product_view', ${p.id});</script>
 <script>
@@ -1501,11 +1535,18 @@ function notFound(title, msg) {
   return base(title, `<div class="min-h-screen grid place-items-center bg-subtle px-4 text-center"><div data-reveal="pop"><h1 class="text-[28px] font-bold">${esc(title)}</h1><p class="mt-2 text-[15px] text-muted-foreground">${esc(msg)}</p><a class="btn-sheen mt-6 inline-block rounded-full bg-brand px-7 py-3 text-[14px] font-bold text-night transition-all duration-200 hover:bg-brand-bright" href="/">العودة للرئيسية</a></div></div>`);
 }
 
-function cartDrawer(store) {
+function cartDrawer(store, t) {
+  t = t || {};
+  let suggest = '';
+  if (t.cart_suggest) {
+    const picks = db.prepare(`SELECT id, name, price, compare_at_price, stock, category, images FROM products WHERE store_id = ? AND status = 'active' AND stock > 0 AND COALESCE(json_extract(settings,'$.hidden_product'),0) = 0 ORDER BY RANDOM() LIMIT 4`).all(store.id);
+    if (picks.length) suggest = `<div class="cart-suggest"><h4>${esc(t.cart_suggest_title || 'منتجات مقترحة')}</h4>${picks.map(p => { const im = (JSON.parse(p.images || '[]')[0]) || ph(p.name); return `<a class="cs-item" href="/s/${esc(store.slug)}/p/${p.id}"><img src="${esc(im)}" alt="" loading="lazy"><div><b>${esc(p.name)}</b><span>${egp(p.price)}</span></div></a>`; }).join('')}</div>`;
+  }
   return `<div class="cart-overlay" id="cartOverlay" onclick="toggleCart(false)"></div>
 <aside class="cart-drawer" id="cartDrawer">
 <div class="cart-head"><h3>سلة التسوق</h3><button onclick="toggleCart(false)">✕</button></div>
 <div class="cart-items" id="cartItems"></div>
+${suggest}
 <div class="cart-foot">
 <div class="cart-total"><span>الإجمالي</span><b id="cartTotal">0 ج.م</b></div>
 <a class="s-btn btn-lg full buy" href="/s/${esc(store.slug)}/checkout" onclick="track('begin_checkout')">إتمام الطلب — دفع عند الاستلام</a>
