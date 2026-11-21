@@ -18,7 +18,18 @@ const THEMES = [
   { id: 'royal', name_ar: 'ملكي — Premium', category: 'متاجر فاخرة', is_premium: 1, price: 450,
     config: { primary: '#101623', accent: '#C9A24B', bg: '#0F1420', surface: '#171E2E', radius: 14, header: 'split', card: 'elevated', font: 'IBM Plex Sans Arabic', dark: true } },
   { id: 'fresh', name_ar: 'طازج — سوبرماركت وعروض', category: 'أغذية وعروض', is_premium: 0, price: 0,
-    config: { primary: '#14532D', accent: '#F59E0B', bg: '#FFFFFF', surface: '#F0FDF4', radius: 16, header: 'centered', card: 'soft', font: 'IBM Plex Sans Arabic' } }
+    config: { primary: '#14532D', accent: '#F59E0B', bg: '#FFFFFF', surface: '#F0FDF4', radius: 16, header: 'centered', card: 'soft', font: 'IBM Plex Sans Arabic' } },
+  // Stage G: EO-look theme family (own code, same structure/look)
+  { id: 'eo-default', name_ar: 'ديفولت', category: 'عام', is_premium: 0, price: 0,
+    config: { primary: '#141924', accent: '#111111', bg: '#FFFFFF', surface: '#F3F4F6', radius: 12, header: 'eo', card: 'flat', font: 'IBM Plex Sans Arabic', announce_bg: '#F3E8FF', announce_color: '#141924' } },
+  { id: 'eo-sphinx', name_ar: 'سفينكس', category: 'عام', is_premium: 0, price: 0,
+    config: { primary: '#141924', accent: '#111111', bg: '#FFFFFF', surface: '#F3F4F6', radius: 10, header: 'eo', card: 'flat', font: 'IBM Plex Sans Arabic', announce_bg: '#FFEA00', announce_color: '#141924' } },
+  { id: 'eo-fasty', name_ar: 'فاستي', category: 'عام', is_premium: 0, price: 0,
+    config: { primary: '#141924', accent: '#E63946', bg: '#FFFFFF', surface: '#F3F4F6', radius: 10, header: 'eo', card: 'flat', font: 'IBM Plex Sans Arabic', announce_bg: '#111111', announce_color: '#FFFFFF' } },
+  { id: 'eo-luxify', name_ar: 'لوكسيفاي', category: 'متاجر فاخرة', is_premium: 0, price: 0,
+    config: { primary: '#141924', accent: '#111111', bg: '#FFFFFF', surface: '#F5F4F2', radius: 8, header: 'eo', card: 'flat', font: 'IBM Plex Sans Arabic', announce_bg: '#F3E8FF', announce_color: '#141924' } },
+  { id: 'eo-nue', name_ar: 'نيو', category: 'عام', is_premium: 0, price: 0,
+    config: { primary: '#141924', accent: '#C8F31D', bg: '#F7F3E8', surface: '#FFFFFF', radius: 0, header: 'eo', card: 'flat', font: 'IBM Plex Sans Arabic', announce_bg: '#F3E8FF', announce_color: '#141924' } }
 ];
 
 function productImage(name, hue) {

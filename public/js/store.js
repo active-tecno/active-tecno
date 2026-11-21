@@ -142,6 +142,8 @@ function renderCartUI() {
   }
   const tot = document.getElementById('cartTotal');
   if (tot) tot.textContent = egp(cart.reduce((s, i) => s + i.price * i.qty, 0));
+  const th = document.getElementById('cartTotalHead');
+  if (th) th.textContent = egp(cart.reduce((s, i) => s + i.price * i.qty, 0));
 }
 function toast(msg) {
   let t = document.querySelector('.toast');
@@ -265,3 +267,23 @@ document.addEventListener('submit', async e => {
   msg.style.color = r.ok ? '#27cd27' : '#f87171';
   if (r.ok) document.getElementById('nlEmail').value = '';
 });
+
+// ---------- Stage G: EO-look theme behaviors ----------
+(function () {
+  const sl = document.getElementById('hSlider');
+  if (sl) {
+    const slides = sl.querySelectorAll('.h-slide');
+    const dots = sl.querySelectorAll('.h-dot');
+    if (slides.length > 1) {
+      let i = 0;
+      const show = n => { i = (n + slides.length) % slides.length; slides.forEach((x, k) => x.classList.toggle('on', k === i)); dots.forEach((x, k) => x.classList.toggle('on', k === i)); };
+      dots.forEach(d => d.addEventListener('click', () => show(+d.dataset.i)));
+      setInterval(() => show(i + 1), 4500);
+    }
+  }
+  const hs = document.getElementById('hSearch');
+  if (hs) hs.addEventListener('input', () => {
+    const q = hs.value.trim();
+    document.querySelectorAll('.p-card').forEach(c => { c.style.display = !q || (c.dataset.name || '').includes(q) ? '' : 'none'; });
+  });
+})();

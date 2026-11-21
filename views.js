@@ -722,7 +722,7 @@ function adminShell() {
 
 // ---------- storefront ----------
 function themeVars(t) {
-  return `--sp:${t.primary || '#141924'};--sa:${t.accent || '#27cd27'};--sbg:${t.bg || '#fff'};--ssf:${t.surface || '#F6F8FC'};--sr:${t.radius ?? 16}px;`;
+  return `--sp:${t.primary || '#141924'};--sa:${t.accent || '#27cd27'};--sbg:${t.bg || '#fff'};--ssf:${t.surface || '#F6F8FC'};--sr:${t.radius ?? 16}px;--p:${t.primary || '#141924'};--sf:${t.surface || '#F6F8FC'};--anbg:${t.announce_bg || '#F3E8FF'};--ancol:${t.announce_color || '#141924'}`;
 }
 function pixelSnippets(store) {
   let px = {}; try { px = (JSON.parse(store.theme_settings || '{}').pixels) || {}; } catch (e) {}
@@ -776,37 +776,94 @@ function socialLinks(store) {
   return `<p class="s-social">${links.join(' · ')} · <a href="/s/${esc(store.slug)}/policies">السياسات</a></p>`;
 }
 
-function storeHeader(store, t) {
-  return `${store.announcement ? `<div class="s-announce">${esc(store.announcement)}</div>` : ''}
+function eoLayout(store) { const id = store.theme_id || ''; return id.startsWith('eo-') ? id.slice(3) : null; }
+IC.search = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>';
+IC.heart = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20s-7-4.4-9.2-8.6C1.2 8.4 3 5 6.2 5c2 0 3.4 1.1 4.2 2.3h3.2C14.4 6.1 15.8 5 17.8 5c3.2 0 5 3.4 3.4 6.4C19 15.6 12 20 12 20z"/></svg>';
+IC.menu = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';
+function storeHeader(store, t, cats = []) {
+  const lay = eoLayout(store);
+  if (!lay) {
+    return `${store.announcement ? `<div class="s-announce">${esc(store.announcement)}</div>` : ''}
 <header class="s-header ${t.header === 'split' ? 'split' : ''}">
   <a class="s-brand" href="/s/${esc(store.slug)}"><span class="s-logo">${esc((store.logo_text || store.name).trim().charAt(0))}</span><span>${esc(store.name)}</span></a>
   <button class="s-cart-btn" onclick="toggleCart(true)" aria-label="السلة">${IC.cart}<span class="s-cart-count" id="cartCount">0</span></button>
 </header>`;
+  }
+  const brand = `<a class="s-brand" href="/s/${esc(store.slug)}"><span class="s-logo">${esc((store.logo_text || store.name).trim().charAt(0))}</span><span class="s-brand-name">${esc(store.name)}</span></a>`;
+  const cartBtn = `<button class="s-cart-btn" onclick="toggleCart(true)" aria-label="السلة">${IC.cart}<span class="s-cart-count" id="cartCount">0</span></button>`;
+  const searchBtn = `<button class="s-icon-btn" aria-label="بحث" onclick="document.getElementById('products')?.scrollIntoView({behavior:'smooth'})">${IC.search}</button>`;
+  const navLinks = [...cats.slice(0, 4).map(c => ({ label: c, href: `?cat=${encodeURIComponent(c)}#products` })),
+    { label: 'سياسة الاستبدال والاسترجاع', href: `/s/${esc(store.slug)}/policies` },
+    { label: 'سياسة الشحن', href: `/s/${esc(store.slug)}/policies` }];
+  const linksHtml = navLinks.map(l => `<a href="${esc(l.href)}">${esc(l.label)}</a>`).join('');
+  const announce = `<div class="s-announce">${esc(store.announcement || 'شحن سريع لكل المحافظات والدفع عند الاستلام')}</div>`;
+  if (lay === 'sphinx') {
+    return `${store.announcement ? announce : ''}
+<header class="s-header eo sphinx">
+  <div class="sh-row">${brand}<div class="sh-search">${IC.search}<input id="hSearch" placeholder="ابحث عن منتج..."></div>${cartBtn}</div>
+  <nav class="sh-links">${linksHtml}</nav>
+</header>`;
+  }
+  if (lay === 'fasty') {
+    return `${announce}
+<header class="s-header eo fasty">
+  <div class="fh-side fh-right"><button class="s-icon-btn" onclick="document.querySelector('.fh-links').classList.toggle('open')">${IC.menu}<span>القائمة</span></button><button class="s-icon-btn" aria-label="المفضلة">${IC.heart}</button>${searchBtn}</div>
+  ${brand}
+  <div class="fh-side fh-left">${cartBtn}<span class="fh-total" id="cartTotalHead"></span></div>
+  <nav class="fh-links">${linksHtml}</nav>
+</header>`;
+  }
+  if (lay === 'luxify') {
+    return `<header class="s-header eo luxify">
+  <div class="lx-row">${brand}<nav class="lx-links">${linksHtml}</nav><div class="lx-icons"><button class="s-icon-btn" aria-label="المفضلة">${IC.heart}</button>${searchBtn}${cartBtn}</div></div>
+</header>
+${announce}`;
+  }
+  return `${announce}
+<header class="s-header eo ${lay}">
+  <div class="dh-row">${brand}<nav class="dh-links">${linksHtml}</nav><div class="dh-icons">${searchBtn}${cartBtn}</div></div>
+</header>`;
+}
+function eoHero(store, products) {
+  const slides = [`<div class="h-slide grad-a on"><div class="h-slide-in"><h2>${esc(store.name)}</h2><p>${esc(store.description || 'تسوق أحدث المنتجات بأفضل الأسعار')}</p><a class="s-btn" href="#products">تسوق الآن</a></div></div>`];
+  const disc = products.filter(p => p.compare_at_price && p.compare_at_price > p.price)
+    .sort((a, b) => (1 - b.price / b.compare_at_price) - (1 - a.price / a.compare_at_price))[0];
+  if (disc) {
+    const pct = Math.round(100 - disc.price * 100 / disc.compare_at_price);
+    slides.push(`<div class="h-slide grad-b"><div class="h-slide-in"><h2>خصم حتى ${pct}%</h2><p>${esc(disc.name)}</p><a class="s-btn" href="/s/${esc(store.slug)}/p/${disc.id}">اطلبه الآن</a></div></div>`);
+  }
+  if (store.free_shipping_over > 0) slides.push(`<div class="h-slide grad-c"><div class="h-slide-in"><h2>شحن مجاني</h2><p>للطلبات فوق ${egp(store.free_shipping_over)}</p><a class="s-btn" href="#products">ابدأ التسوق</a></div></div>`);
+  return `<section class="h-slider" id="hSlider">${slides.join('')}${slides.length > 1 ? `<div class="h-dots">${slides.map((_, i) => `<button class="h-dot${i ? '' : ' on'}" data-i="${i}" aria-label="شريحة ${i + 1}"></button>`).join('')}</div>` : ''}</section>`;
 }
 const storeScripts = store => `<script>window.STORE_SLUG=${JSON.stringify(store.slug)};</script><script src="/public/js/store.js"></script>`;
 
 function storefront(store, t, owner) {
+  const lay = eoLayout(store);
   const products = db.prepare(`SELECT id, name, price, compare_at_price, stock, category, images FROM products WHERE store_id = ? AND status = 'active' ORDER BY created_at DESC`).all(store.id);
   const cats = [...new Set(products.map(p => p.category).filter(Boolean))];
   const cards = products.map(p => {
     const imgs = JSON.parse(p.images || '[]');
     const off = p.compare_at_price && p.compare_at_price > p.price ? Math.round(100 - p.price * 100 / p.compare_at_price) : 0;
-    return `<a class="p-card" data-cat="${esc(p.category)}" href="/s/${esc(store.slug)}/p/${p.id}">
-      ${off ? `<span class="p-off">-${off}%</span>` : ''}
+    const badge = off ? (lay === 'fasty' || lay === 'luxify' ? `<span class="p-off">تخفيضات</span>` : `<span class="p-off">-${off}%</span>`) : '';
+    return `<a class="p-card" data-cat="${esc(p.category)}" data-name="${esc(p.name)}" href="/s/${esc(store.slug)}/p/${p.id}">
+      ${badge}
       ${p.stock <= 0 ? `<span class="p-out">نفدت الكمية</span>` : ''}
       <div class="p-img"><img src="${esc(imgs[0] || ph(p.name))}" alt="${esc(p.name)}" loading="lazy"></div>
       <div class="p-info"><h3>${esc(p.name)}</h3>
       <div class="p-price"><b>${egp(p.price)}</b>${p.compare_at_price ? `<s>${egp(p.compare_at_price)}</s>` : ''}</div></div>
+      ${lay === 'fasty' ? `<div class="p-actions"><span class="p-heart">${IC.heart}</span><span class="p-add">أضف إلى السلة ${IC.cart}</span></div>` : ''}
     </a>`;
   }).join('');
+  const hero = lay ? eoHero(store, products)
+    : `<section class="s-hero"><h1>${esc(store.name)}</h1><p>${esc(store.description)}</p>
+<div class="s-hero-cta"><a class="s-btn" href="#products">تسوّق الآن</a>
+${store.whatsapp ? `<a class="s-btn ghost" href="https://wa.me/${esc(store.whatsapp)}" target="_blank" rel="noopener">تواصل واتساب</a>` : ''}</div></section>`;
   return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, store.name)}</head>
-<body class="store ${t.dark ? 'dark' : ''}">
+<body class="store ${t.dark ? 'dark' : ''} t-${esc(store.theme_id)}">
 ${demoBar(store)}
 ${owner ? `<div class="s-ownerbar">وضع المعاينة — <a href="/app">العودة للوحة التحكم</a></div>` : ''}
-${storeHeader(store, t)}
-<section class="s-hero"><h1>${esc(store.name)}</h1><p>${esc(store.description)}</p>
-<div class="s-hero-cta"><a class="s-btn" href="#products">تسوّق الآن</a>
-${store.whatsapp ? `<a class="s-btn ghost" href="https://wa.me/${esc(store.whatsapp)}" target="_blank" rel="noopener">تواصل واتساب</a>` : ''}</div></section>
+${storeHeader(store, t, cats)}
+${hero}
 ${cats.length ? `<nav class="s-cats" id="products">${['الكل', ...cats].map(c => `<button class="s-cat" data-cat="${esc(c)}">${esc(c)}</button>`).join('')}</nav>` : '<div id="products"></div>'}
 <main class="s-grid">${cards || `<div class="s-empty">لا توجد منتجات بعد — تابعنا قريباً ✨</div>`}</main>
 ${store.free_shipping_over ? `<div class="s-freeship">${IC.truck}شحن مجاني للطلبات فوق ${egp(store.free_shipping_over)}</div>` : ''}
@@ -823,7 +880,7 @@ function productPage(store, p, t, owner) {
   const upsell = p.upsell_product_id ? db.prepare(`SELECT id, name, price, images FROM products WHERE id = ? AND status = 'active' AND stock > 0`).get(p.upsell_product_id) : null;
   const off = p.compare_at_price && p.compare_at_price > p.price ? Math.round(100 - p.price * 100 / p.compare_at_price) : 0;
   return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, `${p.name} | ${store.name}`)}</head>
-<body class="store ${t.dark ? 'dark' : ''}">
+<body class="store ${t.dark ? 'dark' : ''} t-${esc(store.theme_id)}">
 ${demoBar(store)}
 ${owner ? `<div class="s-ownerbar">وضع المعاينة — <a href="/app">العودة للوحة التحكم</a></div>` : ''}
 ${storeHeader(store, t)}
@@ -854,7 +911,7 @@ ${storeScripts(store)}
 function checkoutPage(store, t, owner) {
   const govs = ['القاهرة', 'الجيزة', 'الإسكندرية', 'الدقهلية', 'الشرقية', 'الغربية', 'المنوفية', 'القليوبية', 'البحيرة', 'كفر الشيخ', 'دمياط', 'بورسعيد', 'الإسماعيلية', 'السويس', 'الفيوم', 'بني سويف', 'المنيا', 'أسيوط', 'سوهاج', 'قنا', 'الأقصر', 'أسوان', 'البحر الأحمر', 'مطروح', 'شمال سيناء', 'جنوب سيناء', 'طنطا', 'المنصورة', 'الزقازيق'];
   return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, `إتمام الطلب | ${store.name}`)}</head>
-<body class="store ${t.dark ? 'dark' : ''}">
+<body class="store ${t.dark ? 'dark' : ''} t-${esc(store.theme_id)}">
 ${demoBar(store)}
 ${storeHeader(store, t)}
 <main class="co">
@@ -952,7 +1009,7 @@ document.getElementById('fnForm')?.addEventListener('submit', async e => {
 function storeBlogIndex(store, t) {
   const posts = db.prepare(`SELECT p.*, c.name AS category_name FROM blog_posts p LEFT JOIN blog_categories c ON c.id = p.category_id WHERE p.store_id = ? AND p.status = 'published' ORDER BY p.id DESC`).all(store.id);
   return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, `المدونة | ${store.name}`)}</head>
-<body class="store ${t.dark ? 'dark' : ''}">
+<body class="store ${t.dark ? 'dark' : ''} t-${esc(store.theme_id)}">
 ${demoBar(store)}${storeHeader(store, t)}
 <main class="wrap">
 <h1 class="pg-title">المدونة</h1>
@@ -972,7 +1029,7 @@ ${storeScripts(store)}
 function storeBlogPost(store, p, t) {
   const more = db.prepare(`SELECT title, slug FROM blog_posts WHERE store_id = ? AND status = 'published' AND id != ? ORDER BY id DESC LIMIT 3`).all(store.id, p.id);
   return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, `${p.title} | ${store.name}`)}</head>
-<body class="store ${t.dark ? 'dark' : ''}">
+<body class="store ${t.dark ? 'dark' : ''} t-${esc(store.theme_id)}">
 ${demoBar(store)}${storeHeader(store, t)}
 <main class="wrap blog-post">
 <a class="blog-back" href="/s/${esc(store.slug)}/blog">→ كل المقالات</a>
@@ -989,7 +1046,7 @@ ${storeScripts(store)}
 
 function verifiedPage(store, stats, t) {
   return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, `طلبات موثقة | ${store.name}`)}</head>
-<body class="store ${t.dark ? 'dark' : ''}">
+<body class="store ${t.dark ? 'dark' : ''} t-${esc(store.theme_id)}">
 ${demoBar(store)}
 <main class="done">
 <div class="done-card">
@@ -1033,7 +1090,7 @@ function orderPage(store, o, t) {
   const waMsg = encodeURIComponent(`أهلاً ${o.customer_name} 👋\nتم استلام طلبك رقم ${o.number} من ${store.name} بنجاح ✅\nالإجمالي: ${egp(o.total)} — الدفع عند الاستلام\nسنتواصل معك قريباً لتأكيد الشحن 🚚`);
   const waLink = store.whatsapp ? `https://wa.me/${store.whatsapp}?text=${encodeURIComponent(`أهلاً، أريد الاستفسار عن طلبي رقم ${o.number}`)}` : null;
   return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, `طلبك ${o.number} | ${store.name}`)}</head>
-<body class="store ${t.dark ? 'dark' : ''}">
+<body class="store ${t.dark ? 'dark' : ''} t-${esc(store.theme_id)}">
 ${demoBar(store)}
 <main class="done">
 <div class="done-card">
@@ -1369,7 +1426,7 @@ function policiesPage(store, t) {
     ? secs.map(([k, label]) => `<section class="card" style="margin-bottom:14px"><h2 style="font-size:18px;margin:0 0 8px">${label}</h2><p style="white-space:pre-wrap;line-height:1.9;margin:0">${esc(pol[k])}</p></section>`).join('')
     : `<div class="s-empty">لم يضف المتجر سياسات بعد.</div>`;
   return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, `السياسات | ${store.name}`)}</head>
-<body class="store ${t.dark ? 'dark' : ''}">
+<body class="store ${t.dark ? 'dark' : ''} t-${esc(store.theme_id)}">
 ${demoBar(store)}
 ${storeHeader(store, t)}
 <main style="max-width:760px;margin:24px auto;padding:0 16px">${body}</main>
