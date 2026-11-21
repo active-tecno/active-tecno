@@ -390,6 +390,17 @@ const migrations = [
     sql: `
     ALTER TABLE stores ADD COLUMN api_key TEXT;
     `
+  },
+  {
+    id: '012_product_advanced',
+    sql: `
+    ALTER TABLE products ADD COLUMN stock_tracking INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE products ADD COLUMN disable_on_zero INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE products ADD COLUMN currency TEXT NOT NULL DEFAULT '';
+    ALTER TABLE products ADD COLUMN custom_pixel TEXT NOT NULL DEFAULT '';
+    ALTER TABLE products ADD COLUMN settings TEXT NOT NULL DEFAULT '{}';
+    UPDATE products SET stock_tracking = 1;
+    `
   }
 ];
 

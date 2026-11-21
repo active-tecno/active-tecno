@@ -2,6 +2,7 @@
 const { db } = require('./db');
 
 
+const GOVS = ['القاهرة', 'الجيزة', 'الإسكندرية', 'الدقهلية', 'الشرقية', 'الغربية', 'المنوفية', 'القليوبية', 'البحيرة', 'كفر الشيخ', 'دمياط', 'بورسعيد', 'الإسماعيلية', 'السويس', 'الفيوم', 'بني سويف', 'المنيا', 'أسيوط', 'سوهاج', 'قنا', 'الأقصر', 'أسوان', 'البحر الأحمر', 'مطروح', 'شمال سيناء', 'جنوب سيناء', 'طنطا', 'المنصورة', 'الزقازيق'];
 const IC = {
   bag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l1 14H5L6 7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>',
   box: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3.3 8.3L12 13l8.7-4.7M12 13v9"/></svg>',
@@ -853,8 +854,8 @@ function productCardHTML(store, lay, p) {
 function categoryPage(store, cat, t, owner, sort) {
   const lay = eoLayout(store);
   const order = sort === 'price_asc' ? 'price ASC' : sort === 'price_desc' ? 'price DESC' : 'created_at DESC';
-  const products = db.prepare(`SELECT id, name, price, compare_at_price, stock, category, images FROM products WHERE store_id = ? AND status = 'active' AND category = ? ORDER BY ${order}`).all(store.id, cat);
-  const allCats = [...new Set(db.prepare(`SELECT category FROM products WHERE store_id = ? AND status = 'active'`).all(store.id).map(r => r.category).filter(Boolean))];
+  const products = db.prepare(`SELECT id, name, price, compare_at_price, stock, category, images FROM products WHERE store_id = ? AND status = 'active' AND category = ? AND COALESCE(json_extract(settings,'$.hidden_product'),0) = 0 ORDER BY ${order}`).all(store.id, cat);
+  const allCats = [...new Set(db.prepare(`SELECT category FROM products WHERE store_id = ? AND status = 'active' AND COALESCE(json_extract(settings,'$.hidden_product'),0) = 0`).all(store.id).map(r => r.category).filter(Boolean))];
   const sortSel = `<select class="cat-sort" onchange="location.href='/s/${esc(store.slug)}/cat/${encodeURIComponent(cat)}'+(this.value?'?sort='+this.value:'')">
     <option value="" ${!sort ? 'selected' : ''}>الأحدث</option>
     <option value="price_asc" ${sort === 'price_asc' ? 'selected' : ''}>السعر: من الأقل</option>
@@ -875,7 +876,7 @@ ${storeScripts(store)}
 }
 function storefront(store, t, owner) {
   const lay = eoLayout(store);
-  const products = db.prepare(`SELECT id, name, price, compare_at_price, stock, category, images FROM products WHERE store_id = ? AND status = 'active' ORDER BY created_at DESC`).all(store.id);
+  const products = db.prepare(`SELECT id, name, price, compare_at_price, stock, category, images FROM products WHERE store_id = ? AND status = 'active' AND COALESCE(json_extract(settings,'$.hidden_product'),0) = 0 ORDER BY created_at DESC`).all(store.id);
   const cats = [...new Set(products.map(p => p.category).filter(Boolean))];
   const cards = products.map(p => productCardHTML(store, lay, p)).join('');
   const hero = lay ? eoHero(store, products)
@@ -901,34 +902,122 @@ ${storeScripts(store)}
 
 function productPage(store, p, t, owner) {
   const imgs = JSON.parse(p.images || '[]');
+  const S = {}; try { Object.assign(S, JSON.parse(p.settings || '{}')); } catch (e) {}
+  const cur = String(p.currency || '').trim();
+  const money = v => cur ? `${(+v).toLocaleString('ar-EG')} ${esc(cur)}` : egp(v);
   const upsell = p.upsell_product_id ? db.prepare(`SELECT id, name, price, images FROM products WHERE id = ? AND status = 'active' AND stock > 0`).get(p.upsell_product_id) : null;
   const off = p.compare_at_price && p.compare_at_price > p.price ? Math.round(100 - p.price * 100 / p.compare_at_price) : 0;
-  return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, `${p.name} | ${store.name}`)}</head>
-<body class="store ${t.dark ? 'dark' : ''} t-${esc(store.theme_id)}">
+  const out = !!(p.stock_tracking && p.stock <= 0);
+  const buyText = (S.buy_button_text || '').trim() || 'اضغط هنا للشراء';
+  const fvMin = Math.max(1, +S.fake_visitors_min || 20), fvMax = Math.max(fvMin, +S.fake_visitors_max || 70);
+  const jsName = esc(p.name).replace(/'/g, '');
+  const similar = S.hide_similar ? [] : db.prepare(`SELECT id, name, price, compare_at_price, stock, category, images FROM products WHERE store_id = ? AND status = 'active' AND id != ? AND COALESCE(json_extract(settings,'$.hidden_product'),0) = 0 ORDER BY CASE WHEN category = ? THEN 0 ELSE 1 END, priority DESC, created_at DESC LIMIT 8`).all(store.id, p.id, p.category || '');
+  const reviews = S.reviews_enabled ? db.prepare(`SELECT customer_name, rating, text, created_at FROM reviews WHERE product_id = ? AND status = 'published' ORDER BY id DESC LIMIT 20`).all(p.id) : [];
+  const lay = eoLayout(store);
+  const qtyCtl = out || S.hide_qty_counter ? '' : `<div class="pd-qty"><button type="button" onclick="pdQty(-1)">−</button><span id="pdQty">1</span><button type="button" onclick="pdQty(1)">+</button></div>`;
+  const qtyVal = `+(document.getElementById('pdQty')?.textContent || 1)`;
+  const orderFormHtml = out ? '' : `
+<section class="pd-order" id="pdOrder">
+  <h2>اطلب الآن — الدفع عند الاستلام</h2>
+  <form id="pdForm" class="co-form">
+    <label>الاسم بالكامل<input name="name" required placeholder="مثال: مريم أحمد"></label>
+    <label>رقم الموبايل<input name="phone" required inputmode="tel" dir="ltr" placeholder="01xxxxxxxxx" pattern="01[0125][0-9]{8}"></label>
+    <label>المحافظة<select name="governorate" required>${GOVS.map(g => `<option>${g}</option>`).join('')}</select></label>
+    <label>العنوان بالتفصيل<textarea name="address" required placeholder="الشارع، رقم العمارة، الدور، الشقة، علامة مميزة"></textarea></label>
+    <label>ملاحظات (اختياري)<input name="notes" placeholder="أي تفاصيل إضافية"></label>
+    <div class="auth-err" id="pdErr"></div>
+    ${demoFormNotice(store)}
+    <button type="submit" class="s-btn btn-lg full buy" id="pdSubmit">${esc(buyText)} — ${money(p.price)}</button>
+    <div class="co-trust"><span>${IC.lock}بياناتك آمنة ومشفّرة</span><span>${IC.truck}توصيل سريع</span><span>${IC.ret}إرجاع سهل</span></div>
+  </form>
+</section>`;
+  const buyButtons = out ? `<div class="pd-low out">نفدت الكمية مؤقتاً</div>`
+    : S.buy_same_page ? `${qtyCtl}<button class="s-btn btn-lg full buy" onclick="document.getElementById('pdOrder').scrollIntoView({behavior:'smooth'})">${IC.cart} ${esc(buyText)}</button>`
+    : S.skip_cart ? `${qtyCtl}<button class="s-btn btn-lg full buy" onclick="buyNow(${p.id}, '${jsName}', ${p.price}, ${JSON.stringify(imgs[0] || '')}, ${qtyVal})">${IC.cart} ${esc(buyText)}</button>`
+    : `${qtyCtl}
+<button class="s-btn btn-lg full" onclick="addToCart(${p.id}, '${jsName}', ${p.price}, ${JSON.stringify(imgs[0] || '')}, ${qtyVal})">${IC.cart} أضف إلى السلة</button>
+<button class="s-btn btn-lg full buy" onclick="buyNow(${p.id}, '${jsName}', ${p.price}, ${JSON.stringify(imgs[0] || '')}, ${qtyVal})">${esc(buyText)} — دفع عند الاستلام</button>`;
+  const descBlock = `<div class="pd-desc">${p.description && p.description.trim().startsWith('<') ? p.description : esc(p.description)}</div>`;
+  const widgets = [];
+  if (S.fake_visitors) widgets.push(`<div class="pd-live">${IC.eye}<b id="pdLiveN">${fvMin}</b> شخص يشاهدون هذا المنتج الآن</div>`);
+  if (S.fake_countdown) widgets.push(`<div class="pd-cd">${IC.flame}ينتهي العرض خلال <b id="pdCd">--:--:--</b></div>`);
+  const stockLine = out ? ''
+    : S.fake_stock && S.fake_stock_count > 0 ? `<div class="pd-low">${IC.flame}باقي ${S.fake_stock_count} قطعة فقط — اطلب الآن</div>`
+    : p.stock_tracking && p.stock > 0 && p.stock <= (p.low_stock_threshold || 3) ? `<div class="pd-low">${IC.flame}باقي ${p.stock} فقط — اطلب الآن</div>` : '';
+  return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, `${p.name} | ${store.name}`)}${cur ? '' : ''}${p.custom_pixel && p.custom_pixel.trim() ? p.custom_pixel : ''}</head>
+<body class="store pd-adv ${t.dark ? 'dark' : ''} t-${esc(store.theme_id)}">
 ${demoBar(store)}
 ${owner ? `<div class="s-ownerbar">وضع المعاينة — <a href="/app">العودة للوحة التحكم</a></div>` : ''}
-${storeHeader(store, t)}
+${S.hide_header ? '' : storeHeader(store, t)}
 <main class="pd">
 <div class="pd-gallery"><img id="pdImg" src="${esc(imgs[0] || ph(p.name))}" alt="${esc(p.name)}">
 ${imgs.length > 1 ? `<div class="pd-thumbs">${imgs.map((im, i) => `<img src="${esc(im)}" onclick="document.getElementById('pdImg').src=this.src" class="${i === 0 ? 'on' : ''}">`).join('')}</div>` : ''}</div>
 <div class="pd-info">
-<span class="pd-cat">${esc(p.category)}</span>
+${p.category ? `<span class="pd-cat">${esc(p.category)}</span>` : ''}
 <h1>${esc(p.name)}</h1>
-<div class="pd-price"><b>${egp(p.price)}</b>${p.compare_at_price ? `<s>${egp(p.compare_at_price)}</s>` : ''}${off ? `<span class="p-off">وفّر ${off}%</span>` : ''}</div>
-<p class="pd-desc">${esc(p.description)}</p>
-${p.stock > 0 && p.stock <= (p.low_stock_threshold || 3) ? `<div class="pd-low">${IC.flame}باقي ${p.stock} فقط — اطلب الآن</div>` : ''}
-${p.stock <= 0 ? `<div class="pd-low out">نفدت الكمية مؤقتاً</div>` : `
-<div class="pd-qty"><button onclick="pdQty(-1)">−</button><span id="pdQty">1</span><button onclick="pdQty(1)">+</button></div>
-<button class="s-btn btn-lg full" onclick="addToCart(${p.id}, '${esc(p.name).replace(/'/g, '')}', ${p.price}, ${JSON.stringify(imgs[0] || '')}, +document.getElementById('pdQty').textContent)">${IC.cart} أضف إلى السلة</button>
-<button class="s-btn btn-lg full buy" onclick="buyNow(${p.id}, '${esc(p.name).replace(/'/g, '')}', ${p.price}, ${JSON.stringify(imgs[0] || '')}, +document.getElementById('pdQty').textContent)">اشتري الآن — دفع عند الاستلام</button>`}
+<div class="pd-price"><b>${money(p.price)}</b>${p.compare_at_price ? `<s>${money(p.compare_at_price)}</s>` : ''}${off ? `<span class="p-off">وفّر ${off}%</span>` : ''}</div>
+${S.free_shipping ? `<div class="s-freeship pd-free">${IC.truck}شحن مجاني لهذا المنتج</div>` : ''}
+${widgets.join('\n')}
+${stockLine}
+${S.form_before_desc && S.buy_same_page ? orderFormHtml + descBlock : descBlock}
+${buyButtons}
 ${upsell ? `<div class="pd-upsell"><h4>${IC.bulb}يُشترى معه غالباً</h4>
 <div class="pd-upsell-card"><img src="${esc(JSON.parse(upsell.images || '[]')[0] || '')}"><div><b>${esc(upsell.name)}</b><span>${egp(upsell.price)}</span></div>
 <button onclick="addToCart(${upsell.id}, '${esc(upsell.name).replace(/'/g, '')}', ${upsell.price}, ${JSON.stringify(JSON.parse(upsell.images || '[]')[0] || '')}, 1)">أضف</button></div></div>` : ''}
 </div></main>
-<footer class="s-footer"><p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>
+${S.buy_same_page && !S.form_before_desc ? `<div class="pd-order-wrap">${orderFormHtml}</div>` : ''}
+${S.reviews_enabled ? `
+<section class="pd-reviews wrap"><h2>آراء العملاء</h2>
+${reviews.length ? reviews.map(r => `<div class="pd-review"><div class="pd-review-head"><b>${esc(r.customer_name)}</b><span class="stars">${'★'.repeat(r.rating)}<span class="muted">${'★'.repeat(5 - r.rating)}</span></span></div>${r.text ? `<p>${esc(r.text)}</p>` : ''}</div>`).join('') : '<p class="muted">كن أول من يقيّم هذا المنتج</p>'}
+<form id="rvForm" class="co-form pd-review-form"><h3>أضف تقييمك</h3>
+<label>اسمك<input name="customer_name" required maxlength="60"></label>
+<label>تقييمك<select name="rating"><option value="5">5 — ممتاز</option><option value="4">4 — جيد جداً</option><option value="3">3 — جيد</option><option value="2">2 — مقبول</option><option value="1">1 — ضعيف</option></select></label>
+<label>تعليقك (اختياري)<textarea name="text" maxlength="1000"></textarea></label>
+<button type="submit" class="s-btn">إرسال التقييم</button><div id="rvMsg"></div></form></section>` : ''}
+${similar.length ? `<section class="pd-similar wrap"><h2>منتجات مشابهة</h2><div class="s-grid">${similar.map(sp => productCardHTML(store, lay, sp)).join('')}</div></section>` : ''}
+<footer class="s-footer">${socialLinks(store)}<p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>
+${S.sticky_buy && !out ? `<div class="pd-sticky"><img src="${esc(imgs[0] || '')}" alt=""><div class="pd-sticky-info"><b>${esc(p.name)}</b><span>${money(p.price)}</span></div><button class="s-btn buy" onclick="${S.buy_same_page ? `document.getElementById('pdOrder').scrollIntoView({behavior:'smooth'})` : `buyNow(${p.id}, '${jsName}', ${p.price}, ${JSON.stringify(imgs[0] || '')}, ${qtyVal})`}">${esc(buyText)}</button></div>` : ''}
 ${cartDrawer(store)}
 ${storeScripts(store)}
 <script>track('product_view', ${p.id});</script>
+<script>
+(function(){
+var PID=${p.id},PPRICE=${Number(p.price) || 0},PXVAL=${Number(S.pixel_price) || 0};
+var f=document.getElementById('pdForm');
+if(f)f.addEventListener('submit',async function(e){
+  e.preventDefault();
+  var btn=document.getElementById('pdSubmit');btn.disabled=true;btn.textContent='جاري تأكيد الطلب…';
+  var body={};new FormData(f).forEach(function(v,k){body[k]=v});
+  body.session_id=sid();body.payment_method='cod';
+  var q=+(document.getElementById('pdQty')?document.getElementById('pdQty').textContent:1)||1;
+  body.items=[{product_id:PID,name:${JSON.stringify(p.name)},qty:q}];
+  var r=await fetch('/api/public/'+SLUG+'/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  var d=await r.json();
+  if(!r.ok){document.getElementById('pdErr').textContent=d.error||'حدث خطأ، حاول مرة أخرى';btn.disabled=false;btn.textContent=${JSON.stringify(buyText)};return;}
+  if(window.pxPurchase)pxPurchase(PXVAL>0?PXVAL:PPRICE*q);
+  location.href='/s/'+SLUG+'/order/'+d.number;
+});
+var rv=document.getElementById('rvForm');
+if(rv)rv.addEventListener('submit',async function(e){
+  e.preventDefault();
+  var body={product_id:PID};new FormData(rv).forEach(function(v,k){body[k]=v});
+  var r=await fetch('/api/public/'+SLUG+'/reviews',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  var m=document.getElementById('rvMsg');
+  if(r.ok){m.innerHTML='<p class="ok-text">شكراً! تقييمك وصل وسيظهر بعد المراجعة.</p>';rv.reset();}
+  else m.innerHTML='<p class="err-text">تعذر إرسال التقييم، حاول مرة أخرى.</p>';
+});
+${S.fake_visitors ? `var lvMin=${fvMin},lvMax=${fvMax},lvN=document.getElementById('pdLiveN');
+function lvTick(){lvN.textContent=lvMin+Math.floor(Math.random()*(lvMax-lvMin+1));}
+lvTick();setInterval(lvTick,8000);` : ''}
+${S.fake_countdown ? `var cdH=${Math.max(1, +S.fake_countdown_hours || 1)},cdEl=document.getElementById('pdCd'),cdKey='pd_cd_${p.id}';
+var cdEnd=+localStorage.getItem(cdKey)||0;
+if(!cdEnd||cdEnd<Date.now()){cdEnd=Date.now()+cdH*3600*1000;localStorage.setItem(cdKey,cdEnd);}
+function cdTick(){var d=cdEnd-Date.now();if(d<=0){cdEnd=Date.now()+cdH*3600*1000;localStorage.setItem(cdKey,cdEnd);d=cdEnd-Date.now();}
+var h=Math.floor(d/3600000),m=Math.floor(d%3600000/60000),s=Math.floor(d%60000/1000);
+cdEl.textContent=(h<10?'0':'')+h+':'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s;}
+cdTick();setInterval(cdTick,1000);` : ''}
+})();
+</script>
 </body></html>`;
 }
 

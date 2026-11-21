@@ -1,54 +1,112 @@
-// dash-products.js — Stage F2: EO-layout products cluster (products, create, categories, reviews, feed, catalog, ab-tests)
+// dash-products.js — Stage F2 + H1: EO-parity products cluster (products, create, categories, reviews, feed, catalog, ab-tests)
 
-// ---------- products list ----------
+// ---------- products list (EO layout) ----------
+let P_DATA = [], P_SEL = new Set(), P_PAGE = 1, P_PER = 20, P_SORT_DESC = true, P_Q = '', P_QSKU = '';
 registerView('products', async () => {
   const { products } = await api('/api/products');
-  const rows = products.map(p => {
-    let img = ''; try { img = JSON.parse(p.images || '[]')[0] || ''; } catch (e) {}
-    return `<tr>
-      <td><div class="p-cell">${img ? `<img src="${esc(img)}" alt="">` : `<span class="p-noimg">${I('products')}</span>`}<div><b>${esc(p.name)}</b>${p.sku ? `<div class="muted sm">SKU: ${esc(p.sku)}</div>` : ''}</div></div></td>
-      <td>${egp(p.price)}${p.compare_at_price ? `<div class="muted sm strike">${egp(p.compare_at_price)}</div>` : ''}</td>
-      <td>${p.status === 'active' ? (p.stock > 0 ? `${p.stock} قطعة` : '<span class="chip st-cancelled">نفذ المخزون</span>') : '<span class="chip">مسودة</span>'}</td>
-      <td>${p.status === 'active' ? '<span class="chip st-delivered">نشط</span>' : '<span class="chip">غير نشط</span>'}</td>
-      <td class="acts">
-        <button class="btn sm" onclick="go('products/create?id=${p.id}')">تعديل</button>
-        <button class="btn sm danger" onclick="delProduct(${p.id}, '${esc(p.name).replace(/'/g, '')}')">حذف</button>
-      </td></tr>`;
-  }).join('');
+  P_DATA = products; P_SEL = new Set(); P_PAGE = 1; P_Q = ''; P_QSKU = ''; P_SORT_DESC = true;
+  setTimeout(renderPTable, 0);
   return `
   <div class="d-page">
-    ${topBar('المنتجات', `${products.length} منتج`, `
-      <div class="dd-wrap"><button class="btn" onclick="this.nextElementSibling.classList.toggle('open')">استيراد ${I('chev')}</button>
-        <div class="dd-menu">
-          <button onclick="importProducts('excel')">استيراد من ملف Excel (CSV)</button>
-          <button onclick="importProducts('json')">استيراد من ملف JSON</button>
-          <button onclick="go('product-feed')">Product Feed</button>
-        </div></div>
-      <button class="btn primary" onclick="go('products/create')">+ اضافة منتج</button>`)}
+    ${topBar('المنتجات', 'هنا تدير منتجات متجرك وتجهّزها بشكل يرفع معدل الشراء والتحويل', `
+      <button class="btn" onclick="go('product-feed')">${I('feed')} Product Feed</button>
+      <button class="btn" onclick="importProducts('json')">${I('download')} استيراد من ملف JSON</button>
+      <button class="btn" onclick="importProducts('excel')">${I('download')} استيراد من ملف Excel</button>
+      <button class="btn dark" onclick="go('products/create')">${I('plus')} اضافة منتج</button>`)}
+    <div class="p-guides">
+      <span class="muted">شاهد الشرح قبل البدء:</span>
+      <button class="btn sm" onclick="openGuide('simple')">${I('video')} كيفية انشاء منتج بسيط</button>
+      <button class="btn sm" onclick="openGuide('variants')">${I('video')} كيفية انشاء منتج متعدد الخواص</button>
+    </div>
     ${products.length ? `
-      <div class="d-card"><div class="d-search">${I('search')}<input id="pSearch" placeholder="ابحث باسم المنتج أو SKU..." oninput="filterProducts(this.value)"></div>
-      <table class="d-table" id="pTable"><thead><tr><th>المنتج</th><th>السعر</th><th>المخزون</th><th>الحالة</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
-      <div class="d-card guide"><h3>${I('help')} دليل سريع</h3>
-        <div class="guide-grid">
-          <div><b>كيفية انشاء منتج بسيط</b><p class="muted">اضغط "اضافة منتج"، اكتب الاسم والسعر، ارفع صورة واحدة على الأقل، ثم احفظ. المنتج يظهر في متجرك فوراً.</p></div>
-          <div><b>كيفية انشاء منتج متعدد الخواص</b><p class="muted">في صفحة اضافة المنتج، قسم "خواص المنتج" يتيح لك اضافة متغيرات مثل اللون أو المقاس، كل متغير بقيمه الخاصة.</p></div>
-        </div></div>` : `
+      <div class="p-search-row">
+        <div class="d-search">${I('search')}<input id="pSearch" placeholder="ابحث باسم المنتج" oninput="P_Q=this.value;P_PAGE=1;renderPTable()"></div>
+        <div class="d-search">${I('search')}<input id="pSearchSku" placeholder="ابحث بال SKU" oninput="P_QSKU=this.value;P_PAGE=1;renderPTable()"></div>
+      </div>
+      <div class="d-card p-table-card"><table class="d-table" id="pTable"><thead><tr>
+        <th class="p-check"><input type="checkbox" id="pAll" onchange="pToggleAll(this.checked)"></th>
+        <th>المنتج</th><th>الحالة</th><th>المخزون</th><th>السعر</th>
+        <th class="p-sort" onclick="P_SORT_DESC=!P_SORT_DESC;P_PAGE=1;renderPTable()">تاريخ الانشاء <span id="pSortArrow"></span></th>
+        <th></th></tr></thead><tbody id="pTbody"></tbody></table>
+        <div class="p-table-foot">
+          <span>الصفوف لكل صفحة <select id="pPer" onchange="P_PER=+this.value;P_PAGE=1;renderPTable()"><option>10</option><option selected>20</option><option>50</option></select></span>
+          <span id="pRange" class="muted"></span>
+          <span class="p-pager"><button class="btn sm" onclick="pPage(-1)">السابق</button><button class="btn sm" onclick="pPage(1)">التالي</button></span>
+        </div>
+      </div>
+      <div class="p-bulk" id="pBulk" hidden><b id="pBulkN"></b><button class="btn sm danger" onclick="pBulkDelete()">${I('trash')} حذف المحدد</button></div>` : `
       <div class="d-card empty">
         <div class="empty-ic">${I('products')}</div>
-        <h3>لا توجد منتجات بعد</h3>
-        <p class="muted">أضف أول منتج لمتجرك يدوياً، أو استورد من ملف، أو جرّب اكتف كتالوج لمنتجات جاهزة.</p>
-        <div class="row-gap"><button class="btn primary" onclick="go('products/create')">+ اضافة منتج</button><button class="btn" onclick="go('easy-catalog')">تصفح اكتف كتالوج</button></div>
+        <h3>لا توجد منتجات حالياً</h3>
+        <p class="muted">لم تقم باضافة أي منتج بعد. ابدأ باضافة أول منتج لمتجرك يدوياً، أو استورد منتجاتك دفعة واحدة من ملف.</p>
+        <div class="row-gap"><button class="btn primary" onclick="go('products/create')">${I('plus')} اضافة منتج</button><button class="btn" onclick="importProducts('excel')">${I('download')} استيراد من ملف</button></div>
       </div>`}
   </div>`;
 });
-function filterProducts(q) {
-  q = q.trim();
-  document.querySelectorAll('#pTable tbody tr').forEach(tr => { tr.style.display = tr.textContent.includes(q) ? '' : 'none'; });
+function pFiltered() {
+  const q = P_Q.trim(), qs = P_QSKU.trim();
+  const arr = P_DATA.filter(p => (!q || (p.name || '').includes(q)) && (!qs || (p.sku || '').includes(qs)));
+  arr.sort((a, b) => P_SORT_DESC ? b.id - a.id : a.id - b.id);
+  return arr;
 }
-async function delProduct(id, name) {
-  if (!confirm(`حذف المنتج "${name}"؟`)) return;
-  await api('/api/products/' + id, { method: 'DELETE' });
-  toast('تم حذف المنتج'); rerender();
+function renderPTable() {
+  const tb = document.getElementById('pTbody'); if (!tb) return;
+  const arr = pFiltered();
+  const pages = Math.max(1, Math.ceil(arr.length / P_PER));
+  if (P_PAGE > pages) P_PAGE = pages;
+  const slice = arr.slice((P_PAGE - 1) * P_PER, P_PAGE * P_PER);
+  tb.innerHTML = slice.map(p => {
+    let img = ''; try { img = JSON.parse(p.images || '[]')[0] || ''; } catch (e) {}
+    return `<tr>
+      <td class="p-check"><input type="checkbox" ${P_SEL.has(p.id) ? 'checked' : ''} onchange="pToggle(${p.id},this.checked)"></td>
+      <td><div class="p-cell">${img ? `<span class="p-thumb"><img src="${esc(img)}" alt=""><i class="p-dot ${p.status === 'active' ? 'on' : ''}"></i></span>` : `<span class="p-noimg">${I('products')}</span>`}<b>${esc(p.name)}</b></div></td>
+      <td>${p.status === 'active' ? '<span class="p-status on">نشط</span>' : '<span class="p-status">مسودة</span>'}</td>
+      <td>${p.stock_tracking ? (p.stock > 0 ? p.stock + ' قطعة' : '<span class="chip st-cancelled">نفذ المخزون</span>') : '<span class="muted">غير متتبع</span>'}</td>
+      <td><b>${egp(p.price)}</b>${p.compare_at_price ? `<div class="muted sm strike">${egp(p.compare_at_price)}</div>` : ''}</td>
+      <td class="muted">${fmtDate(p.created_at)}</td>
+      <td class="acts">
+        <button class="btn sm" onclick="go('products/create?id=${p.id}')">${I('pen')} تعديل</button>
+        <button class="btn sm icon" title="استنساخ المنتج" onclick="dupProduct(${p.id})">${I('copy')}</button>
+        <button class="btn sm icon" title="مشاهدة" onclick="viewProduct(${p.id})">${I('eye')}</button>
+      </td></tr>`;
+  }).join('') || `<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">لا نتائج مطابقة للبحث</td></tr>`;
+  const arrow = document.getElementById('pSortArrow'); if (arrow) arrow.textContent = P_SORT_DESC ? '↓' : '↑';
+  const from = arr.length ? (P_PAGE - 1) * P_PER + 1 : 0, to = Math.min(arr.length, P_PAGE * P_PER);
+  const rng = document.getElementById('pRange'); if (rng) rng.textContent = `عرض ${from}-${to} من ${arr.length} منتج`;
+  const all = document.getElementById('pAll'); if (all) all.checked = slice.length > 0 && slice.every(p => P_SEL.has(p.id));
+  pBulkBar();
+}
+function pPage(d) { P_PAGE += d; renderPTable(); }
+function pToggle(id, on) {
+  if (on) P_SEL.add(id); else P_SEL.delete(id);
+  const all = document.getElementById('pAll');
+  if (all) { const slice = pFiltered().slice((P_PAGE - 1) * P_PER, P_PAGE * P_PER); all.checked = slice.length > 0 && slice.every(p => P_SEL.has(p.id)); }
+  pBulkBar();
+}
+function pToggleAll(on) { pFiltered().slice((P_PAGE - 1) * P_PER, P_PAGE * P_PER).forEach(p => { if (on) P_SEL.add(p.id); else P_SEL.delete(p.id); }); renderPTable(); }
+function pBulkBar() { const b = document.getElementById('pBulk'); if (!b) return; b.hidden = !P_SEL.size; const n = document.getElementById('pBulkN'); if (n) n.textContent = `تم تحديد ${P_SEL.size} منتج`; }
+async function pBulkDelete() {
+  if (!P_SEL.size || !confirm(`حذف ${P_SEL.size} منتجاً؟ لا يمكن التراجع.`)) return;
+  for (const id of P_SEL) { try { await api('/api/products/' + id, { method: 'DELETE' }); } catch (e) {} }
+  toast('تم حذف المحدد'); rerender();
+}
+async function dupProduct(id) { await api('/api/products/' + id + '/duplicate', { method: 'POST' }); toast('تم استنساخ المنتج كمسودة'); rerender(); }
+function viewProduct(id) { if (STORE && STORE.slug) window.open('/s/' + STORE.slug + '/p/' + id, '_blank'); }
+function openGuide(kind) {
+  const simple = `<ol class="guide-steps">
+    <li>اضغط زر <b>اضافة منتج</b> أعلى الصفحة.</li>
+    <li>اكتب اسم المنتج ووصفاً واضحاً يجاوب على أسئلة العميل.</li>
+    <li>ارفع صورة واحدة على الأقل — الصورة الأولى هي الرئيسية التي تظهر في المتجر.</li>
+    <li>حدد سعر المنتج، وسعر التخفيض لو عندك عرض.</li>
+    <li>فعّل تتبع المخزون لو عايز النظام يعدّ القطع ويمنع الطلب عند النفاذ.</li>
+    <li>اضغط حفظ — المنتج يظهر في متجرك فوراً بحالة نشط.</li></ol>`;
+  const vars = `<ol class="guide-steps">
+    <li>أنشئ المنتج بنفس خطوات المنتج البسيط.</li>
+    <li>في قسم <b>خواص المنتج</b> اضغط "اضافة متغير جديد".</li>
+    <li>اكتب اسم الخاصية (مثال: المقاس) والقيم مفصولة بفواصل (S, M, L, XL).</li>
+    <li>أضف متغيراً ثانياً عند الحاجة (مثال: اللون) — العميل يختار قبل الطلب.</li>
+    <li>احفظ المنتج وستظهر الخيارات تلقائياً في صفحة المنتج بمتجرك.</li></ol>`;
+  openModal(kind === 'simple' ? 'كيفية انشاء منتج بسيط' : 'كيفية انشاء منتج متعدد الخواص', kind === 'simple' ? simple : vars, () => {});
 }
 function importProducts(kind) {
   const acc = kind === 'json' ? '.json' : '.csv';
@@ -82,7 +140,8 @@ async function runImport(kind) {
   if (ok) setTimeout(() => { closeModal(); rerender(); }, 900);
 }
 
-// ---------- product create / edit (EO layout) ----------
+// ---------- product create / edit (EO two-column layout) ----------
+let PF_IMGS = [], PF_VARS = [], PF_SETTINGS = {};
 registerView('products/create', async () => {
   const params = new URLSearchParams((location.hash.split('?')[1] || ''));
   const id = params.get('id');
@@ -91,58 +150,99 @@ registerView('products/create', async () => {
   const { categories } = await api('/api/categories');
   let imgs = []; try { imgs = JSON.parse(p?.images || '[]'); } catch (e) {}
   let vars = []; try { vars = JSON.parse(p?.variants || '[]'); } catch (e) {}
+  let stg = {}; try { stg = JSON.parse(p?.settings || '{}'); } catch (e) {}
   const catOpts = categories.map(c => `<option value="${esc(c.name)}" ${p?.category === c.name ? 'selected' : ''}>${esc(c.name)}</option>`).join('');
-  setTimeout(() => mountProductForm(p, imgs, vars), 0);
+  setTimeout(() => mountProductForm(p, imgs, vars, stg), 0);
   return `
   <div class="d-page form-page">
-    ${topBar(id ? 'تعديل منتج' : 'اضافة منتج', '', `
+    ${topBar(`<a class="p-back" href="#/products">→</a> ${id ? 'تعديل منتج' : 'اضافة منتج'}`, '', `
       <button class="btn" onclick="aiProductHelper()">${I('spark')} انشاء باستخدام ال AI</button>
-      <button class="btn primary" onclick="saveProduct(${id || 'null'})">حفظ</button>`)}
-    <div class="d-card"><h3>بيانات المنتج الاساسية</h3>
-      <label class="d-label">اسم المنتج *</label><input id="pf-name" class="d-input" value="${esc(p?.name || '')}" placeholder="مثال: ساعة يد كلاسيك">
-      <label class="d-label">وصف المنتج</label>
-      <div class="rte-bar"><button type="button" onclick="rteCmd('bold')"><b>B</b></button><button type="button" onclick="rteCmd('italic')"><i>I</i></button><button type="button" onclick="rteCmd('underline')"><u>U</u></button><button type="button" onclick="rteCmd('insertUnorderedList')">• قائمة</button></div>
-      <div id="pf-desc" class="d-input rte" contenteditable="true">${p?.description || ''}</div>
-      <label class="d-label">الصور</label>
-      <div class="img-drop" id="pf-drop">
-        <input type="file" id="pf-file" accept="image/png,image/jpeg,image/webp" multiple hidden>
-        <div class="img-list" id="pf-imgs"></div>
-        <button type="button" class="btn" onclick="document.getElementById('pf-file').click()">${I('image')} اضافة صور (حتى 5MB للصورة)</button>
+      ${id ? `<button class="btn danger" onclick="delProduct(${id}, '${esc(p?.name || '').replace(/'/g, '')}')">${I('trash')} حذف</button>` : ''}`)}
+    <div class="pf-grid">
+      <div class="pf-main">
+        <div class="d-card"><h3>بيانات المنتج الاساسية</h3>
+          <label class="d-label">اسم المنتج *</label><input id="pf-name" class="d-input" value="${esc(p?.name || '')}" placeholder="مثال: ساعة يد كلاسيك">
+          <label class="d-label">وصف المنتج</label>
+          <div class="rte-bar"><button type="button" onclick="rteCmd('bold')"><b>B</b></button><button type="button" onclick="rteCmd('italic')"><i>I</i></button><button type="button" onclick="rteCmd('underline')"><u>U</u></button><button type="button" onclick="rteCmd('insertUnorderedList')">• قائمة</button></div>
+          <div id="pf-desc" class="d-input rte" contenteditable="true">${p?.description || ''}</div>
+        </div>
+        <div class="d-card"><h3>الصور</h3>
+          <div class="img-drop" id="pf-drop">
+            <input type="file" id="pf-file" accept="image/png,image/jpeg,image/webp" multiple hidden>
+            <div class="img-list" id="pf-imgs"></div>
+            <button type="button" class="btn" onclick="document.getElementById('pf-file').click()">${I('image')} اسحب الصور هنا أو اضغط للاضافة</button>
+            <div class="muted sm">png أو jpg أو webp — حتى 5 ميجا للصورة. الصورة الأولى هي الصورة الرئيسية.</div>
+          </div>
+        </div>
+        <div class="d-card"><h3>التسعير</h3><div class="grid3">
+          <div><label class="d-label">سعر المنتج *</label><input id="pf-price" type="number" min="0" step="0.01" class="d-input" value="${p?.price ?? ''}"></div>
+          <div><label class="d-label">سعر التخفيض</label><input id="pf-compare" type="number" min="0" step="0.01" class="d-input" value="${p?.compare_at_price ?? ''}" placeholder="السعر قبل الخصم"></div>
+          <div><label class="d-label">تكلفة المنتج</label><input id="pf-cost" type="number" min="0" step="0.01" class="d-input" value="${p?.cost ?? ''}"><div class="muted sm">يتم من خلالها احتساب صافي الربح</div></div>
+        </div></div>
+        <div class="d-card"><h3>الظهور في محركات البحث</h3><div class="grid3">
+          <div><label class="d-label">رابط المنتج *</label><input id="pf-slug" class="d-input ltr" value="${esc(p?.slug || '')}" placeholder="classic-watch"></div>
+          <div><label class="d-label">معرف ال SKU</label><input id="pf-sku" class="d-input ltr" value="${esc(p?.sku || '')}"></div>
+          <div><label class="d-label">Meta Description</label><input id="pf-meta" class="d-input" value="${esc(p?.meta_description || '')}" placeholder="وصف مختصر لمحركات البحث"></div>
+        </div></div>
+        <div class="d-card"><h3>خواص المنتج</h3>
+          <div id="pf-vars"></div>
+          <button class="btn sm" type="button" onclick="addVariantRow()">+ اضافة متغير جديد</button>
+        </div>
+        <div class="d-card"><h3>التحكم في الاصناف</h3><div class="grid3">
+          <div><label class="d-label">حد التنبيه للمخزون المنخفض</label><input id="pf-low" type="number" min="0" class="d-input" value="${p?.low_stock_threshold ?? 3}"></div>
+          <div><label class="d-label">الحالة</label><select id="pf-status" class="d-input"><option value="active" ${p?.status !== 'draft' ? 'selected' : ''}>نشط</option><option value="draft" ${p?.status === 'draft' ? 'selected' : ''}>مسودة (مخفي من المتجر)</option></select></div>
+        </div></div>
+      </div>
+      <div class="pf-side">
+        <div class="d-card"><h3>التنظيم</h3>
+          <label class="d-label">الاقسام</label><select id="pf-cat" class="d-input"><option value="">بدون قسم</option>${catOpts}</select>
+          <label class="d-label">الاولوية في الظهور</label><input id="pf-priority" type="number" class="d-input" value="${p?.priority ?? 0}">
+          <div class="muted sm">كلما زاد الرقم ظهر المنتج قبل غيره في الأقسام والصفحة الرئيسية.</div>
+        </div>
+        <div class="d-card"><h3>عمل لاندينج بيدج احترافية للمنتج</h3>
+          ${id ? `
+          <label class="switch-row"><button type="button" class="switch ${stg.landing_standalone ? 'on' : ''}" id="pf-land-alone" onclick="pfLandingToggle('landing_standalone',this)"></button>ظهور المنتج كصفحة هبوط منفصلة</label>
+          <label class="switch-row"><button type="button" class="switch ${stg.landing_below ? 'on' : ''}" id="pf-land-below" onclick="pfLandingToggle('landing_below',this)"></button>اظهار محتوى الهبوط اسفل الصفحة العادية</label>
+          <div class="muted sm">صفحة الهبوط المنفصلة تعرض المنتج بترتيب مبيعات مباشر بدون تشتيت، والمحتوى أسفل الصفحة يضيف نموذج الطلب بعد الوصف.</div>`
+          : `<div class="muted sm">احفظ المنتج أولاً لتفعيل خيارات صفحة الهبوط الاحترافية.</div>`}
+        </div>
+        <div class="d-card"><h3>اعدادات المخزون</h3>
+          <label class="d-label">كمية المخزون</label><input id="pf-stock" type="number" min="0" class="d-input" value="${p?.stock ?? 0}">
+          <div class="muted sm">عند الوصول لصفر يظهر المنتج كخارج المخزون</div>
+          <label class="switch-row"><button type="button" class="switch ${p?.stock_tracking ? 'on' : ''}" id="pf-track" onclick="this.classList.toggle('on')"></button>تتبع المخزون</label>
+          <label class="switch-row"><button type="button" class="switch ${p?.disable_on_zero ? 'on' : ''}" id="pf-disable-zero" onclick="this.classList.toggle('on')"></button>تعطيل المنتج عند نفاذ المخزون</label>
+        </div>
+        <div class="d-card"><h3>اعدادات متقدمة</h3>
+          <p class="muted sm">تخطي السلة، الزر الثابت، نموذج الشراء، المراجعات، العدادات والمزيد.</p>
+          <button class="btn" type="button" onclick="openAdvSettings()">${I('settings')} إدارة الإعدادات</button>
+        </div>
+        <div class="d-card"><h3>ربط المنتج مع منصات خارجية</h3>
+          <label class="d-label">منتج مرتبط (Upsell)</label><select id="pf-upsell" class="d-input"><option value="">بدون</option></select>
+          <div class="muted sm">يظهر كعرض "يُشترى معه غالباً" في صفحة هذا المنتج.</div>
+        </div>
+        <div class="d-card"><h3>عملة مخصصة</h3>
+          <input id="pf-currency" class="d-input" value="${esc(p?.currency || '')}" placeholder="اتركه فارغاً لاستخدام الجنيه">
+          <div class="warn-note sm">عند تحديد عملة مخصصة فعّل تخطي السلة من الإعدادات المتقدمة حتى تظهر العملة بشكل صحيح في الطلب.</div>
+        </div>
+        <div class="d-card"><h3>Custom Pixel</h3>
+          <textarea id="pf-pixel" class="d-input ltr" rows="3" placeholder="كود بيكسل مخصص لهذا المنتج">${esc(p?.custom_pixel || '')}</textarea>
+          <div class="muted sm">يُحقن الكود في صفحة هذا المنتج فقط، وليس في باقي صفحات المتجر.</div>
+        </div>
       </div>
     </div>
-    <div class="d-card"><h3>التسعير</h3><div class="grid3">
-      <div><label class="d-label">سعر المنتج *</label><input id="pf-price" type="number" min="0" step="0.01" class="d-input" value="${p?.price ?? ''}"></div>
-      <div><label class="d-label">سعر التخفيض</label><input id="pf-compare" type="number" min="0" step="0.01" class="d-input" value="${p?.compare_at_price ?? ''}" placeholder="السعر قبل الخصم"></div>
-      <div><label class="d-label">تكلفة المنتج</label><input id="pf-cost" type="number" min="0" step="0.01" class="d-input" value="${p?.cost ?? ''}"><div class="muted sm">يتم من خلالها احتساب صافي الربح</div></div>
-    </div></div>
-    <div class="d-card"><h3>الظهور في محركات البحث</h3><div class="grid3">
-      <div><label class="d-label">رابط المنتج</label><input id="pf-slug" class="d-input ltr" value="${esc(p?.slug || '')}" placeholder="classic-watch"></div>
-      <div><label class="d-label">معرف ال SKU</label><input id="pf-sku" class="d-input ltr" value="${esc(p?.sku || '')}"></div>
-      <div><label class="d-label">Meta Description</label><input id="pf-meta" class="d-input" value="${esc(p?.meta_description || '')}" placeholder="وصف مختصر لمحركات البحث"></div>
-    </div></div>
-    <div class="d-card"><h3>خواص المنتج</h3>
-      <div id="pf-vars"></div>
-      <button class="btn sm" type="button" onclick="addVariantRow()">+ اضافة متغير جديد</button>
-    </div>
-    <div class="d-card"><h3>التحكم في الاصناف</h3><div class="grid3">
-      <div><label class="d-label">الكمية المتاحة</label><input id="pf-stock" type="number" min="0" class="d-input" value="${p?.stock ?? 0}"></div>
-      <div><label class="d-label">حد التنبيه للمخزون المنخفض</label><input id="pf-low" type="number" min="0" class="d-input" value="${p?.low_stock_threshold ?? 3}"></div>
-      <div><label class="d-label">الحالة</label><select id="pf-status" class="d-input"><option value="active" ${p?.status !== 'draft' ? 'selected' : ''}>نشط</option><option value="draft" ${p?.status === 'draft' ? 'selected' : ''}>مسودة (مخفي من المتجر)</option></select></div>
-    </div></div>
-    <div class="d-card"><h3>التنظيم</h3><div class="grid3">
-      <div><label class="d-label">الاقسام</label><select id="pf-cat" class="d-input"><option value="">بدون قسم</option>${catOpts}</select></div>
-      <div><label class="d-label">الاولوية في الظهور</label><input id="pf-priority" type="number" class="d-input" value="${p?.priority ?? 0}"><div class="muted sm">رقم أعلى = يظهر أولاً</div></div>
-      <div><label class="d-label">منتج مرتبط (Upsell)</label><select id="pf-upsell" class="d-input"><option value="">بدون</option></select></div>
-    </div></div>
-    <div class="form-foot"><button class="btn primary lg" onclick="saveProduct(${id || 'null'})">حفظ المنتج</button></div>
+    <div class="save-bar"><button class="btn primary lg" onclick="saveProduct(${id || 'null'})">حفظ</button></div>
   </div>`;
 });
-
-let PF_IMGS = [], PF_VARS = [];
-function mountProductForm(p, imgs, vars) {
-  PF_IMGS = imgs.slice(); PF_VARS = vars.slice();
+function pfLandingToggle(key, el) {
+  el.classList.toggle('on');
+  const on = el.classList.contains('on');
+  PF_SETTINGS[key] = on;
+  if (key === 'landing_standalone' && on) { PF_SETTINGS.buy_same_page = true; PF_SETTINGS.hide_header = true; PF_SETTINGS.hide_similar = true; }
+  if (key === 'landing_below' && on) { PF_SETTINGS.buy_same_page = true; PF_SETTINGS.form_before_desc = false; }
+}
+function mountProductForm(p, imgs, vars, stg) {
+  PF_IMGS = imgs.slice(); PF_VARS = vars.slice(); PF_SETTINGS = stg || {};
   renderPfImgs(); renderPfVars();
-  // upsell options
   api('/api/products').then(({ products }) => {
     const sel = $('#pf-upsell'); if (!sel) return;
     sel.innerHTML = '<option value="">بدون</option>' + products.filter(x => x.id !== p?.id).map(x => `<option value="${x.id}" ${p?.upsell_product_id === x.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('');
@@ -158,7 +258,7 @@ function mountProductForm(p, imgs, vars) {
 }
 function renderPfImgs() {
   const w = $('#pf-imgs'); if (!w) return;
-  w.innerHTML = PF_IMGS.map((u, i) => `<div class="img-thumb"><img src="${esc(u)}"><button type="button" onclick="PF_IMGS.splice(${i},1);renderPfImgs()">✕</button></div>`).join('');
+  w.innerHTML = PF_IMGS.map((u, i) => `<div class="img-thumb"><img src="${esc(u)}">${i === 0 ? '<span class="img-main-badge">الصورة الرئيسية</span>' : ''}<button type="button" onclick="PF_IMGS.splice(${i},1);renderPfImgs()">✕</button></div>`).join('');
 }
 function addVariantRow(v) { PF_VARS.push(v || { name: '', values: '' }); renderPfVars(); }
 function renderPfVars() {
@@ -169,17 +269,61 @@ function renderPfVars() {
     <button class="btn sm danger" type="button" onclick="PF_VARS.splice(${i},1);renderPfVars()">حذف</button></div>`).join('');
 }
 function rteCmd(c) { document.execCommand(c); $('#pf-desc').focus(); }
+// ---------- advanced settings modal ----------
+function advSwitch(key, label) {
+  return `<label class="switch-row"><button type="button" class="switch ${PF_SETTINGS[key] ? 'on' : ''}" onclick="advToggle('${key}',this)"></button>${label}</label>`;
+}
+function advToggle(key, el) { el.classList.toggle('on'); PF_SETTINGS[key] = el.classList.contains('on'); }
+function advNum(key, val) { PF_SETTINGS[key] = val; }
+function openAdvSettings() {
+  openModal('اعدادات متقدمة', `
+    ${advSwitch('skip_cart', 'تخطي السلة')}
+    <label class="d-label">النص المكتوب على زر شراء الآن</label>
+    <input class="d-input" value="${esc(PF_SETTINGS.buy_button_text || '')}" placeholder="اضغط هنا للشراء" oninput="advNum('buy_button_text',this.value)">
+    ${advSwitch('sticky_buy', 'تفعيل الزر الثابت أسفل الصفحة للشراء')}
+    ${advSwitch('buy_same_page', 'شراء المنتج من نفس الصفحة')}
+    ${advSwitch('reviews_enabled', 'تفعيل المراجعات؟')}
+    ${advSwitch('free_shipping', 'تفعيل الشحن المجاني للمنتج')}
+    <div class="sim-box">
+      <b>عدّادات محاكاة (تسويقية)</b>
+      <p class="muted sm">هذه الأدوات تعرض للزائر أرقاماً غير حقيقية تقوم أنت بتحديدها (مشاهدين ومخزون ووقت متبقٍ). تُفعَّل فقط عند اختيارك وتبقى مسؤوليتك أمام عملائك.</p>
+      ${advSwitch('fake_visitors', 'عرض عداد زوار وهمي؟')}
+      <div class="grid2">
+        <div><label class="d-label">الحد الادنى</label><input type="number" min="1" class="d-input" value="${PF_SETTINGS.fake_visitors_min ?? 20}" oninput="advNum('fake_visitors_min',+this.value)"></div>
+        <div><label class="d-label">الحد الأقصى</label><input type="number" min="1" class="d-input" value="${PF_SETTINGS.fake_visitors_max ?? 70}" oninput="advNum('fake_visitors_max',+this.value)"></div>
+      </div>
+      ${advSwitch('fake_stock', 'تفعيل خاصية المخزون الوهمي')}
+      <label class="d-label">عدد قطع المخزون الوهمي</label>
+      <input type="number" min="0" class="d-input" value="${PF_SETTINGS.fake_stock_count ?? 0}" oninput="advNum('fake_stock_count',+this.value)">
+      ${advSwitch('fake_countdown', 'العداد الوهمي')}
+      <label class="d-label">عدد الساعات</label>
+      <input type="number" min="1" class="d-input" value="${PF_SETTINGS.fake_countdown_hours ?? 1}" oninput="advNum('fake_countdown_hours',+this.value)">
+    </div>
+    ${advSwitch('hide_header', 'اخفاء الهيدر')}
+    ${advSwitch('hide_qty_counter', 'اخفاء عداد القطع')}
+    ${advSwitch('hidden_product', 'منتج مخفي')}
+    ${advSwitch('form_before_desc', 'جعل نموذج الشراء قبل وصف المنتج (جديد)')}
+    ${advSwitch('hide_similar', 'جعل المنتجات المشابهة مخفية (جديد)')}
+    <label class="d-label">السعر الذي سيتم ارساله للبيكسل</label>
+    <input type="number" min="0" step="0.01" class="d-input" value="${PF_SETTINGS.pixel_price ?? ''}" placeholder="اتركه فارغاً لإرسال سعر المنتج" oninput="advNum('pixel_price',+this.value||0)">
+    <button class="btn primary" onclick="closeModal();toast('تم تجهيز الإعدادات — لا تنسَ حفظ المنتج')">حفظ</button>`, () => {});
+}
 async function saveProduct(id) {
   const name = $('#pf-name').value.trim(), price = +$('#pf-price').value;
   if (!name || !(price > 0)) return toast('اسم المنتج والسعر مطلوبان', 'err');
+  if (!PF_IMGS.length) return toast('أضف صورة واحدة على الأقل للمنتج', 'err');
   const body = {
     name, description: $('#pf-desc').innerHTML.trim(), price,
     compare_at_price: +$('#pf-compare').value || null, cost: +$('#pf-cost').value || 0,
     sku: $('#pf-sku').value.trim(), slug: $('#pf-slug').value.trim(), meta_description: $('#pf-meta').value.trim(),
     stock: +$('#pf-stock').value || 0, low_stock_threshold: +$('#pf-low').value || 3,
+    stock_tracking: $('#pf-track').classList.contains('on') ? 1 : 0,
+    disable_on_zero: $('#pf-disable-zero').classList.contains('on') ? 1 : 0,
+    currency: $('#pf-currency').value.trim(), custom_pixel: $('#pf-pixel').value.trim(),
     status: $('#pf-status').value, category: $('#pf-cat').value, priority: +$('#pf-priority').value || 0,
     upsell_product_id: +$('#pf-upsell').value || null,
-    images: PF_IMGS, variants: PF_VARS.filter(v => v.name.trim() && v.values.trim())
+    images: PF_IMGS, variants: PF_VARS.filter(v => v.name.trim() && v.values.trim()),
+    settings: PF_SETTINGS
   };
   const saved = id
     ? await api('/api/products/' + id, { method: 'PUT', body })
@@ -188,7 +332,7 @@ async function saveProduct(id) {
   const pid = saved.product?.id || id;
   if (pid && STORE?.slug) {
     openModal('تم الحفظ', `<p>تم حفظ المنتج بنجاح. يمكنك الآن فتح صفحة المنتج في متجرك ومشاركتها كصفحة هبوط.</p>
-      <div class="row-gap"><a class="btn primary" href="/s/${STORE.slug}#p-${pid}" target="_blank">فتح صفحة المنتج</a>
+      <div class="row-gap"><a class="btn primary" href="/s/${STORE.slug}/p/${pid}" target="_blank">فتح صفحة المنتج</a>
       <button class="btn" onclick="closeModal();go('products')">العودة للمنتجات</button></div>`, () => {});
   } else go('products');
 }
@@ -213,6 +357,11 @@ function applyAiProduct(n) {
   $('#pf-name').value = n;
   $('#pf-desc').innerHTML = $('#aiPOut .ai-draft').innerHTML;
   closeModal(); toast('تم نقل المسودة — راجعها قبل الحفظ');
+}
+async function delProduct(id, name) {
+  if (!confirm(`حذف المنتج "${name}"؟ لا يمكن التراجع.`)) return;
+  await api('/api/products/' + id, { method: 'DELETE' });
+  toast('تم حذف المنتج'); go('products');
 }
 
 // ---------- categories ----------

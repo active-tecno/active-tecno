@@ -210,9 +210,9 @@ const api = {
   'POST /api/products': async (req, res, user) => {
     const b = await readJSON(req); if (!b || !b.name || !(b.price > 0)) return json(res, 400, { error: 'الاسم والسعر مطلوبان' });
     const store = getStoreForUser(user);
-    const r = db.prepare(`INSERT INTO products (store_id, name, description, price, compare_at_price, cost, sku, stock, low_stock_threshold, category, status, images, upsell_product_id, meta_description, slug, priority, variants)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .run(store.id, b.name, b.description || '', b.price, b.compare_at_price || null, b.cost || 0, b.sku || '', b.stock ?? 0, b.low_stock_threshold ?? 3, b.category || '', b.status || 'active', JSON.stringify(b.images || []), b.upsell_product_id || null, b.meta_description || '', b.slug || '', b.priority || 0, JSON.stringify(b.variants || []));
+    const r = db.prepare(`INSERT INTO products (store_id, name, description, price, compare_at_price, cost, sku, stock, low_stock_threshold, category, status, images, upsell_product_id, meta_description, slug, priority, variants, stock_tracking, disable_on_zero, currency, custom_pixel, settings)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run(store.id, b.name, b.description || '', b.price, b.compare_at_price || null, b.cost || 0, b.sku || '', b.stock ?? 0, b.low_stock_threshold ?? 3, b.category || '', b.status || 'active', JSON.stringify(b.images || []), b.upsell_product_id || null, b.meta_description || '', b.slug || '', b.priority || 0, JSON.stringify(b.variants || []), b.stock_tracking ? 1 : 0, b.disable_on_zero ? 1 : 0, b.currency || '', b.custom_pixel || '', JSON.stringify(b.settings || {}));
     json(res, 201, { product: db.prepare('SELECT * FROM products WHERE id = ?').get(r.lastInsertRowid) });
   },
   'PUT /api/products/:id': async (req, res, user, p) => {
@@ -220,11 +220,12 @@ const api = {
     const store = getStoreForUser(user);
     const prod = db.prepare('SELECT * FROM products WHERE id = ? AND store_id = ?').get(p.id, store.id);
     if (!prod) return json(res, 404, { error: 'المنتج غير موجود' });
-    const fields = ['name', 'description', 'price', 'compare_at_price', 'cost', 'sku', 'stock', 'low_stock_threshold', 'category', 'status', 'upsell_product_id', 'meta_description', 'slug', 'priority'];
+    const fields = ['name', 'description', 'price', 'compare_at_price', 'cost', 'sku', 'stock', 'low_stock_threshold', 'category', 'status', 'upsell_product_id', 'meta_description', 'slug', 'priority', 'stock_tracking', 'disable_on_zero', 'currency', 'custom_pixel'];
     const sets = [], vals = [];
     for (const f of fields) if (f in b) { sets.push(`${f} = ?`); vals.push(b[f]); }
     if (b.images) { sets.push('images = ?'); vals.push(JSON.stringify(b.images)); }
     if (b.variants) { sets.push('variants = ?'); vals.push(JSON.stringify(b.variants)); }
+    if (b.settings) { sets.push('settings = ?'); vals.push(JSON.stringify(b.settings)); }
     if (sets.length) db.prepare(`UPDATE products SET ${sets.join(', ')} WHERE id = ?`).run(...vals, prod.id);
     json(res, 200, { product: db.prepare('SELECT * FROM products WHERE id = ?').get(prod.id) });
   },
@@ -232,6 +233,15 @@ const api = {
     const store = getStoreForUser(user);
     db.prepare('DELETE FROM products WHERE id = ? AND store_id = ?').run(p.id, store.id);
     json(res, 200, { ok: true });
+  },
+  'POST /api/products/:id/duplicate': (req, res, user, p) => {
+    const store = getStoreForUser(user);
+    const prod = db.prepare('SELECT * FROM products WHERE id = ? AND store_id = ?').get(p.id, store.id);
+    if (!prod) return json(res, 404, { error: 'المنتج غير موجود' });
+    const r = db.prepare(`INSERT INTO products (store_id, name, description, price, compare_at_price, cost, sku, stock, low_stock_threshold, category, status, images, upsell_product_id, meta_description, slug, priority, variants, stock_tracking, disable_on_zero, currency, custom_pixel, settings)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run(store.id, prod.name + ' (نسخة)', prod.description, prod.price, prod.compare_at_price, prod.cost, prod.sku ? prod.sku + '-copy' : '', prod.stock, prod.low_stock_threshold, prod.category, 'draft', prod.images, prod.upsell_product_id, prod.meta_description, prod.slug ? prod.slug + '-copy' : '', prod.priority, prod.variants, prod.stock_tracking, prod.disable_on_zero, prod.currency, prod.custom_pixel, prod.settings);
+    json(res, 201, { product: db.prepare('SELECT * FROM products WHERE id = ?').get(r.lastInsertRowid) });
   },
 
   // uploads (base64 data URLs)
@@ -974,7 +984,7 @@ const api = {
   'GET /api/public/:slug/products': (req, res, user, p) => {
     const store = db.prepare('SELECT * FROM stores WHERE slug = ?').get(p.slug);
     if (!store) return json(res, 404, { error: 'المتجر غير موجود' });
-    const products = db.prepare(`SELECT id, name, description, price, compare_at_price, stock, category, images FROM products WHERE store_id = ? AND status = 'active' ORDER BY created_at DESC`).all(store.id);
+    const products = db.prepare(`SELECT id, name, description, price, compare_at_price, stock, category, images FROM products WHERE store_id = ? AND status = 'active' AND COALESCE(json_extract(settings,'$.hidden_product'),0) = 0 ORDER BY created_at DESC`).all(store.id);
     json(res, 200, { products: products.map(x => ({ ...x, images: JSON.parse(x.images) })) });
   },
   'POST /api/public/:slug/track': async (req, res, user, p) => {
@@ -1021,9 +1031,11 @@ const api = {
     for (const it of b.items) {
       const prod = db.prepare(`SELECT * FROM products WHERE id = ? AND store_id = ? AND status = 'active'`).get(it.product_id, store.id);
       if (!prod) return json(res, 400, { error: `منتج غير متاح: ${it.name || it.product_id}` });
+      let pset = {}; try { pset = JSON.parse(prod.settings || '{}'); } catch (e) {}
       const qty = Math.max(1, Math.min(parseInt(it.qty) || 1, 20));
-      if (prod.stock < qty) return json(res, 400, { error: `الكمية غير متوفرة من "${prod.name}"` });
-      lineItems.push({ prod, qty });
+      if (prod.stock_tracking && prod.stock <= 0 && prod.disable_on_zero) return json(res, 400, { error: `منتج غير متاح: ${prod.name}` });
+      if (prod.stock_tracking && prod.stock < qty) return json(res, 400, { error: `الكمية غير متوفرة من "${prod.name}"` });
+      lineItems.push({ prod, qty, pset });
     }
     const subtotal = lineItems.reduce((s, li) => s + li.prod.price * li.qty, 0);
 
@@ -1033,6 +1045,7 @@ const api = {
     const zone = zones.find(z => (z.governorates || '').split(',').map(x => x.trim()).includes(b.governorate)) || zones[0];
     if (zone) shipping = (zone.free_over && subtotal >= zone.free_over) ? 0 : zone.price * (zone.per_item ? lineItems.reduce((s, li) => s + li.qty, 0) : 1);
     if (store.free_shipping_over && subtotal >= store.free_shipping_over) shipping = 0;
+    if (lineItems.some(li => li.pset && li.pset.free_shipping)) shipping = 0;
 
     // coupon
     let discount = 0, couponCode = null;
@@ -1111,7 +1124,11 @@ const api = {
     const itemStmt = db.prepare('INSERT INTO order_items (order_id, product_id, name, price, qty, image) VALUES (?, ?, ?, ?, ?, ?)');
     for (const li of lineItems) {
       itemStmt.run(oid, li.prod.id, li.prod.name, li.prod.price, li.qty, JSON.parse(li.prod.images)[0] || '');
-      db.prepare('UPDATE products SET stock = stock - ? WHERE id = ?').run(li.qty, li.prod.id);
+      if (li.prod.stock_tracking) db.prepare('UPDATE products SET stock = stock - ? WHERE id = ?').run(li.qty, li.prod.id);
+      if (li.pset && li.pset.fake_stock && li.pset.fake_stock_count > 0) {
+        li.pset.fake_stock_count = Math.max(0, li.pset.fake_stock_count - li.qty);
+        db.prepare('UPDATE products SET settings = ? WHERE id = ?').run(JSON.stringify(li.pset), li.prod.id);
+      }
     }
     db.prepare('INSERT INTO order_status_history (order_id, status) VALUES (?, ?)').run(oid, 'new');
     db.prepare(`INSERT INTO events (store_id, type, session_id) VALUES (?, 'purchase', ?)`).run(store.id, String(b.session_id || ''));
