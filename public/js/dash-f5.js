@@ -50,30 +50,35 @@ registerView('transactions', async () => {
 
 // ---------- plugins (التطبيقات) ----------
 registerView('plugins', async () => {
+  const [intg, { settings }, { coupons }, { cross_sells }, { links }] = await Promise.all([
+    api('/api/store/integrations'), api('/api/store/settings'), api('/api/coupons'), api('/api/cross-sells'), api('/api/referral-links'),
+  ]);
+  let px = {}; try { px = JSON.parse(settings.theme_settings || '{}').pixels || {}; } catch (_) {}
+  const st = (on) => on ? '<span class="chip st-delivered">مُعدّ</span>' : '<span class="chip">جاهز للإعداد</span>';
   const installed = [
-    ['pixel', 'اعدادات البيكسل', 'اربط فيسبوك وتيك توك وسناب بيكسل بصفحات متجرك لتتبع الزوار وقياس أداء حملاتك الإعلانية بدقة.', 'pixels-settings'],
-    ['capi', 'Conversion API', 'أرسل أحداث الشراء من السيرفر مباشرة إلى Meta لتحسين دقة التتبع واستهداف الإعلانات.', 'pixel-conversion'],
-    ['ga', 'Google Analytics', 'تتبع زيارات متجرك وتحويلاته عبر Google Analytics 4 بمجرد لصق معرّف القياس.', 'ga'],
-    ['coupons', 'كوبونات التخفيضات', 'أنشئ أكواد خصم بنسبة أو بمبلغ ثابت، وحدد شروط استخدامها وعدد مرات صلاحيتها.', 'coupons'],
-    ['feed', 'Google Merchant Feed', 'صدّر منتجات متجرك إلى Google Merchant Center لتظهر في نتائج Google Shopping.', 'google-merchant'],
-    ['popup', 'Sales Popup', 'أظهر إشعارات مشتريات حقيقية لزوار متجرك لبناء الثقة وتحفيز الطلب.', 'sales-popup'],
-    ['cross', 'Cross Sell', 'اقترح منتجات مكملة للعميل أثناء إتمام الطلب لرفع متوسط قيمة السلة.', 'cross-sell'],
-    ['down', 'Downsell', 'اعرض عرضًا أخيرًا بخصم في صفحة الشكر بعد إتمام الطلب لزيادة المبيعات.', 'downsell'],
-    ['whatsapp', 'واتساب الرسمي من ميتا', 'أرسل تأكيدات الطلبات ورسائل استرجاع السلات المتروكة عبر واتساب الرسمي من ميتا.', 'whatsapp-api'],
-    ['link', 'روابط الإحالة', 'تتبع الطلبات القادمة من روابط المسوقين والمؤثرين واعرف أداء كل رابط.', 'referral-link'],
+    ['pixel', 'اعدادات البيكسل', 'اربط فيسبوك وتيك توك وسناب بيكسل بصفحات متجرك لتتبع الزوار وقياس أداء حملاتك الإعلانية بدقة.', 'pixels-settings', st(px.meta || px.tiktok || px.snap)],
+    ['capi', 'Conversion API', 'أرسل أحداث الشراء من السيرفر مباشرة إلى Meta لتحسين دقة التتبع واستهداف الإعلانات.', 'pixel-conversion', st(px.capi_token)],
+    ['ga', 'Google Analytics', 'تتبع زيارات متجرك وتحويلاته عبر Google Analytics 4 بمجرد لصق معرّف القياس.', 'ga', st(px.ga)],
+    ['coupons', 'كوبونات التخفيضات', 'أنشئ أكواد خصم بنسبة أو بمبلغ ثابت، وحدد شروط استخدامها وعدد مرات صلاحيتها.', 'coupons', `<span class="chip st-delivered">${coupons.length} كوبون</span>`],
+    ['feed', 'Google Merchant Feed', 'صدّر منتجات متجرك إلى Google Merchant Center لتظهر في نتائج Google Shopping.', 'google-merchant', '<span class="chip st-delivered">يعمل تلقائياً</span>'],
+    ['popup', 'Sales Popup', 'أظهر إشعارات مشتريات حقيقية لزوار متجرك لبناء الثقة وتحفيز الطلب.', 'sales-popup', st(settings.sales_popup)],
+    ['cross', 'Cross Sell', 'اقترح منتجات مكملة للعميل أثناء إتمام الطلب لرفع متوسط قيمة السلة.', 'cross-sell', `<span class="chip st-delivered">${cross_sells.length} عرض</span>`],
+    ['down', 'Downsell', 'اعرض عرضًا أخيرًا بخصم في صفحة الشكر بعد إتمام الطلب لزيادة المبيعات.', 'downsell', st(settings.downsell)],
+    ['whatsapp', 'واتساب الرسمي من ميتا', 'أرسل تأكيدات الطلبات ورسائل استرجاع السلات المتروكة عبر واتساب الرسمي من ميتا.', 'whatsapp-api', st(intg.whatsapp && intg.whatsapp.configured)],
+    ['link', 'روابط الإحالة', 'تتبع الطلبات القادمة من روابط المسوقين والمؤثرين واعرف أداء كل رابط.', 'referral-link', `<span class="chip st-delivered">${links.length} رابط</span>`],
   ];
   return `
   <div class="d-page">
     ${topBar('التطبيقات', 'هنا تجد التطبيقات التي تساعدك على تطوير متجرك وإضافة وظائف جديدة له', '')}
     <div class="pill-tabs" style="margin-bottom:14px"><button class="on">تطبيقات مثبتة (${installed.length})</button></div>
-    <div class="apps-grid">
-      ${installed.map(([ic, name, desc, route]) => `
+    <div class="apps-grid apps-grid-3">
+      ${installed.map(([ic, name, desc, route, status]) => `
       <div class="app-card" onclick="go('${route}')">
         <span class="app-gear">${I('settings')}</span>
         <b>${name}</b>
         <span class="app-sub muted">مجاني</span>
         <p class="app-desc muted">${desc}</p>
-        <div class="app-foot"><span class="chip st-delivered">مثبت · مجاني</span></div>
+        <div class="app-foot">${status}<span class="app-cfg muted">الإعدادات ←</span></div>
       </div>`).join('')}
     </div>
   </div>`;
@@ -115,7 +120,6 @@ registerView('subscriptions', async () => {
           <li>${I('check')} متجر كامل بدومين مجاني على منصتنا</li>
           <li>${I('check')} منتجات وFunnels غير محدودة</li>
           <li>${I('check')} كل أدوات التسويق والتتبع والبيكسلات</li>
-          <li>${I('check')} دعم فني عبر واتساب</li>
         </ul>
       </div>
     </div>
@@ -198,7 +202,7 @@ function servicesView(kind) {
   <div class="d-page">
     <div class="srv-hero">
       <h2>${kind === 'marketing' ? 'خدمات التسويق' : 'معرض الخدمات'}</h2>
-      <p>خدمات فريق اكتف التي تساعدك على تطوير متجرك لأعلى مستوى</p>
+      <p>خدمات يمكن لصاحب المنصة إتاحتها لمتجرك — الأمثلة أدناه تجريبية وغير مفعّلة بعد</p>
       <div class="srv-search">${I('search')}<input id="srvQ" placeholder="ابحث عن خدمة…" oninput="SRV.q=this.value;srvRenderList()"></div>
     </div>
     <div class="srv-body">
@@ -216,7 +220,7 @@ function srvRenderList() {
   const items = SRV_ITEMS.filter(i => (SRV.cat === 'all' || i[1] === SRV.cat) && (!SRV.q || (i[2] + i[3]).includes(SRV.q)));
   grid.innerHTML = items.length ? items.map(([ic, , name, desc]) => `
     <div class="app-card srv-card"><div class="app-ic">${I(ic)}</div><b>${name}</b><span class="muted sm">${desc}</span>
-      <button class="btn sm primary" onclick="reqService('${esc(name)}')">اطلب الخدمة</button></div>`).join('')
+      <div class="app-foot"><span class="chip">تجريبي — غير متاحة حالياً</span></div></div>`).join('')
     : `<div class="d-card empty" style="grid-column:1/-1"><h3>لا نتائج مطابقة</h3><p class="muted">جرّب كلمة بحث أخرى.</p></div>`;
 }
 registerView('services', async () => ({ html: servicesView('design'), after: srvRenderList }));

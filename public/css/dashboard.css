@@ -560,6 +560,7 @@ body.dash[data-theme="dark"] .act-banner.live .bn-ic svg { color: #4ade80; }
 
 /* F5: apps/plugins + plans + services */
 .apps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.apps-grid-3 { grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
 .app-card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 8px; cursor: pointer; transition: all .18s; }
 .app-card:hover { border-color: var(--green); box-shadow: var(--shadow-soft, 0 6px 24px rgba(11,21,38,.07)); transform: translateY(-2px); }
 .app-card .btn { align-self: flex-start; margin-top: 4px; }
@@ -572,6 +573,7 @@ body.dash[data-theme="dark"] .act-banner.live .bn-ic svg { color: #4ade80; }
 .app-sub { font-size: 12.5px; }
 .app-desc { font-size: 13px; line-height: 1.8; margin: 0; }
 .app-foot { margin-top: auto; padding-top: 10px; display: flex; align-items: center; }
+.app-cfg { margin-inline-start: auto; font-size: 12.5px; }
 .app-ic svg { width: 21px; height: 21px; }
 .plan-card { max-width: 560px; }
 .plan-price b { font-size: 40px; font-weight: 800; } .plan-price span { color: var(--muted); font-size: 15px; }
@@ -890,7 +892,7 @@ textarea.mono{font-family:ui-monospace,monospace;font-size:12.5px;direction:ltr;
 .srv-cat.on{background:var(--green-500);color:#fff;font-weight:700}
 .srv-cat.on .srv-cnt{background:rgb(255 255 255 / .25);color:#fff}
 .srv-cnt{background:var(--bg);border-radius:999px;padding:2px 9px;font-size:12px;color:var(--muted)}
-.srv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+.srv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
 .srv-card{cursor:default}
 
 /* subscriptions EO style */
