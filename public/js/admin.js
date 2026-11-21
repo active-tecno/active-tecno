@@ -71,7 +71,7 @@ async function viewOverview() {
       <div class="stat"><span class="ic">${I('activations')}</span><div class="lbl">إيراد الاشتراكات</div><div class="val">${egp(s.activationRevenue)}</div></div>
       <div class="stat"><span class="ic">${I('overview')}</span><div class="lbl">طلبات تفعيل معلقة</div><div class="val" style="color:${s.pendingActivations ? 'var(--amber)' : 'inherit'}">${s.pendingActivations}</div></div>
     </div>
-    ${s.pendingActivations ? `<div class="act-banner pending"><div class="txt"><h3>⏳ ${s.pendingActivations} طلب تفعيل بانتظار المراجعة</h3><p>راجع التحويلات وفعّل المتاجر.</p></div><button class="btn btn-teal" onclick="location.hash='#/activations'">مراجعة الآن</button></div>` : ''}`);
+    ${s.pendingActivations ? `<div class="act-banner pending"><div class="txt"><h3><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg> ${s.pendingActivations} طلب تفعيل بانتظار المراجعة</h3><p>راجع التحويلات وفعّل المتاجر.</p></div><button class="btn btn-teal" onclick="location.hash='#/activations'">مراجعة الآن</button></div>` : ''}`);
 }
 
 async function viewActivations() {
@@ -82,7 +82,7 @@ async function viewActivations() {
     <div class="card tbl-wrap" id="actWrap">${actTable(d.requests)}</div>`);
 }
 function actTable(reqs) {
-  if (!reqs.length) return '<div class="empty"><div class="big">💳</div><b>لا طلبات</b></div>';
+  if (!reqs.length) return '<div class="empty"><div class="big"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg></div><b>لا طلبات</b></div>';
   return `<table class="tbl"><thead><tr><th>التاجر</th><th>المتجر</th><th>الطريقة</th><th>المرجع</th><th>المبلغ</th><th>التاريخ</th><th>الحالة</th><th></th></tr></thead><tbody>
   ${reqs.map(r => `<tr><td><b>${esc(r.user_name)}</b><br><span class="muted small mono">${esc(r.email)}</span></td>
     <td>${esc(r.store_name)} <span class="mono muted small">/s/${esc(r.slug)}</span></td>
