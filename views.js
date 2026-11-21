@@ -715,7 +715,7 @@ function appShell() {
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Rubik:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/public/css/dashboard.css">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23141924'/%3E%3Cpath d='M9 20l7-11 7 11' stroke='%2327cd27' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-</head><body class="dash"><div id="root"></div><script src="/public/js/dash-core.js"></script><script src="/public/js/dash-legacy.js"></script><script src="/public/js/dash-home.js"></script><script src="/public/js/dash-orders.js"></script><script src="/public/js/dash-products.js"></script><script src="/public/js/dash-funnels.js"></script><script src="/public/js/dash-marketing.js"></script><script src="/public/js/dash-f5.js"></script><script src="/public/js/dash-f6.js"></script><script src="/public/js/dash-builder.js"></script><script src="/public/js/dash-i18n.js"></script></body></html>`;
+</head><body class="dash"><div id="root"></div><script src="/public/js/dash-core.js"></script><script src="/public/js/dash-legacy.js"></script><script src="/public/js/dash-home.js"></script><script src="/public/js/dash-orders.js"></script><script src="/public/js/dash-products.js"></script><script src="/public/js/dash-funnels.js"></script><script src="/public/js/dash-marketing.js"></script><script src="/public/js/dash-f5.js"></script><script src="/public/js/dash-f6.js"></script><script src="/public/js/dash-pages.js"></script><script src="/public/js/dash-builder.js"></script><script src="/public/js/dash-i18n.js"></script></body></html>`;
 }
 
 function adminShell() {
@@ -757,6 +757,29 @@ function demoFormNotice(store) {
 function storeSettingsKV(store) {
   return Object.fromEntries(db.prepare('SELECT key, value FROM store_settings WHERE store_id = ?').all(store.id).map(r => [r.key, r.value]));
 }
+function designAssets(store) {
+  try { return JSON.parse(storeSettingsKV(store).design_assets || '[]'); } catch (_) { return []; }
+}
+function uiBlocks(store, pos) {
+  let u = {}; try { u = JSON.parse(storeSettingsKV(store).ui_blocks || '{}'); } catch (_) {}
+  if (!u.enabled) return '';
+  if (pos === 'top' && u.top_on && u.top_html) return String(u.top_html);
+  if (pos === 'bottom' && u.bottom_on && u.bottom_html) return String(u.bottom_html);
+  return '';
+}
+function checkoutFields(store) {
+  const DEFAULTS = [
+    { key: 'full_name', label: 'الاسم بالكامل', helper: 'مثال: مريم أحمد', order: 0, enabled: true, required: true },
+    { key: 'phone', label: 'رقم الموبايل', helper: '01xxxxxxxxx', order: 1, enabled: true, required: true },
+    { key: 'governorate', label: 'المحافظة', helper: '', order: 2, enabled: true, required: true },
+    { key: 'address', label: 'العنوان بالتفصيل', helper: 'الشارع، رقم العمارة، الدور، الشقة، علامة مميزة', order: 3, enabled: true, required: true },
+    { key: 'notes', label: 'ملاحظات', helper: 'أي تفاصيل إضافية', order: 4, enabled: true, required: false },
+  ];
+  let cfg = {}; try { cfg = JSON.parse(storeSettingsKV(store).checkout_fields || '{}'); } catch (_) {}
+  return DEFAULTS.map(d => ({ ...d, ...(cfg[d.key] || {}) }))
+    .filter(f => (f.key === 'full_name' || f.key === 'phone') || f.enabled !== false)
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
+}
 function storeHead(store, t, title) {
   const kv = storeSettingsKV(store);
   let seo = {}; try { seo = JSON.parse(kv.seo || '{}'); } catch (_) {}
@@ -772,7 +795,7 @@ ${meta}
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Rubik:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/public/css/store.css">
-<style>:root{${themeVars(t)}}</style>${isDemo(store) ? '' : pixelSnippets(store)}${headCode}`;
+<style>:root{${themeVars(t)}}</style>${isDemo(store) ? '' : pixelSnippets(store)}${designAssets(store).filter(a => a.enabled && a.kind === 'css').map(a => `<link rel="stylesheet" href="${esc(a.url)}">`).join('')}${headCode}`;
 }
 function socialLinks(store) {
   let s = {}; try { s = JSON.parse(storeSettingsKV(store).social || '{}'); } catch (_) {}
@@ -780,6 +803,9 @@ function socialLinks(store) {
     ['facebook', 'فيسبوك'], ['instagram', 'انستجرام'], ['tiktok', 'تيك توك'],
   ].filter(([k]) => s[k]).map(([k, label]) => `<a href="${esc(s[k])}" target="_blank" rel="noopener">${label}</a>`);
   if (store.whatsapp) links.push(`<a href="https://wa.me/${esc(store.whatsapp)}" target="_blank" rel="noopener">واتساب</a>`);
+  const footerPages = db.prepare('SELECT title, slug FROM pages WHERE store_id = ? AND active = 1 AND in_footer = 1 ORDER BY id LIMIT 6').all(store.id)
+    .map(p => `<a href="/s/${esc(store.slug)}/page/${esc(p.slug)}">${esc(p.title)}</a>`);
+  links.push(...footerPages);
   if (!links.length) return '';
   return `<p class="s-social">${links.join(' · ')} · <a href="/s/${esc(store.slug)}/policies">السياسات</a></p>`;
 }
@@ -801,7 +827,9 @@ function storeHeader(store, t, cats = []) {
   const cartBtn = `<button class="s-cart-btn" onclick="toggleCart(true)" aria-label="السلة">${IC.cart}<span class="s-cart-count" id="cartCount">0</span></button>`;
   const ctaBtn = t.header_cta_text ? `<a class="s-btn s-header-cta" href="${esc(t.header_cta_link || '#products')}">${esc(t.header_cta_text)}</a>` : '';
   const searchBtn = `<button class="s-icon-btn" aria-label="بحث" onclick="document.getElementById('products')?.scrollIntoView({behavior:'smooth'})">${IC.search}</button>`;
+  const headerPages = db.prepare('SELECT title, slug FROM pages WHERE store_id = ? AND active = 1 AND in_header = 1 ORDER BY id LIMIT 4').all(store.id);
   const navLinks = [...cats.slice(0, 4).map(c => ({ label: c, href: `/s/${esc(store.slug)}/cat/${encodeURIComponent(c)}` })),
+    ...headerPages.map(p => ({ label: p.title, href: `/s/${esc(store.slug)}/page/${esc(p.slug)}` })),
     { label: 'سياسة الاستبدال والاسترجاع', href: `/s/${esc(store.slug)}/policies` },
     { label: 'سياسة الشحن', href: `/s/${esc(store.slug)}/policies` }];
   const linksHtml = navLinks.map(l => `<a href="${esc(l.href)}">${esc(l.label)}</a>`).join('');
@@ -870,7 +898,7 @@ function eoHero(store, products) {
   if (store.free_shipping_over > 0) slides.push(`<div class="h-slide grad-c"><div class="h-slide-in"><h2>شحن مجاني</h2><p>للطلبات فوق ${egp(store.free_shipping_over)}</p><a class="s-btn" href="#products">ابدأ التسوق</a></div></div>`);
   return `<section class="h-slider" id="hSlider">${slides.join('')}${slides.length > 1 ? `<div class="h-dots">${slides.map((_, i) => `<button class="h-dot${i ? '' : ' on'}" data-i="${i}" aria-label="شريحة ${i + 1}"></button>`).join('')}</div>` : ''}</section>`;
 }
-const storeScripts = store => `<script>window.STORE_SLUG=${JSON.stringify(store.slug)};</script><script src="/public/js/store.js"></script>`;
+const storeScripts = store => `<script>window.STORE_SLUG=${JSON.stringify(store.slug)};</script><script src="/public/js/store.js"></script>${designAssets(store).filter(a => a.enabled && a.kind === 'js').map(a => `<script defer src="${esc(a.url)}"></script>`).join('')}`;
 
 function productCardHTML(store, lay, p, t) {
   t = t || {};
@@ -903,7 +931,7 @@ function categoryPage(store, cat, t, owner, sort) {
 <body class="store ${t.dark ? 'dark' : ''} t-${esc((t && t.__id) || store.theme_id)}">
 ${demoBar(store)}
 ${owner ? `<div class="s-ownerbar">وضع المعاينة — <a href="/app">العودة للوحة التحكم</a></div>` : ''}
-${storeHeader(store, t, allCats)}
+${uiBlocks(store, 'top')}${storeHeader(store, t, allCats)}${uiBlocks(store, 'bottom')}
 <main class="cat-page">
 <div class="cat-head"><h1>${esc(cat)}</h1>${sortSel}</div>
 ${products.length ? `<div class="s-grid">${products.map(p => productCardHTML(store, lay, p, t)).join('')}</div>` : `<div class="s-empty">لا توجد منتجات في هذا القسم حالياً — <a href="/s/${esc(store.slug)}">تصفح كل المنتجات</a></div>`}
@@ -1066,7 +1094,9 @@ ${store.whatsapp ? `<a class="s-btn ghost" href="https://wa.me/${esc(store.whats
 ${demoBar(store)}
 ${owner ? `<div class="s-ownerbar">وضع المعاينة — <a href="/app">العودة للوحة التحكم</a></div>` : ''}
 ${renderZone(store, 'home', 'above_header', ctx)}
+${uiBlocks(store, 'top')}
 ${storeHeader(store, t, cats)}
+${uiBlocks(store, 'bottom')}
 ${renderZone(store, 'home', 'below_header', ctx)}
 ${renderZone(store, 'home', 'content', ctx)}
 ${store.free_shipping_over ? `<div class="s-freeship">${IC.truck}شحن مجاني للطلبات فوق ${egp(store.free_shipping_over)}</div>` : ''}
@@ -1130,7 +1160,7 @@ function productPage(store, p, t, owner) {
 ${demoBar(store)}
 ${owner ? `<div class="s-ownerbar">وضع المعاينة — <a href="/app">العودة للوحة التحكم</a></div>` : ''}
 ${renderZone(store, 'product', 'above_header', ctx)}
-${S.hide_header ? '' : storeHeader(store, t)}
+${S.hide_header ? '' : uiBlocks(store, 'top') + storeHeader(store, t) + uiBlocks(store, 'bottom')}
 ${renderZone(store, 'product', 'below_header', ctx)}
 <main class="pd">
 <div class="pd-gallery"><img id="pdImg" src="${esc(imgs[0] || ph(p.name))}" alt="${esc(p.name)}">
@@ -1215,7 +1245,9 @@ function checkoutPage(store, t, owner) {
 <body class="store ${t.dark ? 'dark' : ''} t-${esc((t && t.__id) || store.theme_id)}">
 ${demoBar(store)}
 ${renderZone(store, 'checkout', 'above_header', ctx)}
+${uiBlocks(store, 'top')}
 ${storeHeader(store, t)}
+${uiBlocks(store, 'bottom')}
 ${renderZone(store, 'checkout', 'below_header', ctx)}
 <main class="co">
 <h1>إتمام الطلب</h1>
@@ -1224,11 +1256,15 @@ ${renderZone(store, 'checkout', 'below_header', ctx)}
 <div class="co-grid" id="coGrid">
 <form id="coForm" class="co-form">
 <h3>بيانات التوصيل</h3>
-<label>الاسم بالكامل<input name="name" required placeholder="مثال: مريم أحمد"></label>
-<label>رقم الموبايل<input name="phone" required inputmode="tel" dir="ltr" placeholder="01xxxxxxxxx" pattern="01[0125][0-9]{8}"></label>
-<label>المحافظة<select name="governorate" required>${govs.map(g => `<option>${g}</option>`).join('')}</select></label>
-<label>العنوان بالتفصيل<textarea name="address" required placeholder="الشارع، رقم العمارة، الدور، الشقة، علامة مميزة"></textarea></label>
-<label>ملاحظات (اختياري)<input name="notes" placeholder="أي تفاصيل إضافية"></label>
+${checkoutFields(store).map(f => {
+  const req = (f.key === 'full_name' || f.key === 'phone') ? true : f.required !== false;
+  if (f.key === 'full_name') return `<label>${esc(f.label)}<input name="name" ${req ? 'required' : ''} placeholder="${esc(f.helper)}"></label>`;
+  if (f.key === 'phone') return `<label>${esc(f.label)}<input name="phone" ${req ? 'required' : ''} inputmode="tel" dir="ltr" placeholder="${esc(f.helper)}" pattern="01[0125][0-9]{8}"></label>`;
+  if (f.key === 'governorate') return `<label>${esc(f.label)}<select name="governorate" ${req ? 'required' : ''}>${govs.map(g => `<option>${g}</option>`).join('')}</select></label>`;
+  if (f.key === 'address') return `<label>${esc(f.label)}<textarea name="address" ${req ? 'required' : ''} placeholder="${esc(f.helper)}"></textarea></label>`;
+  if (f.key === 'notes') return `<label>${esc(f.label)}<input name="notes" ${req ? 'required' : ''} placeholder="${esc(f.helper)}"></label>`;
+  return '';
+}).join('')}
 <h3 style="margin-top:6px">طريقة الدفع</h3>
 <div class="pay-methods">
 <label class="pay-method"><input type="radio" name="payment_method" value="cod" checked><span class="pm-ic">${IC.cash}</span><div class="pm-body"><b>الدفع عند الاستلام</b><span>ادفع كاش أو بالمحفظة عند وصول طلبك</span></div><span class="pm-check"></span></label>
@@ -1393,6 +1429,9 @@ function orderPage(store, o, t) {
       }
     }
   } catch (e) {}
+  let thanks = {}; try { thanks = JSON.parse(storeSettingsKV(store).thanks || '{}'); } catch (_) {}
+  const thanksOn = thanks.enabled && thanks.html;
+  const homeBtn = thanks.home_btn !== false;
   const waMsg = encodeURIComponent(`أهلاً ${o.customer_name} 👋\nتم استلام طلبك رقم ${o.number} من ${store.name} بنجاح ✅\nالإجمالي: ${egp(o.total)} — الدفع عند الاستلام\nسنتواصل معك قريباً لتأكيد الشحن 🚚`);
   const waLink = store.whatsapp ? `https://wa.me/${store.whatsapp}?text=${encodeURIComponent(`أهلاً، أريد الاستفسار عن طلبي رقم ${o.number}`)}` : null;
   return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, `طلبك ${o.number} | ${store.name}`)}</head>
@@ -1401,15 +1440,15 @@ ${demoBar(store)}
 <main class="done">
 <div class="done-card">
 <div class="done-check">${IC.check}</div>
-<h1>شكراً ${esc(o.customer_name)}!</h1>
-<p>تم استلام طلبك <b>${esc(o.number)}</b> بنجاح وسنتواصل معك لتأكيد الشحن.</p>
+${thanksOn ? `<div class="thanks-custom">${thanks.html}</div>` : `<h1>شكراً ${esc(o.customer_name)}!</h1>
+<p>تم استلام طلبك <b>${esc(o.number)}</b> بنجاح وسنتواصل معك لتأكيد الشحن.</p>`}
 <div class="done-items">${items.map(i => `<div class="done-item"><span>${esc(i.name)} × ${i.qty}</span><b>${egp(i.price * i.qty)}</b></div>`).join('')}
 <div class="done-item dim"><span>الشحن</span><b>${o.shipping ? egp(o.shipping) : 'مجاني'}</b></div>
 ${o.discount ? `<div class="done-item dim"><span>الخصم${o.coupon_code ? ` (${esc(o.coupon_code)})` : ''}</span><b>−${egp(o.discount)}</b></div>` : ''}
 <div class="done-item total"><span>الإجمالي عند الاستلام</span><b>${egp(o.total)}</b></div></div>
 <div class="done-actions">
 ${waLink ? `<a class="s-btn" href="${waLink}" target="_blank" rel="noopener">تواصل معنا واتساب</a>` : ''}
-<a class="s-btn ghost" href="/s/${esc(store.slug)}">متابعة التسوق</a></div>
+${homeBtn ? `<a class="s-btn ghost" href="/s/${esc(store.slug)}">متابعة التسوق</a>` : ''}</div>
 </div>
 ${downsellCard}</main>
 <footer class="s-footer"><p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>
@@ -1792,4 +1831,18 @@ function builderRender(store, t, page) {
   };
 }
 
-module.exports = { landing, login: loginPage, register: registerPage, appShell, adminShell, storefront, productPage, checkoutPage, funnelPage, orderPage, verifiedPage, policiesPage, categoryPage, storeBlogIndex, storeBlogPost, comingSoon, notFound, onboarding, egp, esc, pricingPage, themesPage, blogIndex, blogPostPage, blogStaticPage, BLOG_POSTS, builderRender };
+function simplePage(store, pg, t, owner) {
+  return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, `${pg.title} | ${store.name}`)}</head>
+<body class="store ${t.dark ? 'dark' : ''} t-${esc((t && t.__id) || store.theme_id)}">
+${demoBar(store)}
+${owner ? `<div class="s-ownerbar">وضع المعاينة — <a href="/app">العودة للوحة التحكم</a></div>` : ''}
+${uiBlocks(store, 'top')}
+${storeHeader(store, t)}
+${uiBlocks(store, 'bottom')}
+<main class="s-page"><h1>${esc(pg.title)}</h1><div class="s-page-body">${pg.content}</div></main>
+<footer class="s-footer">${socialLinks(store)}${t.footer_text ? `<p>${esc(t.footer_text)}</p>` : ''}<p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>
+${storeScripts(store)}
+</body></html>`;
+}
+
+module.exports = { landing, login: loginPage, register: registerPage, appShell, adminShell, storefront, productPage, checkoutPage, funnelPage, orderPage, verifiedPage, policiesPage, categoryPage, storeBlogIndex, storeBlogPost, comingSoon, notFound, onboarding, egp, esc, pricingPage, themesPage, blogIndex, blogPostPage, blogStaticPage, BLOG_POSTS, builderRender, simplePage };

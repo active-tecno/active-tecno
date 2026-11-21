@@ -190,7 +190,7 @@ async function renderCheckout() {
   coState.zones = d.zones || [];
   coState.freeOver = d.store.free_shipping_over || 0;
   drawSummary();
-  document.querySelector('[name=governorate]').addEventListener('change', drawSummary);
+  document.querySelector('[name=governorate]')?.addEventListener('change', drawSummary);
 }
 function shippingFor(subtotal, gov) {
   let ship = 0;

@@ -12,6 +12,9 @@ registerView('funnels', async () => {
         <td>${f.views}</td><td>${f.orders}</td><td>${conv(f)}</td>
         <td>${f.status === 'active' ? '<span class="chip st-delivered">نشط</span>' : '<span class="chip">متوقف</span>'}</td>
         <td class="acts">
+          <a class="btn sm" href="/s/${STORE.slug}/f/${f.id}" target="_blank" rel="noopener" title="مشاهدة">${I('eye')}</a>
+          <button class="btn sm" onclick="funnelRename(${f.id}, '${esc(f.name)}')">تعديل</button>
+          <button class="btn sm" onclick="funnelClone(${f.id})">استنساخ</button>
           <button class="btn sm" onclick="copyFunnel(${f.id})">نسخ الرابط</button>
           ${f.status === 'active' ? `<button class="btn sm" onclick="funnelStatus(${f.id},'paused')">إيقاف</button>` : `<button class="btn sm" onclick="funnelStatus(${f.id},'active')">تشغيل</button>`}
           <button class="btn sm danger" onclick="delFunnel(${f.id})">حذف</button></td></tr>`).join('')}</tbody></table></div>
@@ -34,6 +37,22 @@ async function saveFunnel() {
 }
 async function funnelStatus(id, status) { await api('/api/funnels/' + id, { method: 'PUT', body: { status } }); toast('تم التحديث'); rerender(); }
 async function delFunnel(id) { if (!confirm('حذف هذا الـ Funnel؟')) return; await api('/api/funnels/' + id, { method: 'DELETE' }); toast('تم الحذف'); rerender(); }
+async function funnelRename(id, cur) {
+  openModal('تعديل الـ Funnel', `
+    <label class="d-label">اسم الـ Funnel *</label><input id="fnRename" class="d-input" value="${esc(cur)}">
+    <button class="btn primary" onclick="funnelRenameSave(${id})">حفظ</button>`, () => {});
+}
+async function funnelRenameSave(id) {
+  const name = $('#fnRename').value.trim(); if (!name) return toast('الاسم مطلوب', 'err');
+  await api('/api/funnels/' + id, { method: 'PUT', body: { name } });
+  closeModal(); toast('تم الحفظ'); rerender();
+}
+async function funnelClone(id) {
+  const { funnels } = await api('/api/funnels');
+  const f = funnels.find(x => x.id === id); if (!f) return;
+  await api('/api/funnels', { method: 'POST', body: { name: f.name + ' — نسخة', product_id: f.product_id } });
+  toast('تم الاستنساخ'); rerender();
+}
 function copyFunnel(id) {
   const url = `${location.origin}/s/${STORE.slug}/f/${id}`;
   navigator.clipboard.writeText(url).then(() => toast('تم نسخ رابط الـ Funnel'));

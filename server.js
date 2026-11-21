@@ -561,11 +561,85 @@ const api = {
     json(res, 200, { ok: true });
   },
 
+  // simple pages (الصفحات)
+  'GET /api/pages': (req, res, user) => {
+    const store = getStoreForUser(user);
+    json(res, 200, { pages: db.prepare('SELECT * FROM pages WHERE store_id = ? ORDER BY id').all(store.id) });
+  },
+  'POST /api/pages': async (req, res, user) => {
+    const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
+    const store = getStoreForUser(user);
+    const title = String(b.title || '').trim().slice(0, 120);
+    const slug = String(b.slug || '').trim().toLowerCase().replace(/[^a-z0-9\u0600-\u06FF-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
+    if (!title || !slug) return json(res, 400, { error: 'العنوان والرابط مطلوبان' });
+    try {
+      const r = db.prepare('INSERT INTO pages (store_id, title, slug, content, in_header, in_footer, active) VALUES (?, ?, ?, ?, ?, ?, ?)')
+        .run(store.id, title, slug, String(b.content || ''), b.in_header ? 1 : 0, b.in_footer === false ? 0 : 1, b.active === false ? 0 : 1);
+      json(res, 201, { ok: true, id: r.lastInsertRowid });
+    } catch (e) { json(res, 400, { error: 'هذا الرابط مستخدم لصفحة أخرى' }); }
+  },
+  'PUT /api/pages/:id': async (req, res, user, p) => {
+    const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
+    const store = getStoreForUser(user);
+    const pg = db.prepare('SELECT * FROM pages WHERE id = ? AND store_id = ?').get(p.id, store.id);
+    if (!pg) return json(res, 404, { error: 'الصفحة غير موجودة' });
+    const title = String(b.title ?? pg.title).trim().slice(0, 120) || pg.title;
+    const slug = String(b.slug ?? pg.slug).trim().toLowerCase().replace(/[^a-z0-9\u0600-\u06FF-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80) || pg.slug;
+    try {
+      db.prepare("UPDATE pages SET title=?, slug=?, content=?, in_header=?, in_footer=?, active=?, updated_at=datetime('now') WHERE id=?")
+        .run(title, slug, String(b.content ?? pg.content), (b.in_header ?? !!pg.in_header) ? 1 : 0, (b.in_footer ?? !!pg.in_footer) ? 1 : 0, (b.active ?? !!pg.active) ? 1 : 0, pg.id);
+      json(res, 200, { ok: true });
+    } catch (e) { json(res, 400, { error: 'هذا الرابط مستخدم لصفحة أخرى' }); }
+  },
+  'DELETE /api/pages/:id': (req, res, user, p) => {
+    const store = getStoreForUser(user);
+    db.prepare('DELETE FROM pages WHERE id = ? AND store_id = ?').run(p.id, store.id);
+    json(res, 200, { ok: true });
+  },
+
+  // notifications feed (الإشعارات) — real store events: new orders + activation reviews
+  'GET /api/notifications': (req, res, user) => {
+    const store = getStoreForUser(user);
+    const orders = db.prepare("SELECT number, customer_name, total, status, created_at FROM orders WHERE store_id = ? AND demo = 0 ORDER BY id DESC LIMIT 50").all(store.id)
+      .map(o => ({ kind: 'order', text: `طلب جديد ${o.number} بقيمة ${o.total} ج.م من ${o.customer_name}`, date: o.created_at, fresh: o.status === 'new', link: '#/orders' }));
+    const acts = db.prepare("SELECT status, created_at, reviewed_at FROM activation_requests WHERE store_id = ? ORDER BY id DESC LIMIT 10").all(store.id)
+      .map(a => ({ kind: 'activation', text: a.status === 'approved' ? 'تمت الموافقة على طلب تفعيل متجرك' : a.status === 'rejected' ? 'تم رفض طلب التفعيل — راجع الملاحظات وأعد المحاولة' : 'طلب التفعيل قيد المراجعة', date: a.reviewed_at || a.created_at, fresh: false, link: '#/top-up' }));
+    const items = [...orders, ...acts].sort((a, b) => String(b.date).localeCompare(String(a.date))).slice(0, 50);
+    json(res, 200, { notifications: items });
+  },
+
+  // design assets (رفع ملفات التصاميم) — merchant's own css/js, injected into their storefront
+  'POST /api/design-assets': async (req, res, user) => {
+    const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
+    const m = b.dataUrl && String(b.dataUrl).match(/^data:(text\/css|text\/javascript|application\/javascript);base64,(.+)$/);
+    if (!m) return json(res, 400, { error: 'ملف غير صالح — ارفع ملف CSS أو JS فقط' });
+    const kind = m[1] === 'text/css' ? 'css' : 'js';
+    const buf = Buffer.from(m[2], 'base64');
+    if (buf.length > 1024 * 1024) return json(res, 400, { error: 'الملف أكبر من 1 ميجا' });
+    const name = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}.${kind}`;
+    fs.writeFileSync(path.join(UPLOAD_DIR, name), buf);
+    const store = getStoreForUser(user);
+    let assets = []; try { assets = JSON.parse((db.prepare("SELECT value FROM store_settings WHERE store_id = ? AND key = 'design_assets'").get(store.id) || {}).value || '[]'); } catch (e) {}
+    assets.push({ name: String(b.name || name).slice(0, 120), url: '/uploads/' + name, kind, enabled: true });
+    db.prepare("INSERT INTO store_settings (store_id, key, value, updated_at) VALUES (?, 'design_assets', ?, datetime('now')) ON CONFLICT(store_id, key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at").run(store.id, JSON.stringify(assets));
+    json(res, 201, { ok: true, assets });
+  },
+  'DELETE /api/design-assets': async (req, res, user) => {
+    const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
+    const store = getStoreForUser(user);
+    let assets = []; try { assets = JSON.parse((db.prepare("SELECT value FROM store_settings WHERE store_id = ? AND key = 'design_assets'").get(store.id) || {}).value || '[]'); } catch (e) {}
+    const victim = assets.find(a => a.url === b.url);
+    assets = assets.filter(a => a.url !== b.url);
+    db.prepare("INSERT INTO store_settings (store_id, key, value, updated_at) VALUES (?, 'design_assets', ?, datetime('now')) ON CONFLICT(store_id, key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at").run(store.id, JSON.stringify(assets));
+    if (victim) { const f = path.join(UPLOAD_DIR, path.basename(victim.url)); try { fs.unlinkSync(f); } catch (e) {} }
+    json(res, 200, { ok: true, assets });
+  },
+
   // ---------- F6: settings tree ----------
   'PUT /api/store/settings': async (req, res, user) => {
     const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
     const store = getStoreForUser(user);
-    const allowed = ['policies', 'head_code', 'seo', 'social', 'custom_domain', 'max_items', 'notify_email', 'notifications', 'digital_delivery'];
+    const allowed = ['policies', 'head_code', 'seo', 'social', 'custom_domain', 'max_items', 'notify_email', 'notifications', 'digital_delivery', 'checkout_fields', 'thanks', 'ui_blocks', 'design_assets'];
     const up = db.prepare('INSERT INTO store_settings (store_id, key, value, updated_at) VALUES (?, ?, ?, datetime(\'now\')) ON CONFLICT(store_id, key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at');
     for (const k of allowed) if (k in b) up.run(store.id, k, typeof b[k] === 'string' ? b[k] : JSON.stringify(b[k]));
     if ('phone' in b) db.prepare('UPDATE stores SET phone = ? WHERE id = ?').run(String(b.phone).trim(), store.id);
@@ -772,7 +846,12 @@ const api = {
     const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
     const store = getStoreForUser(user);
     const phone = normalizePhone(b.phone);
-    if (!b.name || !EG_PHONE.test(phone) || !b.address) return json(res, 400, { error: 'تأكد من الاسم ورقم الهاتف المصري والعنوان' });
+    let cfCfg = null; try { cfCfg = JSON.parse((db.prepare("SELECT value FROM store_settings WHERE store_id = ? AND key = 'checkout_fields'").get(store.id) || {}).value || 'null'); } catch (e) {}
+    const cfOn = k => !cfCfg || !cfCfg[k] || cfCfg[k].enabled !== false;
+    const cfReq = k => !cfCfg || !cfCfg[k] || cfCfg[k].required !== false;
+    if (!b.name || !EG_PHONE.test(phone)) return json(res, 400, { error: 'تأكد من الاسم ورقم الهاتف المصري' });
+    if (cfOn('address') && cfReq('address') && !b.address) return json(res, 400, { error: 'تأكد من كتابة العنوان' });
+    if (cfOn('governorate') && cfReq('governorate') && !b.governorate) return json(res, 400, { error: 'اختر المحافظة' });
     if (!Array.isArray(b.items) || !b.items.length) return json(res, 400, { error: 'اختر منتجاً واحداً على الأقل' });
     const lineItems = [];
     for (const it of b.items) {
@@ -793,7 +872,7 @@ const api = {
     const number = `${store.slug.slice(0, 2).toUpperCase()}-${1021 + count}`;
     const r = db.prepare(`INSERT INTO orders (store_id, number, customer_name, customer_phone, customer_address, governorate, notes, subtotal, shipping, discount, total, source)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 'dashboard')`)
-      .run(store.id, number, b.name.trim(), phone, b.address.trim(), b.governorate || '', (b.notes || '').trim(), subtotal, shipping, total);
+      .run(store.id, number, b.name.trim(), phone, (b.address || '').trim(), b.governorate || '', (b.notes || '').trim(), subtotal, shipping, total);
     const oid = r.lastInsertRowid;
     const itemStmt = db.prepare('INSERT INTO order_items (order_id, product_id, name, price, qty, image) VALUES (?, ?, ?, ?, ?, ?)');
     for (const li of lineItems) {
@@ -1079,7 +1158,12 @@ const api = {
     const store = db.prepare('SELECT * FROM stores WHERE slug = ?').get(p.slug);
     if (!store) return json(res, 404, { error: 'المتجر غير موجود' });
     const phone = normalizePhone(b.phone);
-    if (!b.name || !EG_PHONE.test(phone) || !b.address) return json(res, 400, { error: 'تأكد من الاسم ورقم الهاتف المصري والعنوان' });
+    let cfCfg = null; try { cfCfg = JSON.parse((db.prepare("SELECT value FROM store_settings WHERE store_id = ? AND key = 'checkout_fields'").get(store.id) || {}).value || 'null'); } catch (e) {}
+    const cfOn = k => !cfCfg || !cfCfg[k] || cfCfg[k].enabled !== false;
+    const cfReq = k => !cfCfg || !cfCfg[k] || cfCfg[k].required !== false;
+    if (!b.name || !EG_PHONE.test(phone)) return json(res, 400, { error: 'تأكد من الاسم ورقم الهاتف المصري' });
+    if (cfOn('address') && cfReq('address') && !b.address) return json(res, 400, { error: 'تأكد من كتابة العنوان' });
+    if (cfOn('governorate') && cfReq('governorate') && !b.governorate) return json(res, 400, { error: 'اختر المحافظة' });
     if (db.prepare('SELECT id FROM blocked_numbers WHERE store_id = ? AND phone = ?').get(store.id, phone))
       return json(res, 403, { error: 'عذراً، لا يمكن إتمام الطلب بهذا الرقم. تواصل مع المتجر للمساعدة.' });
     if (!Array.isArray(b.items) || !b.items.length) return json(res, 400, { error: 'السلة فارغة' });
@@ -1136,7 +1220,7 @@ const api = {
     const isDemo = isDemoStore(store.id) ? 1 : 0;
     const r = db.prepare(`INSERT INTO orders (store_id, number, customer_name, customer_phone, customer_address, governorate, notes, subtotal, shipping, discount, total, coupon_code, payment_method, utm_source, utm_medium, utm_campaign, ref_code, demo)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .run(store.id, number, b.name.trim(), phone, b.address.trim(), b.governorate || '', (b.notes || '').trim(), subtotal, shipping, discount, total, couponCode, payMethod,
+      .run(store.id, number, b.name.trim(), phone, (b.address || '').trim(), b.governorate || '', (b.notes || '').trim(), subtotal, shipping, discount, total, couponCode, payMethod,
         String(b.utm_source || '').slice(0, 100), String(b.utm_medium || '').slice(0, 100), String(b.utm_campaign || '').slice(0, 100), refCode, isDemo);
     // funnel attribution
     if (b.funnel_id) db.prepare('UPDATE funnels SET orders = orders + 1 WHERE id = ? AND store_id = ?').run(b.funnel_id | 0, store.id);
@@ -1193,7 +1277,7 @@ const api = {
     db.prepare(`UPDATE carts SET items = '[]', customer_phone = ?, updated_at = datetime('now') WHERE store_id = ? AND session_id = ?`).run(phone, store.id, String(b.session_id || ''));
     let payment = null;
     if (payMethod === 'online') {
-      payment = await integ.paymobCreatePayment({ amountEGP: total, orderNumber: number, customer: { name: b.name.trim(), phone, address: b.address.trim(), governorate: b.governorate || '' }, storeCfg: (JSON.parse(store.theme_settings || '{}').payments_config) || null });
+      payment = await integ.paymobCreatePayment({ amountEGP: total, orderNumber: number, customer: { name: b.name.trim(), phone, address: (b.address || '').trim(), governorate: b.governorate || '' }, storeCfg: (JSON.parse(store.theme_settings || '{}').payments_config) || null });
       if (payment.payment_url) {
         db.prepare(`UPDATE orders SET payment_status = 'awaiting_payment', payment_ref = ? WHERE id = ?`).run(String(payment.paymob_order_id || ''), oid);
       } else if (payment.simulated) {
@@ -1293,9 +1377,9 @@ const server = http.createServer(async (req, res) => {
     }
     if (pathname === '/admin') return html(res, 200, views.adminShell());
 
-    const storeMatch = pathname.match(/^\/s\/([a-z0-9\u0600-\u06FF-]+)(\/p\/(\d+)|\/f\/(\d+)|\/checkout|\/verified|\/policies|\/cat\/([^\/]+)|\/blog|\/blog\/([^\/]+)|\/order\/([A-Z0-9-]+))?\/?$/i);
+    const storeMatch = pathname.match(/^\/s\/([a-z0-9\u0600-\u06FF-]+)(\/p\/(\d+)|\/f\/(\d+)|\/checkout|\/verified|\/policies|\/cat\/([^\/]+)|\/blog|\/blog\/([^\/]+)|\/order\/([A-Z0-9-]+)|\/page\/([^\/]+))?\/?$/i);
     if (storeMatch) {
-      const [, slug, sub, productId, funnelId, catName, , orderNumber] = storeMatch;
+      const [, slug, sub, productId, funnelId, catName, , orderNumber, pageSlug] = storeMatch;
       const store = db.prepare('SELECT * FROM stores WHERE slug = ?').get(slug);
       if (!store) return html(res, 404, views.notFound('المتجر غير موجود', 'تأكد من الرابط أو تواصل مع صاحب المتجر.'));
       let theme = db.prepare('SELECT * FROM themes WHERE id = ?').get(store.theme_id);
@@ -1329,6 +1413,11 @@ const server = http.createServer(async (req, res) => {
         const post = db.prepare(`SELECT p.*, c.name AS category_name FROM blog_posts p LEFT JOIN blog_categories c ON c.id = p.category_id WHERE p.store_id = ? AND p.slug = ? AND p.status = 'published'`).get(store.id, sub.slice(6));
         if (!post) return html(res, 404, views.notFound());
         return html(res, 200, views.storeBlogPost(store, post, themeConfig));
+      }
+      if (sub && sub.startsWith('/page/')) {
+        const pg = db.prepare('SELECT * FROM pages WHERE store_id = ? AND slug = ? AND active = 1').get(store.id, pageSlug);
+        if (!pg) return html(res, 404, views.notFound('الصفحة غير موجودة', 'ربما تغيّر الرابط أو حُذفت الصفحة.'));
+        return html(res, 200, views.simplePage(store, pg, themeConfig, owner));
       }
       if (sub === '/policies') return html(res, 200, views.policiesPage(store, themeConfig));
       if (sub && sub.startsWith('/cat/')) return html(res, 200, views.categoryPage(store, catName, themeConfig, owner, url.searchParams.get('sort') || ''));

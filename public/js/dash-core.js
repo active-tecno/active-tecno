@@ -156,6 +156,11 @@ const NAV_GROUPS = [
   { label: null, items: [], group: ['design', 'customize', 'تصميم المتجر', [
     ['customize', null, 'الثييمات'],
     ['builder', null, 'تعديل الصفحة الرئيسية'],
+    ['pages', null, 'الصفحات'],
+    ['checkout-fields', null, 'نموذج الشراء'],
+    ['thanks-edit', null, 'تعديل صفحة الشكر'],
+    ['ui-blocks', null, 'UI Blocks'],
+    ['upload-assets', null, 'رفع ملفات التصاميم'],
   ]]},
   { label: null, items: [['funnels', 'funnel', 'Funnels']] },
   { label: null, items: [], group: ['tracking', 'tracking', 'ادوات التتبع', [
@@ -266,7 +271,7 @@ async function toggleNotifs(e) {
   if ((ME.activations || []).some(a => a.status === 'pending')) items.push({ ic: 'cash', t: 'طلب التفعيل قيد المراجعة من فريقنا', a: "go('overview')" });
   const render = () => {
     if (!items.length) { dd.innerHTML = '<div class="notif-empty">لا اشعارات جديدة</div>'; return; }
-    dd.innerHTML = `<h4>الاشعارات</h4>` + items.map(n => `<button class="notif-item" style="width:100%;background:transparent;border:0;text-align:start;cursor:pointer" onclick="document.getElementById('notifDd').style.display='none';${n.a}"><span class="n-ic">${I(n.ic)}</span><span>${n.t}</span></button>`).join('');
+    dd.innerHTML = `<h4>الاشعارات</h4>` + items.map(n => `<button class="notif-item" style="width:100%;background:transparent;border:0;text-align:start;cursor:pointer" onclick="document.getElementById('notifDd').style.display='none';${n.a}"><span class="n-ic">${I(n.ic)}</span><span>${n.t}</span></button>`).join('') + `<button class="notif-item" style="width:100%;background:transparent;border:0;text-align:start;cursor:pointer;color:var(--green-400)" onclick="document.getElementById('notifDd').style.display='none';go('notifications')"><span class="n-ic">${I('bell')}</span><span>اظهار الكل</span></button>`;
   };
   if (!p.enabled) dd.innerHTML = `<div class="notif-empty">إشعارات الطلبات موقوفة — <a href="#/settings/notifications" style="color:var(--green-400)">إعادة التفعيل</a></div>`;
   else render();

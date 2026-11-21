@@ -810,3 +810,30 @@ select.d-input { cursor: pointer; }
 .ord-tabs { align-items: center; }
 .ord-tab svg { width: 14px; height: 14px; vertical-align: -2px; }
 .ord-tab { align-self: center; }
+
+/* dash-pages.js: pages/checkout-fields/thanks/ui-blocks/assets/notifications */
+.chk-yes{color:var(--green-600,#16a34a);display:inline-flex}.chk-yes svg{width:16px;height:16px}
+.chk-no{color:var(--muted,#94A3B8);font-weight:700}
+.tbl-foot{padding:10px 4px 0;text-align:start}
+.cf-row{border-top:1px solid var(--line,#E6ECF5);padding:18px 0}
+.cf-row:first-of-type{border-top:0}
+.cf-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.cf-toggles{display:flex;gap:26px;margin-top:12px}
+.uib-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+textarea.mono{font-family:ui-monospace,monospace;font-size:12.5px;direction:ltr;text-align:left}
+.ntf-list{display:grid}
+.ntf-row{display:flex;align-items:center;gap:14px;padding:14px 6px;border:0;border-bottom:1px solid var(--line,#E6ECF5);background:transparent;cursor:pointer;text-align:start;width:100%}
+.ntf-row:last-child{border-bottom:0}
+.ntf-row:hover{background:var(--soft,#F5F8FC)}
+.ntf-row .n-ic{width:38px;height:38px;border-radius:12px;background:var(--green-soft,#eafbee);color:var(--green-600,#16a34a);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ntf-row .n-ic svg{width:18px;height:18px}
+.ntf-row .n-body{flex:1;display:grid;gap:3px}
+
+/* pure-CSS pill toggle (EO-style) */
+.tg{display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:14px}
+.tg input{display:none}
+.tg i{position:relative;width:42px;height:24px;border-radius:999px;background:var(--line-strong,#D5DCE8);transition:background .2s;flex-shrink:0}
+.tg i::after{content:'';position:absolute;top:3px;inset-inline-start:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:inset-inline-start .2s var(--ease,.2s);box-shadow:0 1px 3px rgb(0 0 0/.25)}
+.tg input:checked + i{background:var(--green-500,#27cd27)}
+.tg input:checked + i::after{inset-inline-start:21px}
+.tg input:disabled + i{opacity:.55;cursor:not-allowed}

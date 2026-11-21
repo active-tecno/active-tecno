@@ -392,6 +392,25 @@ const migrations = [
     `
   },
   {
+    id: '014_pages',
+    sql: `
+    CREATE TABLE IF NOT EXISTS pages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      store_id INTEGER NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      slug TEXT NOT NULL,
+      content TEXT NOT NULL DEFAULT '',
+      in_header INTEGER NOT NULL DEFAULT 0,
+      in_footer INTEGER NOT NULL DEFAULT 1,
+      active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(store_id, slug)
+    );
+    CREATE INDEX IF NOT EXISTS idx_pages_store ON pages(store_id, active);
+    `
+  },
+  {
     id: '013_store_sections',
     sql: `
     CREATE TABLE IF NOT EXISTS store_sections (
