@@ -21,7 +21,12 @@ const THEMES = [
     config: { primary: '#14532D', accent: '#F59E0B', bg: '#FFFFFF', surface: '#F0FDF4', radius: 16, header: 'centered', card: 'soft', font: 'IBM Plex Sans Arabic' } },
   // Stage G: EO-look theme family (own code, same structure/look)
   { id: 'eo-default', name_ar: 'ديفولت', category: 'عام', is_premium: 0, price: 0,
-    config: { primary: '#141924', accent: '#111111', bg: '#FFFFFF', surface: '#F3F4F6', radius: 12, header: 'eo', card: 'flat', font: 'IBM Plex Sans Arabic', announce_bg: '#F3E8FF', announce_color: '#141924' } },
+    config: { primary: '#141924', accent: '#111111', bg: '#FFFFFF', surface: '#F3F4F6', radius: 12, header: 'eo', card: 'flat', font: 'IBM Plex Sans Arabic', announce_bg: '#F3E8FF', announce_color: '#141924',
+      schema: [
+        { key: 'header_cta_text', label: 'نص زر الهيدر (اختياري)', kind: 'text' },
+        { key: 'header_cta_link', label: 'رابط زر الهيدر', kind: 'text' },
+        { key: 'trust_line', label: 'سطر الثقة أعلى الفوتر', kind: 'text' },
+      ] } },
   { id: 'eo-sphinx', name_ar: 'سفينكس', category: 'عام', is_premium: 0, price: 0,
     config: { primary: '#141924', accent: '#111111', bg: '#FFFFFF', surface: '#F3F4F6', radius: 10, header: 'eo', card: 'flat', font: 'IBM Plex Sans Arabic', announce_bg: '#FFEA00', announce_color: '#141924' } },
   { id: 'eo-fasty', name_ar: 'فاستي', category: 'عام', is_premium: 0, price: 0,
@@ -44,7 +49,7 @@ function seed() {
   const hasUsers = db.prepare('SELECT COUNT(*) c FROM users').get().c > 0;
 
   const themeStmt = db.prepare(`INSERT INTO themes (id, name_ar, category, is_premium, price, config)
-    VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO NOTHING`);
+    VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET name_ar = excluded.name_ar, category = excluded.category, is_premium = excluded.is_premium, price = excluded.price, config = excluded.config`);
   for (const t of THEMES) themeStmt.run(t.id, t.name_ar, t.category, t.is_premium, t.price, JSON.stringify(t.config));
 
   if (hasUsers) { console.log('Seed: users exist, themes synced, done.'); return; }

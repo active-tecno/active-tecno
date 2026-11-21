@@ -792,6 +792,7 @@ function storeHeader(store, t, cats = []) {
   }
   const brand = `<a class="s-brand" href="/s/${esc(store.slug)}"><span class="s-logo">${esc((store.logo_text || store.name).trim().charAt(0))}</span><span class="s-brand-name">${esc(store.name)}</span></a>`;
   const cartBtn = `<button class="s-cart-btn" onclick="toggleCart(true)" aria-label="السلة">${IC.cart}<span class="s-cart-count" id="cartCount">0</span></button>`;
+  const ctaBtn = t.header_cta_text ? `<a class="s-btn s-header-cta" href="${esc(t.header_cta_link || '#products')}">${esc(t.header_cta_text)}</a>` : '';
   const searchBtn = `<button class="s-icon-btn" aria-label="بحث" onclick="document.getElementById('products')?.scrollIntoView({behavior:'smooth'})">${IC.search}</button>`;
   const navLinks = [...cats.slice(0, 4).map(c => ({ label: c, href: `/s/${esc(store.slug)}/cat/${encodeURIComponent(c)}` })),
     { label: 'سياسة الاستبدال والاسترجاع', href: `/s/${esc(store.slug)}/policies` },
@@ -822,7 +823,7 @@ ${announce}`;
   }
   return `${announce}
 <header class="s-header eo ${lay}">
-  <div class="dh-row">${brand}<nav class="dh-links">${linksHtml}</nav><div class="dh-icons">${searchBtn}${cartBtn}</div></div>
+  <div class="dh-row">${brand}<nav class="dh-links">${linksHtml}</nav><div class="dh-icons">${ctaBtn}${searchBtn}${cartBtn}</div></div>
 </header>`;
 }
 function eoHero(store, products) {
@@ -893,8 +894,9 @@ const SECTION_DEFAULTS = {
   newsletter: { title: 'اشترك في نشرتنا البريدية', desc: 'عروض ومنتجات جديدة على بريدك أولاً بأول' },
   reviews: { title: 'آراء العملاء', limit: 6 },
   blog: { title: 'من المدونة', limit: 3 },
+  marquee: { items: ['شحن سريع لكل المحافظات', 'الدفع عند الاستلام', 'إرجاع سهل خلال 14 يوم'], speed: 22, bg: '#141924', color: '#ffffff' },
 };
-const SECTION_NAMES = { hero: 'سلايدر', slider: 'سلايدر صور', categories: 'الفئات', product_grid: 'شبكة المنتجات', product_list: 'قائمة المنتجات', featured_products: 'المنتجات المميزة', promo_banner: 'لافتة ترويجية', image: 'صورة', heading: 'عنوان رئيسي وفرعي', rich_text: 'نص متقدم', html_code: 'كود HTML', faq: 'الأسئلة الشائعة', features: 'مميزات المتجر', newsletter: 'النشرة البريدية', reviews: 'التقييمات', blog: 'المدونة' };
+const SECTION_NAMES = { hero: 'سلايدر', slider: 'سلايدر صور', categories: 'الفئات', product_grid: 'شبكة المنتجات', product_list: 'قائمة المنتجات', featured_products: 'المنتجات المميزة', promo_banner: 'لافتة ترويجية', image: 'صورة', heading: 'عنوان رئيسي وفرعي', rich_text: 'نص متقدم', html_code: 'كود HTML', faq: 'الأسئلة الشائعة', features: 'مميزات المتجر', newsletter: 'النشرة البريدية', reviews: 'التقييمات', blog: 'المدونة', marquee: 'شريط متحرك' };
 function seedHomeSections(store) {
   const rows = [
     ['below_header', 'hero', { title: store.name, subtitle: store.description }],
@@ -931,7 +933,7 @@ ${store.whatsapp ? `<a class="s-btn ghost" href="https://wa.me/${escAttr(store.w
     }
     case 'categories': {
       if (!cats.length) return '';
-      return `${st.title ? `<h2 class="s-sec-t">${esc(st.title)}</h2>` : ''}<nav class="s-cats" id="products">${['الكل', ...cats].map(c => `<button class="s-cat" data-cat="${escAttr(c)}">${esc(c)}</button>`).join('')}</nav>`;
+      return `${st.title ? `<h2 class="s-sec-t">${esc(st.title)}</h2>` : ''}<nav class="s-cats v-${esc(st.variant || 'pills')}" id="products">${['الكل', ...cats].map(c => `<button class="s-cat" data-cat="${escAttr(c)}">${esc(c)}</button>`).join('')}</nav>`;
     }
     case 'product_grid': {
       let list = products; if (st.sort === 'price_asc') list = [...products].sort((a, b) => a.price - b.price); if (st.sort === 'price_desc') list = [...products].sort((a, b) => b.price - a.price);
@@ -952,18 +954,24 @@ ${store.whatsapp ? `<a class="s-btn ghost" href="https://wa.me/${escAttr(store.w
     case 'heading': return `<header class="s-heading"><h2>${esc(st.title || '')}</h2>${st.subtitle ? `<p>${esc(st.subtitle)}</p>` : ''}</header>`;
     case 'rich_text': return `<div class="s-richtext">${st.html || ''}</div>`;
     case 'html_code': return st.html || '';
-    case 'faq': return `${st.title ? `<h2 class="s-sec-t">${esc(st.title)}</h2>` : ''}<div class="s-faq">${(st.items || []).map(x => `<details><summary>${esc(x.q || '')}</summary><p>${esc(x.a || '')}</p></details>`).join('')}</div>`;
-    case 'features': return `${st.title ? `<h2 class="s-sec-t">${esc(st.title)}</h2>` : ''}<div class="s-features">${(st.items || []).map(x => `<div class="s-feat"><b>${esc(x.title || '')}</b><p>${esc(x.text || '')}</p></div>`).join('')}</div>`;
+    case 'faq': return `${st.title ? `<h2 class="s-sec-t">${esc(st.title)}</h2>` : ''}<div class="s-faq v-${esc(st.variant || 'simple')}">${(st.items || []).map(x => `<details><summary>${esc(x.q || '')}</summary><p>${esc(x.a || '')}</p></details>`).join('')}</div>`;
+    case 'features': return `${st.title ? `<h2 class="s-sec-t">${esc(st.title)}</h2>` : ''}<div class="s-features v-${esc(st.variant || 'cards')}">${(st.items || []).map(x => `<div class="s-feat"><b>${esc(x.title || '')}</b><p>${esc(x.text || '')}</p></div>`).join('')}</div>`;
     case 'newsletter': return `<section class="s-newsletter"><h3>${esc(st.title)}</h3><p>${esc(st.desc || '')}</p><form id="nlForm"><input type="email" id="nlEmail" placeholder="بريدك الإلكتروني" required dir="ltr"><button class="s-btn" type="submit">اشترك</button></form><div id="nlMsg"></div></section>`;
     case 'reviews': {
       const revs = db.prepare("SELECT customer_name, rating, text FROM reviews WHERE store_id = ? AND status = 'published' ORDER BY created_at DESC LIMIT ?").all(store.id, st.limit || 6);
       if (!revs.length) return '';
-      return `<section class="s-revs"><h2 class="s-sec-t">${esc(st.title)}</h2><div class="s-revs-row">${revs.map(r => `<div class="s-rev"><div class="s-rev-stars">${'★'.repeat(r.rating || 5)}</div><p>${esc(r.text || '')}</p><b>${esc(r.customer_name || '')}</b></div>`).join('')}</div></section>`;
+      return `<section class="s-revs v-${esc(st.variant || 'cards')}"><h2 class="s-sec-t">${esc(st.title)}</h2><div class="s-revs-row">${revs.map(r => `<div class="s-rev"><div class="s-rev-stars">${'★'.repeat(r.rating || 5)}</div><p>${esc(r.text || '')}</p><b>${esc(r.customer_name || '')}</b></div>`).join('')}</div></section>`;
     }
     case 'blog': {
       let posts = []; try { posts = db.prepare("SELECT title, slug, substr(body,1,120) excerpt FROM blog_posts WHERE store_id = ? AND status = 'published' ORDER BY created_at DESC LIMIT ?").all(store.id, st.limit || 3); } catch (e) {}
       if (!posts.length) return '';
-      return `<section class="s-blog"><h2 class="s-sec-t">${esc(st.title)}</h2><div class="s-blog-row">${posts.map(p2 => `<a class="s-blog-card" href="/s/${escAttr(store.slug)}/blog/${escAttr(p2.slug)}"><b>${esc(p2.title)}</b>${p2.excerpt ? `<p>${esc(p2.excerpt)}</p>` : ''}</a>`).join('')}</div></section>`;
+      return `<section class="s-blog v-${esc(st.variant || 'grid')}"><h2 class="s-sec-t">${esc(st.title)}</h2><div class="s-blog-row">${posts.map(p2 => `<a class="s-blog-card" href="/s/${escAttr(store.slug)}/blog/${escAttr(p2.slug)}"><b>${esc(p2.title)}</b>${p2.excerpt ? `<p>${esc(p2.excerpt)}</p>` : ''}</a>`).join('')}</div></section>`;
+    }
+    case 'marquee': {
+      const items = (st.items || []).filter(Boolean);
+      if (!items.length) return '';
+      const strip = items.map(x => `<span class="s-mq-i">${esc(x)}</span>`).join('<span class="s-mq-dot"></span>');
+      return `<div class="s-mq" style="background:${escAttr(st.bg)};color:${escAttr(st.color)}"><div class="s-mq-t" style="animation-duration:${Math.max(8, +st.speed || 22)}s">${strip}<span class="s-mq-dot"></span>${strip}<span class="s-mq-dot"></span></div></div>`;
     }
     default: return '';
   }
@@ -992,7 +1000,7 @@ ${renderZone(store, 'home', 'below_header', ctx)}
 ${renderZone(store, 'home', 'content', ctx)}
 ${store.free_shipping_over ? `<div class="s-freeship">${IC.truck}شحن مجاني للطلبات فوق ${egp(store.free_shipping_over)}</div>` : ''}
 ${renderZone(store, 'home', 'above_footer', ctx)}
-<footer class="s-footer">${socialLinks(store)}${t.footer_text ? `<p>${esc(t.footer_text)}</p>` : ''}<p>يعمل بواسطة <a href="/">اكتف اوردر</a> — الدفع عند الاستلام متاح</p></footer>
+<footer class="s-footer">${socialLinks(store)}${t.footer_text ? `<p>${esc(t.footer_text)}</p>` : ''}${t.trust_line ? `<p class="s-trust">${esc(t.trust_line)}</p>` : ''}<p>يعمل بواسطة <a href="/">اكتف اوردر</a> — الدفع عند الاستلام متاح</p></footer>
 ${renderZone(store, 'home', 'below_footer', ctx)}
 ${cartDrawer(store)}
 ${storeScripts(store)}
@@ -1681,6 +1689,7 @@ function checkoutFormPreview(store, t) {
 }
 function builderRender(store, t, page) {
   const lay = eoLayout(store);
+  let themeSchema = []; try { const row = db.prepare('SELECT config FROM themes WHERE id = ?').get(store.theme_id); themeSchema = row ? (JSON.parse(row.config).schema || []) : []; } catch (e) {}
   const products = db.prepare(`SELECT id, name, price, compare_at_price, stock, category, images FROM products WHERE store_id = ? AND status = 'active' AND COALESCE(json_extract(settings,'$.hidden_product'),0) = 0 ORDER BY created_at DESC`).all(store.id);
   const cats = [...new Set(products.map(p => p.category).filter(Boolean))];
   const ctx = { products, cats, lay, t };
@@ -1701,12 +1710,14 @@ function builderRender(store, t, page) {
       primary: t.primary || '#141924', accent: t.accent || '#27cd27', bg: t.bg || '#ffffff', surface: t.surface || '#F6F8FC',
       radius: t.radius ?? 16, announce_bg: t.announce_bg || t.accent || '#27cd27', announce_color: t.announce_color || '#ffffff',
       header: t.header || '', footer_text: t.footer_text || '', hide_announcement: !!t.hide_announcement,
+      ...Object.fromEntries(themeSchema.map(f => [f.key, t[f.key] ?? (f.kind === 'check' ? false : '')])),
     },
     announcement: store.announcement || '',
     header: storeHeader(store, t, cats),
-    footer: `<footer class="s-footer">${socialLinks(store)}${t.footer_text ? `<p>${esc(t.footer_text)}</p>` : ''}<p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>`,
+    footer: `<footer class="s-footer">${socialLinks(store)}${t.footer_text ? `<p>${esc(t.footer_text)}</p>` : ''}${t.trust_line ? `<p class="s-trust">${esc(t.trust_line)}</p>` : ''}<p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>`,
     fixed, fixedLabel,
     zones,
+    theme_schema: themeSchema,
   };
 }
 

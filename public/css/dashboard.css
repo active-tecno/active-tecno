@@ -723,3 +723,8 @@ select.d-input { cursor: pointer; }
 .b2-save { width: 100%; margin-top: 16px; background: #27cd27; color: #fff; border: 0; border-radius: 10px; padding: 11px; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
 .b2-save:hover { filter: brightness(1.06); }
 .b2-muted { color: #8a93a6; font-size: 12.5px; }
+.b2-item-acts { display: inline-flex; gap: 5px; }
+.b2-preset { display: block; width: 100%; text-align: start; background: #f8fafc; border: 1px solid #e3e8f0; border-radius: 11px; padding: 11px 13px; margin-bottom: 8px; cursor: pointer; font-family: inherit; }
+.b2-preset:hover { border-color: #27cd2788; background: #27cd2710; }
+.b2-preset b { display: block; font-size: 13px; color: #141924; }
+.b2-preset span { display: block; font-size: 11.5px; color: #8a93a6; margin-top: 3px; }

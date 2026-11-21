@@ -6,9 +6,9 @@ const B_TYPES = [
   ['الصور والميديا', [['slider', 'سلايدر'], ['image', 'صورة'], ['promo_banner', 'لافتة ترويجية']]],
   ['التجارة الالكترونية', [['categories', 'الفئات'], ['featured_products', 'المنتجات المميزة'], ['product_list', 'قائمة المنتجات'], ['product_grid', 'شبكة المنتجات']]],
   ['عناصر اخري', [['hero', 'قسم بسيط'], ['advanced_section', 'قسم متقدم'], ['html_code', 'كود HTML']]],
-  ['أقسام جاهزة', [['faq', 'الأسئلة الشائعة'], ['features', 'مميزات المتجر'], ['reviews', 'التقييمات'], ['newsletter', 'النشرة البريدية'], ['blog', 'المدونة']]],
+  ['أقسام جاهزة', [['faq', 'الأسئلة الشائعة'], ['features', 'مميزات المتجر'], ['reviews', 'التقييمات'], ['newsletter', 'النشرة البريدية'], ['blog', 'المدونة'], ['marquee', 'شريط متحرك']]],
 ];
-const B_TYPE_NAMES = { hero: 'قسم بسيط', slider: 'سلايدر', categories: 'الفئات', product_grid: 'شبكة المنتجات', product_list: 'قائمة المنتجات', featured_products: 'المنتجات المميزة', promo_banner: 'لافتة ترويجية', image: 'صورة', heading: 'عنوان رئيسي وفرعي', rich_text: 'نص متقدم', html_code: 'كود HTML', faq: 'الأسئلة الشائعة', features: 'مميزات المتجر', newsletter: 'النشرة البريدية', reviews: 'التقييمات', blog: 'المدونة', advanced_section: 'قسم متقدم' };
+const B_TYPE_NAMES = { hero: 'قسم بسيط', slider: 'سلايدر', categories: 'الفئات', product_grid: 'شبكة المنتجات', product_list: 'قائمة المنتجات', featured_products: 'المنتجات المميزة', promo_banner: 'لافتة ترويجية', image: 'صورة', heading: 'عنوان رئيسي وفرعي', rich_text: 'نص متقدم', html_code: 'كود HTML', faq: 'الأسئلة الشائعة', features: 'مميزات المتجر', newsletter: 'النشرة البريدية', reviews: 'التقييمات', blog: 'المدونة', advanced_section: 'قسم متقدم', marquee: 'شريط متحرك' };
 const B_FIELDS = {
   hero: [['title', 'العنوان', 'text'], ['subtitle', 'الوصف', 'textarea'], ['cta_text', 'نص الزر', 'text'], ['cta_link', 'رابط الزر', 'text'], ['img', 'صورة الخلفية (رابط)', 'text']],
   slider: [['slides', 'الشرائح (JSON: [{img, title, subtitle, link}])', 'json']],
@@ -27,6 +27,52 @@ const B_FIELDS = {
   newsletter: [['title', 'العنوان', 'text'], ['desc', 'الوصف', 'text']],
   reviews: [['title', 'العنوان', 'text'], ['limit', 'عدد التقييمات', 'number']],
   blog: [['title', 'العنوان', 'text'], ['limit', 'عدد المقالات', 'number']],
+  marquee: [['items', 'العبارات (JSON: ["نص 1", "نص 2"])', 'json'], ['speed', 'السرعة (ثواني للفة)', 'number'], ['bg', 'لون الخلفية', 'color'], ['color', 'لون النص', 'color']],
+};
+// variant libraries: preset section packs (independent original content)
+const B_PRESETS = {
+  faq: [
+    ['أسئلة الشحن', 'شكل بسيط عن الشحن والتوصيل', { variant: 'simple', title: 'أسئلة الشحن والتوصيل', items: [{ q: 'كم تستغرق مدة التوصيل؟', a: 'من 2 لـ 5 أيام عمل حسب المحافظة.' }, { q: 'هل يوجد شحن لكل المحافظات؟', a: 'نعم، نوصل لجميع محافظات مصر.' }, { q: 'ما تكلفة الشحن؟', a: 'تظهر تكلفة الشحن عند إتمام الطلب حسب المحافظة.' }] }],
+    ['الدفع والاسترجاع (صناديق)', 'تصميم صناديق عن الدفع والإرجاع', { variant: 'boxed', title: 'الدفع والاسترجاع', items: [{ q: 'هل الدفع عند الاستلام متاح؟', a: 'نعم، ادفع كاش أو بالمحفظة عند الاستلام.' }, { q: 'ما سياسة الاسترجاع؟', a: 'يمكنك الاسترجاع خلال 14 يوم بحالة المنتج الأصلية.' }, { q: 'متى يصلني المبلغ المسترد؟', a: 'خلال 7 أيام عمل من استلام المرتجع.' }] }],
+    ['عمودين عن المنتجات', 'عمودان للأسئلة الكثيرة', { variant: 'columns', title: 'أسئلة عن المنتجات', items: [{ q: 'هل المنتجات أصلية؟', a: 'جميع منتجاتنا أصلية 100%.' }, { q: 'كيف أختار المقاس؟', a: 'راجع جدول المقاسات في صفحة المنتج.' }, { q: 'هل الألوان مطابقة للصور؟', a: 'قد يختلف اللون قليلاً حسب إضاءة الشاشة.' }, { q: 'هل يوجد ضمان؟', a: 'نعم، ضمان استبدال ضد عيوب الصناعة.' }] }],
+    ['طلبات وتتبع', 'متابعة الطلب خطوة بخطوة', { variant: 'boxed', title: 'متابعة طلبك', items: [{ q: 'كيف أتابع طلبي؟', a: 'نتواصل معك هاتفياً لتأكيد الطلب وموعد التسليم.' }, { q: 'هل يمكن تعديل الطلب؟', a: 'نعم قبل خروجه للشحن، تواصل معنا فوراً.' }, { q: 'كيف ألغي الطلب؟', a: 'تواصل معنا قبل الشحن وسنلغيه بدون رسوم.' }] }],
+    ['أسئلة عامة بسيطة', 'بداية سريعة بسيطة', { variant: 'simple', title: 'الأسئلة الشائعة', items: [{ q: 'كيف أطلب؟', a: 'اختر المنتج واملأ بياناتك وسنتصل بك للتأكيد.' }, { q: 'هل أحتاج حساباً؟', a: 'لا، الطلب مباشر بدون تسجيل.' }] }],
+    ['جملة واحدة لكل سؤال', 'إجابات قصيرة مركزة', { variant: 'columns', title: 'أسئلة سريعة', items: [{ q: 'التوصيل؟', a: '2-5 أيام.' }, { q: 'الدفع؟', a: 'عند الاستلام.' }, { q: 'الاسترجاع؟', a: 'خلال 14 يوم.' }, { q: 'الشحن المجاني؟', a: 'حسب عروض المتجر.' }] }],
+  ],
+  features: [
+    ['ثقة أساسية (كروت)', 'شحن ودفع وإرجاع', { variant: 'cards', title: 'ليه تشتري منا؟', items: [{ title: 'شحن سريع', text: 'توصيل لكل المحافظات في أيام قليلة' }, { title: 'دفع عند الاستلام', text: 'ادفع بعد ما تستلم وتعاين' }, { title: 'إرجاع سهل', text: 'استرجاع خلال 14 يوم بدون تعقيد' }] }],
+    ['أربعة في صف', 'شبكة أربعة مميزات', { variant: 'grid4', title: 'مميزاتنا', items: [{ title: 'جودة مضمونة', text: 'خامات مختارة بعناية' }, { title: 'أسعار منافسة', text: 'أفضل قيمة مقابل السعر' }, { title: 'دعم سريع', text: 'رد خلال ساعات على واتساب' }, { title: 'تغليف آمن', text: 'تغليف يحافظ على المنتج' }] }],
+    ['صف أفقي متحرك', 'شريط مميزات قابل للتمرير', { variant: 'row', title: '', items: [{ title: 'توصيل سريع', text: 'لكل المحافظات' }, { title: 'دفع آمن', text: 'عند الاستلام' }, { title: 'منتجات أصلية', text: 'جودة مضمونة' }, { title: 'إرجاع مجاني', text: 'خلال 14 يوم' }, { title: 'عروض مستمرة', text: 'خصومات أسبوعية' }] }],
+    ['عمودان واسعان', 'مميزات كبيرة بعمودين', { variant: 'grid2', title: 'وعدنا ليك', items: [{ title: 'منتج يستاهل فلوسك', text: 'نختار كل قطعة بمعايير جودة صارمة قبل عرضها' }, { title: 'تجربة شراء بسيطة', text: 'اطلب في دقيقة واحدة بدون تسجيل أو تعقيد' }] }],
+    ['ضمانات البائع', 'تركيز على الضمان', { variant: 'cards', title: 'ضماناتنا', items: [{ title: 'ضمان استبدال', text: 'عيوب الصناعة نستبدلها فوراً' }, { title: 'معاينة عند الاستلام', text: 'عاين طلبك قبل الدفع حسب شركة الشحن' }, { title: 'خصوصية بياناتك', text: 'بياناتك تُستخدم للتوصيل فقط' }] }],
+    ['خدمة العملاء', 'دعم وتواصل', { variant: 'grid2', title: 'خدمة العملاء', items: [{ title: 'واتساب مباشر', text: 'كلمنا في أي وقت وسنرد بأسرع ما يمكن' }, { title: 'متابعة بعد البيع', text: 'نتأكد أن طلبك وصلك سليماً وأنت راضٍ' }] }],
+    ['بدون عنوان', 'شريط مميزات نظيف', { variant: 'row', title: '', items: [{ title: 'شحن سريع', text: '' }, { title: 'دفع عند الاستلام', text: '' }, { title: 'إرجاع سهل', text: '' }] }],
+    ['تصميم كروت كبير', 'ثلاثة كروت بارزة', { variant: 'cards', title: 'تسوق براحتك', items: [{ title: 'اختر براحتك', text: 'تصفح الكتالوج كاملاً بدون ضغط' }, { title: 'اطلب في دقيقة', text: 'نموذج واحد وطلبك في الطريق' }, { title: 'استلم وعاين', text: 'ادفع بعد الاستلام والمعاينة' }] }],
+  ],
+  reviews: [
+    ['كروت آراء', 'تقييمات بخلفية كروت', { variant: 'cards', title: 'آراء عملائنا', limit: 6 }],
+    ['قائمة مضغوطة', 'آراء مدمجة بدون كروت', { variant: 'compact', title: 'ماذا قالوا عنا', limit: 8 }],
+    ['ثلاثة فقط', 'أحدث 3 تقييمات', { variant: 'cards', title: 'آخر التقييمات', limit: 3 }],
+    ['بدون عنوان', 'آراء مباشرة', { variant: 'compact', title: '', limit: 5 }],
+  ],
+  categories: [
+    ['حبوب (افتراضي)', 'أزرار دائرية', { variant: 'pills', title: '' }],
+    ['شبكة كروت', 'مربعات كبيرة', { variant: 'grid', title: 'تصفح الأقسام' }],
+    ['شبكة بعنوان', 'كروت مع عنوان', { variant: 'grid', title: 'تسوق حسب القسم' }],
+  ],
+  marquee: [
+    ['شريط ثقة داكن', 'عبارات ثقة أساسية', { items: ['شحن سريع لكل المحافظات', 'الدفع عند الاستلام', 'إرجاع سهل خلال 14 يوم'], speed: 22, bg: '#141924', color: '#ffffff' }],
+    ['عرض ترويجي ملون', 'خلفية مميزة لعرض', { items: ['خصم 20% لفترة محدودة', 'اطلب الآن قبل انتهاء العرض'], speed: 18, bg: '#27cd27', color: '#0b111d' }],
+    ['شحن مجاني', 'إعلان الشحن المجاني', { items: ['شحن مجاني للطلبات الكبيرة', 'توصيل سريع'], speed: 25, bg: '#F3E8FF', color: '#141924' }],
+    ['منتجات جديدة', 'إعلان وصولات', { items: ['وصل حديثاً: تشكيلة جديدة', 'تسوق أحدث المنتجات الآن'], speed: 20, bg: '#111111', color: '#C8F31D' }],
+    ['بطيء وهادئ', 'إيقاع هادئ', { items: ['جودة تستحقها', 'خدمة عملاء على مدار الساعة'], speed: 35, bg: '#F6F8FC', color: '#141924' }],
+    ['سريع عاجل', 'إيقاع سريع للعروض', { items: ['العرض ينتهي قريباً', 'اطلب الآن'], speed: 12, bg: '#E63946', color: '#ffffff' }],
+  ],
+  blog: [
+    ['شبكة مقالات', 'أحدث 3 مقالات', { variant: 'grid', title: 'من المدونة', limit: 3 }],
+    ['قائمة', 'مقالات بشكل قائمة', { variant: 'list', title: 'آخر المقالات', limit: 4 }],
+    ['بدون عنوان', 'شبكة نظيفة', { variant: 'grid', title: '', limit: 3 }],
+  ],
 };
 // theme settings drawer groups: [group, [[key, label, kind, default]]]
 const B_THEME_GROUPS = [
@@ -96,7 +142,7 @@ registerView('builder', async () => {
       <aside class="b2-palette">
         <h3>المكونات</h3>
         <p class="b2-pal-hint">اسحب أي مكون إلى مكانه في الصفحة</p>
-        ${B_TYPES.map(([g, items]) => `<details class="b2-group" ${g === 'نص' ? 'open' : ''}><summary>${esc(g)}</summary>${items.map(([tp, nm]) => `<div class="b2-item" draggable="true" ondragstart="bDragType(event,'${tp}')"><span>${esc(nm)}</span><button class="b2-add" title="إضافة في محتوى الصفحة" onclick="bAdd('${tp}')">+</button></div>`).join('')}</details>`).join('')}
+        ${B_TYPES.map(([g, items]) => `<details class="b2-group" ${g === 'نص' ? 'open' : ''}><summary>${esc(g)}</summary>${items.map(([tp, nm]) => `<div class="b2-item" draggable="true" ondragstart="bDragType(event,'${tp}')"><span>${esc(nm)}</span><span class="b2-item-acts">${B_PRESETS[tp] ? `<button class="b2-add" title="قوالب جاهزة" onclick="bPresets('${tp}')">☰</button>` : ''}<button class="b2-add" title="إضافة في محتوى الصفحة" onclick="bAdd('${tp}')">+</button></span></div>`).join('')}</details>`).join('')}
       </aside>
       <div class="b2-canvas-wrap" id="b2Wrap"><div id="b2Host"></div></div>
       <aside class="b2-drawer" id="b2Drawer"><div class="b2-drawer-empty">اختر قسماً من الصفحة لتعديله<br>أو افتح إعدادات الثيم</div></aside>
@@ -245,6 +291,13 @@ function bThemeDrawer() {
       if (kind === 'number') return `<label class="b2-label">${label}</label><input id="bt-${k}" type="number" class="b2-input" value="${esc(String(cur ?? def))}">`;
       return `<label class="b2-label">${label}</label><input id="bt-${k}" class="b2-input" value="${esc(cur || '')}">`;
     }).join('')}</details>`).join('')}
+    ${(B_DATA && B_DATA.theme_schema && B_DATA.theme_schema.length) ? `<details class="b2-tgroup" open><summary>بيانات الثيم</summary>${B_DATA.theme_schema.map(f => {
+      const cur = (B_DATA.theme && f.key in B_DATA.theme) ? B_DATA.theme[f.key] : '';
+      if (f.kind === 'check') return `<label class="b2-check"><input type="checkbox" id="bt-s_${esc(f.key)}" ${cur ? 'checked' : ''}> ${esc(f.label)}</label>`;
+      if (f.kind === 'color') return `<label class="b2-label">${esc(f.label)}</label><input id="bt-s_${esc(f.key)}" type="color" class="b2-color" value="${esc(cur || '#141924')}">`;
+      if (f.kind === 'number') return `<label class="b2-label">${esc(f.label)}</label><input id="bt-s_${esc(f.key)}" type="number" class="b2-input" value="${esc(String(cur ?? ''))}">`;
+      return `<label class="b2-label">${esc(f.label)}</label><input id="bt-s_${esc(f.key)}" class="b2-input" value="${esc(cur || '')}">`;
+    }).join('')}</details>` : ''}
     <button class="b2-save" onclick="bSaveTheme()">حفظ إعدادات الثيم</button>`;
 }
 
@@ -259,6 +312,12 @@ async function bSaveTheme() {
       if (kind === 'number') { ts[k] = +el.value; continue; }
       if (el.value) ts[k] = el.value; else delete ts[k];
     }
+  }
+  if (B_DATA && B_DATA.theme_schema) for (const f of B_DATA.theme_schema) {
+    const el = document.getElementById('bt-s_' + f.key); if (!el) continue;
+    if (f.kind === 'check') { if (el.checked) ts[f.key] = true; else delete ts[f.key]; }
+    else if (f.kind === 'number') { if (el.value !== '') ts[f.key] = +el.value; else delete ts[f.key]; }
+    else { if (el.value) ts[f.key] = el.value; else delete ts[f.key]; }
   }
   const r = await api('/api/store', { method: 'PUT', body: { theme_settings: ts, announcement } });
   if (r && r.store) { STORE.theme_settings = r.store.theme_settings; STORE.announcement = r.store.announcement; }
@@ -313,3 +372,22 @@ async function bZoneDrop(e, zone) {
 
 async function bToggle(id, on) { await api(`/api/sections/${id}`, { method: 'PUT', body: { enabled: !!on } }); bLoad(true); }
 async function bDel(id) { if (!confirm('حذف هذا القسم؟')) return; await api(`/api/sections/${id}`, { method: 'DELETE' }); if (B_SEL === id) bCloseDrawer(); bLoad(); }
+
+
+// ---------- variant library preset chooser ----------
+function bPresets(type) {
+  B_DRAWER = 'presets';
+  const presets = B_PRESETS[type] || [];
+  const dr = document.getElementById('b2Drawer');
+  dr.innerHTML = `
+    <div class="b2-drawer-h"><b>قوالب: ${esc(B_TYPE_NAMES[type] || type)}</b><button class="b2-x" onclick="bCloseDrawer()">✕</button></div>
+    <p class="b2-muted" style="margin-bottom:10px">اختر قالباً جاهزاً لإضافته — يمكنك تعديله بعد الإضافة</p>
+    ${presets.map((p, i) => `<button class="b2-preset" onclick="bUsePreset('${type}', ${i})"><b>${esc(p[0])}</b><span>${esc(p[1])}</span></button>`).join('')}`;
+}
+
+async function bUsePreset(type, idx) {
+  const p = (B_PRESETS[type] || [])[idx]; if (!p) return;
+  await api('/api/sections', { method: 'POST', body: { page: B_PAGE, zone: 'content', type, settings: p[2] } });
+  bCloseDrawer();
+  bLoad();
+}
