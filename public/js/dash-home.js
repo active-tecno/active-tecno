@@ -14,8 +14,33 @@ function assistantCard(d, products) {
     <div style="display:grid;gap:8px">${tips.map(t => `<div style="background:rgba(255,255,255,.07);border-radius:11px;padding:10px 14px;font-size:13.5px;line-height:1.8">${t}</div>`).join('')}</div></div>`;
 }
 
+let homeRange = null; // {from:'YYYY-MM-DD', to:'YYYY-MM-DD'} — null = last 30 days
+function homeRangeLabel() {
+  if (!homeRange) return 'آخر 30 يوم';
+  const f = homeRange.from.split('-').reverse().join('/'), t = homeRange.to.split('-').reverse().join('/');
+  return `${f} - ${t}`;
+}
+function openHomeRange() {
+  const today = new Date().toISOString().slice(0, 10);
+  const d30 = new Date(Date.now() - 29 * 86400000).toISOString().slice(0, 10);
+  openModal('فلترة الإحصائيات بالفترة', `
+    <div class="f-grid">
+      <div class="f-field"><label>من تاريخ</label><input type="date" id="hrFrom" value="${homeRange ? homeRange.from : d30}" max="${today}"></div>
+      <div class="f-field"><label>إلى تاريخ</label><input type="date" id="hrTo" value="${homeRange ? homeRange.to : today}" max="${today}"></div>
+    </div>
+    <div class="m-actions">
+      <button class="btn btn-soft" onclick="homeRange=null;closeModal();route()">آخر 30 يوم</button>
+      <button class="btn btn-teal" onclick="applyHomeRange()">تطبيق</button>
+    </div>`);
+}
+function applyHomeRange() {
+  const from = $('#hrFrom').value, to = $('#hrTo').value;
+  if (!from || !to || from > to) return toast('تأكد من الفترة المختارة', 'err');
+  homeRange = { from, to };
+  closeModal(); route();
+}
 async function viewHome() {
-  const d = await api('/api/analytics?days=30');
+  const d = await api('/api/analytics?' + (homeRange ? `from=${homeRange.from}&to=${homeRange.to}` : 'days=30'));
   const prods = await api('/api/products');
   const hasProducts = prods.products.length > 0;
   const guideDismissed = localStorage.getItem('at_setup_dismissed') === '1';
@@ -38,7 +63,8 @@ async function viewHome() {
   const allDone = doneCount === checklist.length;
   const funnelMax = Math.max(d.funnel.page_view, 1);
   const funnelSteps = [['page_view', 'زيارة المتجر'], ['product_view', 'مشاهدة منتج'], ['add_to_cart', 'إضافة للسلة'], ['begin_checkout', 'بدء الشراء'], ['purchase', 'طلب مكتمل']];
-  const html = topBar('لوحة الإحصائيات', `أهلاً ${esc(ME.user.name)}`) +
+  const html = topBar('لوحة الإحصائيات', `أهلاً ${esc(ME.user.name)}`,
+    `<button class="btn btn-soft" onclick="openHomeRange()" title="حدد مدى الفترة لفلترة الاحصائيات">${I('stats')} <span id="hrLabel">${homeRangeLabel()}</span></button>`) +
     activationBanner() +
     (allDone || guideDismissed ? '' : `<div class="card" style="margin-bottom:16px">
       <div class="setup-head"><div><h3 style="margin:0">دليل اعداد المتجر</h3><p class="muted small" style="margin:4px 0 0">اتبع هذه الخطوات البسيطة لاعداد متجرك وبدء البيع</p></div>
@@ -51,14 +77,14 @@ async function viewHome() {
         <span class="sc-foot">${!c.done ? `<button class="sc-more" onclick="${c.go ? `go('${c.go}')` : 'openActivation()'}">المزيد ‹</button>` : '<span></span>'}</span>
       </div>`).join('')}</div></div>`) +
     `<div class="grid4" style="margin-bottom:16px">
-      <div class="stat"><span class="s-ic" style="background:var(--green-soft);color:var(--green-600)">${I('payments')}</span><div><div class="s-num">${egp(d.revenue)}</div><div class="s-lbl">الإيرادات (30 يوم)</div></div></div>
+      <div class="stat"><span class="s-ic" style="background:var(--green-soft);color:var(--green-600)">${I('payments')}</span><div><div class="s-num">${egp(d.revenue)}</div><div class="s-lbl">الإيرادات${homeRange ? '' : ' (30 يوم)'}</div></div></div>
       <div class="stat"><span class="s-ic" style="background:#EFF6FF;color:var(--blue)">${I('orders')}</span><div><div class="s-num">${d.orders}</div><div class="s-lbl">الطلبات</div></div></div>
       <div class="stat"><span class="s-ic" style="background:#F5F3FF;color:var(--purple)">${I('eye')}</span><div><div class="s-num">${d.views}</div><div class="s-lbl">زيارات المتجر</div></div></div>
       <div class="stat"><span class="s-ic" style="background:#FFFBEB;color:var(--amber)">${I('stats')}</span><div><div class="s-num">${d.conversion}%</div><div class="s-lbl">معدل التحويل</div></div></div>
     </div>
     ${assistantCard(d, prods.products)}
     <div class="grid-2">
-      <div class="card chart-card"><h3>الإيرادات اليومية <span class="hint muted small">آخر 30 يوم</span></h3><canvas id="revChart"></canvas></div>
+      <div class="card chart-card"><h3>الإيرادات اليومية <span class="hint muted small">${homeRange ? homeRangeLabel() : 'آخر 30 يوم'}</span></h3><canvas id="revChart"></canvas></div>
       <div class="card"><h3>فانل المبيعات</h3><div class="funnel">
         ${funnelSteps.map(([k, l]) => `<div class="f-step"><span>${l}</span><div class="f-bar" style="width:${Math.max(6, 100 * d.funnel[k] / funnelMax)}%">${d.funnel[k]}</div><span class="pct">${d.funnel.page_view ? Math.round(100 * d.funnel[k] / d.funnel.page_view) : 0}%</span></div>`).join('')}
       </div></div>

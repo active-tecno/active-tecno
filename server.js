@@ -1146,24 +1146,37 @@ const api = {
   'GET /api/analytics': (req, res, user, p, url) => {
     const store = getStoreForUser(user);
     const days = Math.min(parseInt(url.searchParams.get('days')) || 30, 90);
-    const since = new Date(Date.now() - days * 86400000).toISOString();
-    const revenue = db.prepare(`SELECT COALESCE(SUM(total),0) s, COUNT(*) c FROM orders WHERE store_id = ? AND status NOT IN ('cancelled','returned') AND created_at >= ?`).get(store.id, since);
-    const views = db.prepare(`SELECT COUNT(*) c FROM events WHERE store_id = ? AND type = 'page_view' AND created_at >= ?`).get(store.id, since).c;
+    const sqlDT = d => d.toISOString().slice(0, 19).replace('T', ' ');
+    let since = sqlDT(new Date(Date.now() - days * 86400000));
+    let until = null;
+    const dRe = /^\d{4}-\d{2}-\d{2}$/;
+    const qpFrom = url.searchParams.get('from') || '', qpTo = url.searchParams.get('to') || '';
+    if (dRe.test(qpFrom) && dRe.test(qpTo) && qpFrom <= qpTo) {
+      const fromD = new Date(qpFrom + 'T00:00:00Z'), toD = new Date(qpTo + 'T00:00:00Z');
+      if (toD - fromD <= 90 * 86400000) {
+        since = sqlDT(fromD);
+        until = sqlDT(new Date(toD.getTime() + 86400000));
+      }
+    }
+    const range = (where) => until ? `(${where} >= ? AND ${where} < ?)` : `${where} >= ?`;
+    const rp = (extra = []) => until ? [...extra, since, until] : [...extra, since];
+    const revenue = db.prepare(`SELECT COALESCE(SUM(total),0) s, COUNT(*) c FROM orders WHERE store_id = ? AND status NOT IN ('cancelled','returned') AND ${range('created_at')}`).get(...rp([store.id]));
+    const views = db.prepare(`SELECT COUNT(*) c FROM events WHERE store_id = ? AND type = 'page_view' AND ${range('created_at')}`).get(...rp([store.id])).c;
     const funnel = {};
     for (const t of ['page_view', 'product_view', 'add_to_cart', 'begin_checkout', 'purchase'])
-      funnel[t] = db.prepare('SELECT COUNT(*) c FROM events WHERE store_id = ? AND type = ? AND created_at >= ?').get(store.id, t, since).c;
+      funnel[t] = db.prepare(`SELECT COUNT(*) c FROM events WHERE store_id = ? AND type = ? AND ${range('created_at')}`).get(...rp([store.id, t])).c;
     const daily = db.prepare(`
       SELECT substr(created_at, 1, 10) day, COUNT(*) orders, COALESCE(SUM(total),0) revenue
-      FROM orders WHERE store_id = ? AND status NOT IN ('cancelled','returned') AND created_at >= ?
-      GROUP BY day ORDER BY day`).all(store.id, since);
+      FROM orders WHERE store_id = ? AND status NOT IN ('cancelled','returned') AND ${range('created_at')}
+      GROUP BY day ORDER BY day`).all(...rp([store.id]));
     const top = db.prepare(`
       SELECT oi.name, SUM(oi.qty) qty, SUM(oi.price * oi.qty) revenue FROM order_items oi
       JOIN orders o ON o.id = oi.order_id
-      WHERE o.store_id = ? AND o.status NOT IN ('cancelled','returned') AND o.created_at >= ?
-      GROUP BY oi.name ORDER BY revenue DESC LIMIT 5`).all(store.id, since);
+      WHERE o.store_id = ? AND o.status NOT IN ('cancelled','returned') AND ${range('o.created_at')}
+      GROUP BY oi.name ORDER BY revenue DESC LIMIT 5`).all(...rp([store.id]));
     const statusCounts = {};
-    for (const s of ORDER_STATUSES)
-      statusCounts[s] = db.prepare('SELECT COUNT(*) c FROM orders WHERE store_id = ? AND status = ? AND created_at >= ?').get(store.id, s, since).c;
+    for (const st of ORDER_STATUSES)
+      statusCounts[st] = db.prepare(`SELECT COUNT(*) c FROM orders WHERE store_id = ? AND status = ? AND ${range('created_at')}`).get(...rp([store.id, st])).c;
     json(res, 200, {
       days, revenue: revenue.s, orders: revenue.c, views,
       conversion: views ? +(100 * revenue.c / views).toFixed(2) : 0,
