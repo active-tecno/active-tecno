@@ -130,7 +130,7 @@ function json(res, code, obj) {
   res.end(body);
 }
 function html(res, code, body) {
-  res.writeHead(code, { 'Content-Type': 'text/html; charset=utf-8' });
+  res.writeHead(code, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
   res.end(body);
 }
 const EG_PHONE = /^01[0125][0-9]{8}$/;
