@@ -162,10 +162,18 @@ registerView('products/create', async () => {
       ${id ? `<button class="btn danger" onclick="delProduct(${id}, '${esc(p?.name || '').replace(/'/g, '')}')">${I('trash')} حذف</button>` : ''}`)}
     <div class="pf-grid">
       <div class="pf-main">
-        <div class="d-card"><h3>بيانات المنتج الاساسية</h3>
+        <div class="d-card" id="pf-basics"><div class="d-card-h"><h3>بيانات المنتج الاساسية</h3><button type="button" class="btn sm" id="pf-expand" onclick="pfToggleExpand()" title="تكبير">${I('expand')} تكبير</button></div>
           <label class="d-label">اسم المنتج *</label><input id="pf-name" class="d-input" value="${esc(p?.name || '')}" placeholder="مثال: ساعة يد كلاسيك">
           <label class="d-label">وصف المنتج</label>
-          <div class="rte-bar"><button type="button" onclick="rteCmd('bold')"><b>B</b></button><button type="button" onclick="rteCmd('italic')"><i>I</i></button><button type="button" onclick="rteCmd('underline')"><u>U</u></button><button type="button" onclick="rteCmd('insertUnorderedList')">• قائمة</button></div>
+          <div class="rte-bar">
+            <select onchange="rteCmd('formatBlock', this.value); this.value=''"><option value="" selected>عادي</option><option value="h2">عنوان كبير</option><option value="h3">عنوان متوسط</option><option value="h4">عنوان صغير</option><option value="p">نص عادي</option><option value="blockquote">اقتباس</option></select>
+            <button type="button" onclick="rteCmd('bold')"><b>B</b></button><button type="button" onclick="rteCmd('italic')"><i>I</i></button><button type="button" onclick="rteCmd('underline')"><u>U</u></button><button type="button" onclick="rteCmd('strikeThrough')"><s>S</s></button>
+            <button type="button" onclick="rteCmd('insertUnorderedList')">• قائمة</button><button type="button" onclick="rteCmd('insertOrderedList')">1. قائمة</button>
+            <button type="button" onclick="rteLink()">${I('link')} رابط</button>
+            <label class="rte-color" title="لون النص">A<input type="color" onchange="rteCmd('foreColor', this.value)"></label>
+            <button type="button" onclick="rteCmd('removeFormat')">مسح التنسيق</button>
+            <button type="button" onclick="pfToggleExpand()">${I('expand')}</button>
+          </div>
           <div id="pf-desc" class="d-input rte" contenteditable="true">${p?.description || ''}</div>
         </div>
         <div class="d-card"><h3>الصور</h3>
@@ -270,7 +278,9 @@ function renderPfVars() {
     <input class="d-input" placeholder="القيم مفصولة بفواصل (مثال: أحمر, أزرق, أسود)" value="${esc(v.values)}" oninput="PF_VARS[${i}].values=this.value">
     <button class="btn sm danger" type="button" onclick="PF_VARS.splice(${i},1);renderPfVars()">حذف</button></div>`).join('');
 }
-function rteCmd(c) { document.execCommand(c); $('#pf-desc').focus(); }
+function rteCmd(c, v) { $('#pf-desc').focus(); document.execCommand(c, false, v || null); }
+function rteLink() { const u = prompt('رابط:'); if (u) rteCmd('createLink', u); }
+function pfToggleExpand() { const on = $('#pf-basics').classList.toggle('expanded'); $('#pf-expand').innerHTML = on ? 'تصغير' : 'تكبير'; }
 // ---------- advanced settings modal ----------
 function advSwitch(key, label) {
   return `<label class="switch-row"><button type="button" class="switch ${PF_SETTINGS[key] ? 'on' : ''}" onclick="advToggle('${key}',this)"></button>${label}</label>`;

@@ -464,7 +464,14 @@ body.dash[data-theme="dark"] .act-banner.live .bn-ic svg { color: #4ade80; }
 /* rich text */
 .rte-bar { display: flex; gap: 6px; margin-bottom: 6px; }
 .rte-bar button { border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 8px; padding: 5px 11px; cursor: pointer; font-size: 13px; }
-.rte { min-height: 120px; line-height: 1.9; }
+.rte { min-height: 320px; max-height: 60vh; overflow-y: auto; line-height: 1.9; }
+.rte-bar { flex-wrap: wrap; align-items: center; }
+.rte-bar select { border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 8px; padding: 5px 8px; font-size: 13px; font-family: inherit; }
+.rte-color { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; cursor: pointer; font-size: 13px; font-weight: 700; }
+.rte-color input { width: 18px; height: 18px; border: 0; padding: 0; background: none; cursor: pointer; }
+.d-card-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+#pf-basics.expanded { position: fixed; inset: 24px; z-index: 40; overflow-y: auto; box-shadow: var(--shadow-float, 0 24px 60px rgb(0 0 0 / .25)); }
+#pf-basics.expanded .rte { max-height: none; min-height: 55vh; }
 .rte:empty::before { content: 'اكتب وصف المنتج...'; color: var(--mut); }
 
 /* image uploader */
@@ -597,7 +604,10 @@ body.dash[data-theme="dark"] .act-banner.live .bn-ic svg { color: #4ade80; }
 .p-guides .btn svg { width: 14px; height: 14px; }
 .p-search-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
 .p-table-card { padding: 0; overflow-x: auto; }
-.p-table-card .d-table { margin: 0; }
+.p-table-card .d-table { margin: 0; min-width: 720px; }
+.p-table-card .d-table td:nth-child(2) { min-width: 180px; max-width: 260px; white-space: normal; }
+.p-table-card .d-table td { white-space: nowrap; }
+.p-table-card .d-table td:nth-child(2) .p-name { white-space: normal; }
 .p-check { width: 38px; text-align: center; }
 .p-check input { width: 16px; height: 16px; accent-color: var(--green-500); cursor: pointer; }
 .p-thumb { position: relative; display: inline-block; width: 42px; height: 42px; border-radius: 10px; overflow: visible; flex-shrink: 0; }
