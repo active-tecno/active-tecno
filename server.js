@@ -1307,6 +1307,7 @@ const server = http.createServer(async (req, res) => {
       const tsFull = JSON.parse(store.theme_settings || '{}');
       const { pixels, payments, couriers, ...themeOverrides } = tsFull;
       const themeConfig = { ...(theme ? JSON.parse(theme.config) : {}), ...themeOverrides };
+      if (theme) themeConfig.__id = theme.id;
       const owner = user && user.id === store.user_id;
       if (!store.is_published && !owner && !sub) return html(res, 200, views.comingSoon(store));
       if (sub && sub.startsWith('/p/')) {

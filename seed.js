@@ -90,17 +90,17 @@ function seed() {
     'eo-phoenix': ['متجر عام', 'ملابس وأزياء'], 'eo-shine': ['مستحضرات تجميل'], 'eo-clear': ['متجر عام']
   };
   const HERO_CARD = {
-    'eo-default': ['classic', 'flat'], 'eo-sphinx': ['split', 'shadow'], 'eo-fasty': ['classic', 'flat'], 'eo-luxify': ['minimal', 'shadow'], 'eo-nue': ['banner', 'brutal'],
-    'eo-void': ['minimal', 'shadow'], 'eo-nature': ['split', 'flat'], 'eo-blast': ['banner', 'pill'], 'eo-hype': ['banner', 'bordered'],
-    'eo-vantage-el': ['split', 'bordered'], 'eo-vantage-cos': ['minimal', 'shadow'], 'eo-trendy': ['classic', 'bordered'], 'eo-elegance': ['minimal', 'shadow'],
-    'eo-phoenix': ['grid', 'flat'], 'eo-shine': ['banner', 'pill'], 'eo-clear': ['minimal', 'bordered']
+    'eo-default': ['classic', 'flat', 'pills'], 'eo-sphinx': ['photo', 'shadow', 'cards'], 'eo-fasty': ['classic', 'flat', 'icons'], 'eo-luxify': ['photo', 'shadow', 'pills'], 'eo-nue': ['promo', 'brutal', 'circles'],
+    'eo-void': ['photo', 'shadow', 'circles'], 'eo-nature': ['split', 'flat', 'cards'], 'eo-blast': ['photo', 'pill', 'icons'], 'eo-hype': ['photo', 'bordered', 'cards'],
+    'eo-vantage-el': ['minimal', 'bordered', 'pills'], 'eo-vantage-cos': ['split', 'shadow', 'circles'], 'eo-trendy': ['photo', 'bordered', 'circles'], 'eo-elegance': ['banner', 'shadow', 'circles'],
+    'eo-phoenix': ['photo', 'flat', 'cards'], 'eo-shine': ['banner', 'pill', 'circles'], 'eo-clear': ['minimal', 'bordered', 'pills']
   };
   const themeStmt = db.prepare(`INSERT INTO themes (id, name_ar, category, is_premium, price, config)
     VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET name_ar = excluded.name_ar, category = excluded.category, is_premium = excluded.is_premium, price = excluded.price, config = excluded.config`);
   for (const t of THEMES) {
     const hc = HERO_CARD[t.id];
     const base = { niches: NICHES[t.id] || ['متجر عام'], ...t.config };
-    if (hc) { if (!base.hero) base.hero = hc[0]; if (!base.card) base.card = hc[1]; }
+    if (hc) { if (!base.hero) base.hero = hc[0]; if (!base.card) base.card = hc[1]; if (!base.cats_style) base.cats_style = hc[2]; }
     themeStmt.run(t.id, t.name_ar, t.category, t.is_premium, t.price, JSON.stringify(base));
   }
 

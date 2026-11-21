@@ -777,7 +777,7 @@ function socialLinks(store) {
   return `<p class="s-social">${links.join(' · ')} · <a href="/s/${esc(store.slug)}/policies">السياسات</a></p>`;
 }
 
-function eoLayout(store) { const id = store.theme_id || ''; return id.startsWith('eo-') ? id.slice(3) : null; }
+function eoLayout(store, t) { const id = (t && t.__id) || store.theme_id || ''; return id.startsWith('eo-') ? id.slice(3) : null; }
 IC.search = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>';
 IC.heart = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20s-7-4.4-9.2-8.6C1.2 8.4 3 5 6.2 5c2 0 3.4 1.1 4.2 2.3h3.2C14.4 6.1 15.8 5 17.8 5c3.2 0 5 3.4 3.4 6.4C19 15.6 12 20 12 20z"/></svg>';
 IC.menu = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';
@@ -935,7 +935,19 @@ function renderSection(store, s, ctx) {
         const img0 = st.img || (products[0] ? (JSON.parse(products[0].images || '[]')[0] || '') : '');
         return `<section class="s-hero hv-split"><div class="hv-s-text"><h1>${title}</h1><p>${sub}</p><div class="s-hero-cta">${cta}</div></div>${img0 ? `<div class="hv-s-img"><img src="${escAttr(img0)}" alt="" loading="lazy"></div>` : ''}</section>`;
       }
+
       if (hv === 'banner') return `<section class="s-hero hv-banner"${bg}><div class="hv-b-in"><span class="hv-b-kicker">${esc(store.name)}</span><h1>${title}</h1><p>${sub}</p><div class="s-hero-cta">${cta}</div></div></section>`;
+      if (hv === 'photo') {
+        const him = st.img || '';
+        const style = him ? ` style="background-image:linear-gradient(to top, color-mix(in srgb, var(--sp) 78%, transparent), color-mix(in srgb, var(--sp) 25%, transparent)), url('${escAttr(him)}');background-size:cover;background-position:center"` : ` style="background:linear-gradient(135deg, var(--sp) 0%, color-mix(in srgb, var(--sa) 70%, var(--sp)) 100%)"`;
+        return `<section class="s-hero hv-photo hv-photo--${escAttr(lay || 'default')}"${style}><div class="hv-p-in"><h1>${title}</h1><p>${sub}</p><div class="s-hero-cta">${cta}</div></div></section>`;
+      }
+      if (hv === 'promo') {
+        const disc = products.filter(p => p.compare_at_price && p.compare_at_price > p.price).sort((a, b) => (1 - b.price / b.compare_at_price) - (1 - a.price / a.compare_at_price))[0];
+        const pct = disc ? Math.round(100 - disc.price * 100 / disc.compare_at_price) : 0;
+        const pim = disc ? (JSON.parse(disc.images || '[]')[0] || '') : '';
+        return `<section class="s-hero hv-promo"><div class="hv-pr-text"><span class="hv-pr-big">${pct ? `خصم حتى ${pct}%` : title}</span><p>${sub}</p><div class="s-hero-cta">${disc ? `<a class="s-btn" href="/s/${escAttr(store.slug)}/p/${disc.id}">${esc(st.cta_text || 'تسوق الآن')}</a>` : cta}</div></div>${pim ? `<div class="hv-pr-img"><img src="${escAttr(pim)}" alt="" loading="lazy"></div>` : ''}</section>`;
+      }
       if (hv === 'grid') {
         const tiles = (cats || []).slice(0, 4).map(c => { const p = products.find(x => x.category === c); const im = p ? JSON.parse(p.images || '[]')[0] : ''; return `<a class="hv-g-t" href="/s/${escAttr(store.slug)}/cat/${encodeURIComponent(c)}">${im ? `<img src="${escAttr(im)}" alt="" loading="lazy">` : ''}<span>${esc(c)}</span></a>`; }).join('');
         return `<section class="s-hero hv-grid"><div class="hv-g-head"><h1>${title}</h1><p>${sub}</p><div class="s-hero-cta">${cta}</div></div>${tiles ? `<div class="hv-g-tiles">${tiles}</div>` : ''}</section>`;
@@ -951,7 +963,12 @@ ${store.whatsapp ? `<a class="s-btn ghost" href="https://wa.me/${escAttr(store.w
     }
     case 'categories': {
       if (!cats.length) return '';
-      return `${st.title ? `<h2 class="s-sec-t">${esc(st.title)}</h2>` : ''}<nav class="s-cats v-${esc(st.variant || 'pills')}" id="products">${['الكل', ...cats].map(c => `<button class="s-cat" data-cat="${escAttr(c)}">${esc(c)}</button>`).join('')}</nav>`;
+      const cvariant = st.variant || t.cats_style || 'pills';
+      if (cvariant === 'circles' || cvariant === 'cards' || cvariant === 'icons') {
+        const cell = (c) => { const p = products.find(x => x.category === c); const im = p ? JSON.parse(p.images || '[]')[0] : ''; return `<a class="cat-cell" href="/s/${escAttr(store.slug)}/cat/${encodeURIComponent(c)}">${cvariant !== 'icons' ? `<span class="cat-thumb">${im ? `<img src="${escAttr(im)}" alt="" loading="lazy">` : `<i>${esc(c.trim().charAt(0))}</i>`}</span>` : `<span class="cat-ico">${IC.menu}</span>`}<b>${esc(c)}</b></a>`; };
+        return `${st.title ? `<h2 class="s-sec-t">${esc(st.title)}</h2>` : ''}<nav class="s-cats v-${esc(cvariant)}" id="products"><a class="cat-cell" href="/s/${escAttr(store.slug)}">${cvariant !== 'icons' ? `<span class="cat-thumb"><i>ك</i></span>` : `<span class="cat-ico">${IC.menu}</span>`}<b>الكل</b></a>${cats.map(cell).join('')}</nav>`;
+      }
+      return `${st.title ? `<h2 class="s-sec-t">${esc(st.title)}</h2>` : ''}<nav class="s-cats v-pills" id="products">${['الكل', ...cats].map(c => `<button class="s-cat" data-cat="${escAttr(c)}">${esc(c)}</button>`).join('')}</nav>`;
     }
     case 'product_grid': {
       let list = products; if (st.sort === 'price_asc') list = [...products].sort((a, b) => a.price - b.price); if (st.sort === 'price_desc') list = [...products].sort((a, b) => b.price - a.price);
@@ -999,7 +1016,7 @@ function renderZone(store, page, zone, ctx) {
 }
 
 function storefront(store, t, owner) {
-  const lay = eoLayout(store);
+  const lay = eoLayout(store, t);
   const products = db.prepare(`SELECT id, name, price, compare_at_price, stock, category, images FROM products WHERE store_id = ? AND status = 'active' AND COALESCE(json_extract(settings,'$.hidden_product'),0) = 0 ORDER BY created_at DESC`).all(store.id);
   const cats = [...new Set(products.map(p => p.category).filter(Boolean))];
   const cards = products.map(p => productCardHTML(store, lay, p, t)).join('');
@@ -1039,7 +1056,7 @@ function productPage(store, p, t, owner) {
   const jsName = esc(p.name).replace(/'/g, '');
   const similar = S.hide_similar ? [] : db.prepare(`SELECT id, name, price, compare_at_price, stock, category, images FROM products WHERE store_id = ? AND status = 'active' AND id != ? AND COALESCE(json_extract(settings,'$.hidden_product'),0) = 0 ORDER BY CASE WHEN category = ? THEN 0 ELSE 1 END, priority ASC, created_at DESC LIMIT 8`).all(store.id, p.id, p.category || '');
   const reviews = S.reviews_enabled ? db.prepare(`SELECT customer_name, rating, text, created_at FROM reviews WHERE product_id = ? AND status = 'published' ORDER BY id DESC LIMIT 20`).all(p.id) : [];
-  const lay = eoLayout(store);
+  const lay = eoLayout(store, t);
   const ctxProds = db.prepare(`SELECT id, name, price, compare_at_price, stock, category, images FROM products WHERE store_id = ? AND status = 'active' AND COALESCE(json_extract(settings,'$.hidden_product'),0) = 0 ORDER BY created_at DESC`).all(store.id);
   const ctx = { products: ctxProds, cats: [...new Set(ctxProds.map(x => x.category).filter(Boolean))], lay, t };
   const qtyCtl = out || S.hide_qty_counter ? '' : `<div class="pd-qty"><button type="button" onclick="pdQty(-1)">−</button><span id="pdQty">1</span><button type="button" onclick="pdQty(1)">+</button></div>`;
@@ -1157,7 +1174,7 @@ cdTick();setInterval(cdTick,1000);` : ''}
 function checkoutPage(store, t, owner) {
   const govs = ['القاهرة', 'الجيزة', 'الإسكندرية', 'الدقهلية', 'الشرقية', 'الغربية', 'المنوفية', 'القليوبية', 'البحيرة', 'كفر الشيخ', 'دمياط', 'بورسعيد', 'الإسماعيلية', 'السويس', 'الفيوم', 'بني سويف', 'المنيا', 'أسيوط', 'سوهاج', 'قنا', 'الأقصر', 'أسوان', 'البحر الأحمر', 'مطروح', 'شمال سيناء', 'جنوب سيناء', 'طنطا', 'المنصورة', 'الزقازيق'];
   const ctxProds = db.prepare(`SELECT id, name, price, compare_at_price, stock, category, images FROM products WHERE store_id = ? AND status = 'active' AND COALESCE(json_extract(settings,'$.hidden_product'),0) = 0 ORDER BY created_at DESC`).all(store.id);
-  const ctx = { products: ctxProds, cats: [...new Set(ctxProds.map(x => x.category).filter(Boolean))], lay: eoLayout(store), t };
+  const ctx = { products: ctxProds, cats: [...new Set(ctxProds.map(x => x.category).filter(Boolean))], lay: eoLayout(store, t), t };
   return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, `إتمام الطلب | ${store.name}`)}</head>
 <body class="store ${t.dark ? 'dark' : ''} t-${esc(store.theme_id)}">
 ${demoBar(store)}
