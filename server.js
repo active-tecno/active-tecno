@@ -1298,7 +1298,12 @@ const server = http.createServer(async (req, res) => {
       const [, slug, sub, productId, funnelId, catName, , orderNumber] = storeMatch;
       const store = db.prepare('SELECT * FROM stores WHERE slug = ?').get(slug);
       if (!store) return html(res, 404, views.notFound('المتجر غير موجود', 'تأكد من الرابط أو تواصل مع صاحب المتجر.'));
-      const theme = db.prepare('SELECT * FROM themes WHERE id = ?').get(store.theme_id);
+      let theme = db.prepare('SELECT * FROM themes WHERE id = ?').get(store.theme_id);
+      const previewThemeId = url.searchParams.get('theme');
+      if (previewThemeId && user && user.id === store.user_id) {
+        const pt = db.prepare('SELECT * FROM themes WHERE id = ?').get(previewThemeId);
+        if (pt) theme = pt;
+      }
       const tsFull = JSON.parse(store.theme_settings || '{}');
       const { pixels, payments, couriers, ...themeOverrides } = tsFull;
       const themeConfig = { ...(theme ? JSON.parse(theme.config) : {}), ...themeOverrides };

@@ -15,7 +15,7 @@ const THEMES = [
     config: { primary: '#0B1526', accent: '#3B82F6', bg: '#FFFFFF', surface: '#F1F5F9', radius: 12, header: 'split', card: 'flat', font: 'IBM Plex Sans Arabic' } },
   { id: 'boutique', name_ar: 'بوتيك — تجميل وعناية', category: 'تجميل وعناية', is_premium: 0, price: 0,
     config: { primary: '#4A2C3D', accent: '#D98E9A', bg: '#FDF8F6', surface: '#F7ECEA', radius: 24, header: 'centered', card: 'soft', font: 'IBM Plex Sans Arabic' } },
-  { id: 'royal', name_ar: 'ملكي — Premium', category: 'متاجر فاخرة', is_premium: 1, price: 450,
+  { id: 'royal', name_ar: 'ملكي', category: 'متاجر فاخرة', is_premium: 0, price: 0,
     config: { primary: '#101623', accent: '#C9A24B', bg: '#0F1420', surface: '#171E2E', radius: 14, header: 'split', card: 'elevated', font: 'IBM Plex Sans Arabic', dark: true } },
   { id: 'fresh', name_ar: 'طازج — سوبرماركت وعروض', category: 'أغذية وعروض', is_premium: 0, price: 0,
     config: { primary: '#14532D', accent: '#F59E0B', bg: '#FFFFFF', surface: '#F0FDF4', radius: 16, header: 'centered', card: 'soft', font: 'IBM Plex Sans Arabic' } },
@@ -82,9 +82,16 @@ function seed() {
   migrate();
   const hasUsers = db.prepare('SELECT COUNT(*) c FROM users').get().c > 0;
 
+  const NICHES = {
+    modern: ['ملابس وأزياء'], tech: ['الإلكترونيات'], boutique: ['مستحضرات تجميل', 'عطور'], royal: ['إكسسوارات ومجوهرات'], fresh: ['الطعام والمشروبات', 'متجر عام'],
+    'eo-default': ['متجر عام'], 'eo-sphinx': ['المنزل والمطبخ'], 'eo-fasty': ['ملابس وأزياء'], 'eo-luxify': ['إكسسوارات ومجوهرات', 'مستحضرات تجميل'], 'eo-nue': ['ملابس وأزياء', 'أحذية وشنط'],
+    'eo-void': ['مستحضرات تجميل', 'عطور'], 'eo-nature': ['ساعات ونظارات'], 'eo-blast': ['مستلزمات الأطفال', 'الألعاب والهوايات'], 'eo-hype': ['الإلكترونيات'],
+    'eo-vantage-el': ['الإلكترونيات'], 'eo-vantage-cos': ['مستحضرات تجميل'], 'eo-trendy': ['ملابس وأزياء'], 'eo-elegance': ['ملابس وأزياء', 'مستحضرات تجميل'],
+    'eo-phoenix': ['متجر عام', 'ملابس وأزياء'], 'eo-shine': ['مستحضرات تجميل'], 'eo-clear': ['متجر عام']
+  };
   const themeStmt = db.prepare(`INSERT INTO themes (id, name_ar, category, is_premium, price, config)
     VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET name_ar = excluded.name_ar, category = excluded.category, is_premium = excluded.is_premium, price = excluded.price, config = excluded.config`);
-  for (const t of THEMES) themeStmt.run(t.id, t.name_ar, t.category, t.is_premium, t.price, JSON.stringify(t.config));
+  for (const t of THEMES) themeStmt.run(t.id, t.name_ar, t.category, t.is_premium, t.price, JSON.stringify({ niches: NICHES[t.id] || ['متجر عام'], ...t.config }));
 
   if (hasUsers) { console.log('Seed: users exist, themes synced, done.'); return; }
 

@@ -728,3 +728,41 @@ select.d-input { cursor: pointer; }
 .b2-preset:hover { border-color: #27cd2788; background: #27cd2710; }
 .b2-preset b { display: block; font-size: 13px; color: #141924; }
 .b2-preset span { display: block; font-size: 11.5px; color: #8a93a6; margin-top: 3px; }
+
+/* ---------- themes catalog (EO layout) ---------- */
+.thc { display: flex; flex-direction: column; gap: 16px; }
+.thc-current { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 24px; background: #f6fef7; border: 1px solid #d9f2dd; }
+.thc-cur-label { font-size: 12.5px; color: #5b6470; margin-bottom: 2px; }
+.thc-cur-name { font-size: 20px; font-weight: 800; color: #141924; }
+.thc-cur-thumb { margin-top: 10px; width: 92px; height: 64px; border-radius: 10px; overflow: hidden; border: 1px solid #e3e8ef; }
+.thc-cur-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.thc-cur-actions { display: flex; align-items: center; gap: 8px; }
+.thc-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 16px; border: 1px solid #d8dee6; background: #fff; border-radius: 10px; font-family: inherit; font-size: 13px; font-weight: 600; color: #141924; cursor: pointer; text-decoration: none; transition: background .15s; }
+.thc-btn:hover { background: #f4f6f9; }
+.thc-btn-dark { background: #141924; border-color: #141924; color: #fff; }
+.thc-btn-dark:hover { background: #232a3a; }
+.thc-rec { padding: 20px 24px; }
+.thc-rec-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+.thc-rec-title { font-size: 16px; font-weight: 800; }
+.thc-rec-sub { font-size: 13px; font-weight: 600; color: #3a4354; }
+.thc-rec-desc { font-size: 12.5px; color: #7a8494; margin-top: 3px; }
+.thc-rec-star { width: 42px; height: 42px; border-radius: 12px; background: #27cd27; display: grid; place-items: center; flex: none; }
+.thc-filters { margin-bottom: 12px; }
+.thc-price { display: flex; align-items: center; gap: 8px; }
+.thc-price label { font-size: 12.5px; color: #5b6470; }
+.thc-price select { padding: 8px 12px; border: 1px solid #d8dee6; border-radius: 10px; font-family: inherit; font-size: 13px; background: #fff; min-width: 110px; }
+.thc-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.thc-pill { padding: 7px 14px; border: 1px solid #d8dee6; background: #fff; border-radius: 999px; font-family: inherit; font-size: 12.5px; font-weight: 600; color: #3a4354; cursor: pointer; }
+.thc-pill.on { background: #141924; border-color: #141924; color: #fff; }
+.thc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.thc-card { border: 1px solid #e3e8ef; border-radius: 14px; background: #fff; overflow: hidden; display: flex; flex-direction: column; }
+.thc-media { position: relative; aspect-ratio: 4/3; background: linear-gradient(135deg, #f4f6f9, #e9edf3); overflow: hidden; }
+.thc-media.noimg::after { content: 'معاينة الثيم'; position: absolute; inset: 0; display: grid; place-items: center; color: #98a2b3; font-size: 12.5px; }
+.thc-media img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.thc-badge { position: absolute; top: 10px; left: 10px; background: #e9fbec; color: #169a1c; border: 1px solid #bfeecd; font-size: 11.5px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
+.thc-body { padding: 12px 14px 6px; }
+.thc-name { font-weight: 800; font-size: 14.5px; margin-bottom: 6px; }
+.thc-niches { display: flex; flex-wrap: wrap; gap: 6px; }
+.thc-niches span { font-size: 11px; color: #5b6470; background: #f4f6f9; border: 1px solid #e3e8ef; border-radius: 999px; padding: 2px 9px; }
+.thc-actions { display: flex; gap: 8px; padding: 12px 14px 14px; margin-top: auto; }
+.thc-actions .thc-btn { flex: 1; }

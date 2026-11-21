@@ -260,50 +260,63 @@ async function addBlocked() {
 }
 async function unblock(id) { await api(`/api/blocked/${id}`, { method: 'DELETE' }); toast('تم إلغاء الحظر'); route(); }
 
-// ---------- customize ----------
-let custDirty = false;
+// ---------- customize (themes catalog, EO layout) ----------
+let thcFilter = { niche: 'الكل', price: 'الكل' };
 async function viewCustomize() {
   const d = await api('/api/themes');
-  const cur = STORE.theme_id;
-  const settings = JSON.parse(STORE.theme_settings || '{}');
-  return shell(topBar('تخصيص المتجر', 'كل تعديل يظهر فوراً في المعاينة') +
-    `<div class="cust"><div>
-    <div class="card"><h3>القالب</h3><div class="theme-pick">
-      ${d.themes.map(t => `<div class="theme-opt ${t.id === cur ? 'on' : ''}" onclick="pickTheme('${t.id}')">
-        <div class="dots"><span style="background:${t.config.primary}"></span><span style="background:${t.config.accent}"></span><span style="background:${t.config.surface}"></span></div>
-        <b>${esc(t.name_ar)}</b><small>${esc(t.category)}${t.is_premium ? ` · ${egp(t.price)}` : ' · مجاني'}</small></div>`).join('')}
-    </div></div>
-    <div class="card"><h3>الألوان</h3>
-      <div class="color-row"><label>اللون الأساسي</label><input type="color" id="cPrimary" value="${settings.primary || d.themes.find(t => t.id === cur)?.config.primary || '#141924'}"></div>
-      <div class="color-row"><label>لون الأزرار والتمييز</label><input type="color" id="cAccent" value="${settings.accent || d.themes.find(t => t.id === cur)?.config.accent || '#27cd27'}"></div>
-      <button class="btn btn-soft btn-sm" onclick="previewColors()">معاينة فورية</button>
+  const cur = d.themes.find(t => t.id === STORE.theme_id) || d.themes[0];
+  const niches = ['الكل', 'متجر عام', 'الزراعة والحدائق', 'المنتجات الرقمية', 'الأدوات والمعدات', 'الهدايا والهاند ميد', 'الطعام والمشروبات', 'الحيوانات الأليفة', 'السيارات والإكسسوارات', 'الكتب', 'الألعاب والهوايات', 'مستلزمات الأطفال', 'المنزل والمطبخ', 'الإلكترونيات', 'الصحة واللياقة', 'مستحضرات تجميل', 'عطور', 'ساعات ونظارات', 'إكسسوارات ومجوهرات', 'أحذية وشنط', 'ملابس وأزياء'];
+  const card = (t) => `<div class="thc-card" data-niches="${esc((t.config.niches || []).join('|'))}" data-price="${t.is_premium ? 'paid' : 'free'}">
+    <div class="thc-media"><img src="/public/theme-previews/${t.id}.png" alt="" loading="lazy" onerror="this.parentNode.classList.add('noimg');this.remove()">
+      <span class="thc-badge">مجاني</span></div>
+    <div class="thc-body"><div class="thc-name">${esc(t.name_ar)}</div>
+      <div class="thc-niches">${(t.config.niches || []).map(n => `<span>${esc(n)}</span>`).join('')}</div></div>
+    <div class="thc-actions">${t.id === STORE.theme_id
+      ? `<button type="button" class="thc-btn" disabled style="opacity:.55">مفعّل</button>`
+      : `<button type="button" class="thc-btn" onclick="thcActivate('${t.id}')">تفعيل</button>`}
+      <button type="button" class="thc-btn" onclick="thcPreview('${t.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg> معاينة</button></div>
+  </div>`;
+  return shell(topBar('الثييمات', 'اختار من مجموعة قوالب جاهزة لمتجرك') +
+  `<div class="thc">
+    <div class="thc-current card">
+      <div class="thc-cur-info"><div class="thc-cur-label">الثيم الحالي</div><div class="thc-cur-name">${esc(cur.name_ar)}</div>
+        <div class="thc-cur-thumb"><img src="/public/theme-previews/${cur.id}.png" alt="" onerror="this.parentNode.style.display='none'"></div></div>
+      <div class="thc-cur-actions">
+        <button type="button" class="thc-btn" onclick="thcPreview('${cur.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        <a class="thc-btn thc-btn-dark" href="#/builder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> تخصيص الثيم</a>
+      </div></div>
+    <div class="card thc-rec">
+      <div class="thc-rec-head"><div><div class="thc-rec-title">الثيمات الحديثة <span class="thc-rec-sub">(مرشحة لك)</span></div>
+        <div class="thc-rec-desc">قوالب محدّثة باستمرار لتجربة بيع أسرع وأسهل لعملائك</div></div>
+        <div class="thc-rec-star"><svg viewBox="0 0 24 24" fill="#fff" width="22" height="22"><path d="M12 2l2.4 6.2 6.6.4-5.1 4.3 1.7 6.4L12 15.7 6.4 19.3l1.7-6.4L3 8.6l6.6-.4z"/></svg></div></div>
+      <div class="thc-filters"><div class="thc-price"><label>السعر</label>
+          <select id="thcPrice" onchange="thcApply()"><option>الكل</option><option>مجاني</option></select>
+          <button type="button" class="thc-btn" onclick="thcReset()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg> إعادة تعيين</button></div></div>
+      <div class="thc-pills" id="thcPills">${niches.map((n, i) => `<button type="button" class="thc-pill ${i === 0 ? 'on' : ''}" data-n="${esc(n)}" onclick="thcNiche(this)">${esc(n)}</button>`).join('')}</div>
+      <div class="thc-grid" id="thcGrid">${d.themes.map(card).join('')}</div>
     </div>
-    <div class="card"><h3>إعلان أعلى المتجر</h3>
-      <div class="f-field"><input id="cAnnounce" value="${esc(STORE.announcement || '')}" placeholder="مثال: شحن مجاني فوق 600 ج.م "></div>
-      <div class="m-actions"><button class="btn btn-teal" onclick="saveCustomize()">حفظ ونشر التغييرات</button></div>
-    </div></div>
-    <div class="cust-preview"><div class="bar"><span>معاينة حية — ${esc(STORE.name)}</span><span class="mono" style="direction:ltr">/s/${esc(STORE.slug)}</span></div>
-      <iframe id="custFrame" src="/s/${esc(STORE.slug)}?t=${Date.now()}"></iframe></div>
-    </div>`);
+  </div>`);
 }
-let pendingTheme = null;
-function pickTheme(id) {
-  pendingTheme = id;
-  document.querySelectorAll('.theme-opt').forEach(el => el.classList.remove('on'));
-  event.currentTarget.classList.add('on');
-  custDirty = true;
+function thcNiche(btn) {
+  document.querySelectorAll('#thcPills .thc-pill').forEach(p => p.classList.remove('on'));
+  btn.classList.add('on');
+  thcFilter.niche = btn.dataset.n;
+  thcApply();
 }
-async function previewColors() { custDirty = true; await saveCustomize(true); }
-async function saveCustomize(silent) {
-  const body = { announcement: $('#cAnnounce').value };
-  if (pendingTheme) body.theme_id = pendingTheme;
-  const existing = JSON.parse(STORE.theme_settings || '{}');
-  body.theme_settings = { ...existing, primary: $('#cPrimary').value, accent: $('#cAccent').value };
-  const d = await api('/api/store', { method: 'PUT', body });
-  STORE = d.store; pendingTheme = null;
-  $('#custFrame').src = `/s/${STORE.slug}?t=${Date.now()}`;
-  if (!silent) toast('تم حفظ التخصيص ونشره ');
+function thcReset() { thcFilter = { niche: 'الكل', price: 'الكل' }; document.querySelectorAll('#thcPills .thc-pill').forEach((p, i) => p.classList.toggle('on', i === 0)); $('#thcPrice').value = 'الكل'; thcApply(); }
+function thcApply() {
+  const price = $('#thcPrice') ? $('#thcPrice').value : 'الكل';
+  document.querySelectorAll('#thcGrid .thc-card').forEach(c => {
+    const nOk = thcFilter.niche === 'الكل' || (c.dataset.niches || '').split('|').includes(thcFilter.niche);
+    const pOk = price === 'الكل' || (price === 'مجاني' && c.dataset.price === 'free');
+    c.style.display = nOk && pOk ? '' : 'none';
+  });
 }
+async function thcActivate(id) {
+  const d = await api('/api/store', { method: 'PUT', body: { theme_id: id } });
+  STORE = d.store; toast('تم تفعيل الثيم'); route();
+}
+function thcPreview(id) { window.open(`/s/${STORE.slug}?theme=${id}`, '_blank'); }
 
 // ---------- tracking ----------
 async function viewTracking() {
