@@ -113,12 +113,12 @@ function seed() {
   const admin = db.prepare(`INSERT INTO users (email, password_hash, name, is_admin) VALUES (?, ?, ?, 1)`)
     .run('admin@activetecno.software', hashPassword('admin1234'), 'إدارة اكتف اوردر');
   const merchant = db.prepare(`INSERT INTO users (email, password_hash, name, phone) VALUES (?, ?, ?, ?)`)
-    .run('demo@activetecno.software', hashPassword('demo1234'), 'نورا محمود', '01011206670');
+    .run('demo@activetecno.software', hashPassword('demo1234'), 'نورا محمود', '01055512345');
 
   const publishedUntil = new Date(Date.now() + 22 * 86400000).toISOString().slice(0, 10);
   const store = db.prepare(`INSERT INTO stores (user_id, name, slug, description, phone, whatsapp, theme_id, announcement, free_shipping_over, is_published, published_until)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`)
-    .run(merchant.lastInsertRowid, 'متجر نورا', 'noura', 'أزياء نسائية عصرية — عبايات، حقائب وإكسسوارات مختارة بعناية. شحن سريع لكل المحافظات والدفع عند الاستلام.', '01011206670', '201011206670', 'modern', 'شحن مجاني للطلبات فوق 600 ج.م ⚡', 600, publishedUntil);
+    .run(merchant.lastInsertRowid, 'متجر نورا', 'noura', 'أزياء نسائية عصرية — عبايات، حقائب وإكسسوارات مختارة بعناية. شحن سريع لكل المحافظات والدفع عند الاستلام.', '01055512345', '201055512345', 'modern', 'شحن مجاني للطلبات فوق 600 ج.م ⚡', 600, publishedUntil);
   const storeId = store.lastInsertRowid;
 
   const products = [
