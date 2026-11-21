@@ -593,3 +593,9 @@ body:has(.pd-sticky) main.pd { padding-bottom: 80px; }
 .s-header.eo .dh-links{flex:1;display:flex;gap:16px;justify-content:center;font-size:14px;flex-wrap:wrap}
 .s-header.eo .dh-links a{text-decoration:none;color:inherit;white-space:nowrap}
 .s-header.eo .dh-icons{display:flex;gap:8px;align-items:center}
+/* sphinx corrections: centered hero overlay + full-width nav row under header */
+.s-hero.hv-photo--sphinx { text-align: center; align-items: center; }
+.s-hero.hv-photo--sphinx .hv-p-in { margin: 0 auto; }
+.s-hero.hv-photo--sphinx .s-hero-cta { justify-content: center; }
+.t-eo-sphinx .sh-links { display: flex; justify-content: center; gap: 20px; width: 100%; padding: 10px 16px 14px; font-size: 14px; font-weight: 600; flex-wrap: wrap; }
+.t-eo-sphinx .s-header.eo.sphinx { display: block; }
