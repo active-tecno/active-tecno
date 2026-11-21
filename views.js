@@ -1007,4 +1007,164 @@ ${siteHeader('light')}
 ${siteFooter}`);
 }
 
-module.exports = { landing, login: loginPage, register: registerPage, appShell, adminShell, storefront, productPage, checkoutPage, orderPage, comingSoon, notFound, onboarding, egp, esc, pricingPage, themesPage };
+// ---------- blog ----------
+const BLOG_POSTS = [
+  { slug: 'what-your-store-needs', cat: 'إدارة متجرك', title: 'ما الذي يحتاجه متجرك الإلكتروني لينجح؟', excerpt: 'قبل أن تصرف جنيهاً واحداً على الإعلانات، تأكد أن هذه الأساسيات الخمسة موجودة في متجرك.', date: '18 نوفمبر 2026', read: '4 دقائق', hue: ['#0B1526', '#3B82F6'],
+    body: [
+      ['منتج واضح بعرض أوضح', 'الزائر يقرر في ثوانٍ هل يكمل التصفح أم يخرج. صور حقيقية، وصف يجاوب على أسئلة العميل قبل أن يسأل، وسعر واضح شامل بدون مفاجآت عند الطلب.'],
+      ['طلب بأقل خطوات ممكنة', 'كل حقل إضافي في فورم الطلب يكلفك مبيعات. الاسم ورقم الهاتف والعنوان يكفون لبدء البيع بالدفع عند الاستلام، وأي شيء زيادة رفاهية تؤجلها.'],
+      ['تأكيد الطلبات قبل الشحن', 'نسبة كبيرة من مرتجعات الشحن سببها طلبات غير جادة. تأكيد العميل لطلبه برسالة واتساب قبل الشحن يوفر عليك تكلفة الشحن ذهاباً وعودة.'],
+      ['متابعة الأرقام أسبوعياً', 'عدد الزيارات، نسبة من أكملوا الطلب، وأكثر منتج يتصفحه الناس: ثلاثة أرقام تقرأها كل أسبوع تخبرك أين المشكلة قبل أن تكبر.'],
+    ] },
+  { slug: 'store-cost-breakdown', cat: 'ابدأ متجرك', title: 'كم تكلفة إنشاء متجر إلكتروني في مصر؟', excerpt: 'تفصيل صادق للتكاليف: المنصة، الدومين، الدفع الإلكتروني، والشحن — بدون مبالغة ولا وعود وردية.', date: '15 نوفمبر 2026', read: '5 دقائق', hue: ['#14532D', '#27cd27'],
+    body: [
+      ['المنصة', 'تقدر تبدأ مجاناً وتجهّز متجرك بالكامل قبل أن تدفع أي شيء. عند النشر، اشتراك شهري بسيط يغطي الاستضافة والقوالب والتحليلات، وهو أقل بكثير من تكلفة تطوير متجر خاص من الصفر.'],
+      ['الدومين', 'اختياري في البداية لأن متجرك يعمل برابط جاهز. عندما تكبر، دومين خاص يكلف مئات قليلة من الجنيهات سنوياً ويضيف ثقة واضحة لعلامتك.'],
+      ['الدفع الإلكتروني', 'الدفع عند الاستلام لا يكلفك شيئاً إضافياً. بوابات الدفع بالبطاقات تأخذ نسبة من كل عملية، فعّلها عندما يطلبها عملاؤك فعلاً.'],
+      ['الشحن', 'شركات الشحن الداخلي تتقاضى رسماً لكل طلب يتضاعف مع المرتجعات. ابدأ بشركة واحدة موثوقة في محافظات عملائك الأساسية وتوسع تدريجياً.'],
+      ['الخلاصة', 'البوابة الحقيقية ليست التكلفة بل الوقت: متجر جاهز للبيع اليوم يتفوق على متجر مثالي يتأخر شهوراً.'],
+    ] },
+  { slug: 'start-free-no-experience', cat: 'ابدأ متجرك', title: 'كيف تبدأ متجرك مجاناً وبدون خبرة تقنية؟', excerpt: 'خطوات عملية من إنشاء الحساب حتى أول طلب، مصممة لمن لم يبنِ موقعاً في حياته.', date: '11 نوفمبر 2026', read: '4 دقائق', hue: ['#4A2C3D', '#D98E9A'],
+    body: [
+      ['أنشئ حسابك في دقيقة', 'كل ما تحتاجه بريد إلكتروني ورقم هاتف. اختر اسم رابط متجرك، وستجده محجوزاً لك فوراً حتى قبل أن تدفع أي شيء.'],
+      ['اختر قالباً وأضف منتجاتك', 'القوالب جاهزة بأقسامها وترتيبها. مهمتك فقط: صور منتجاتك وأسعارها ووصفها. ابدأ بثلاثة منتجات قوية بدلاً من كتالوج كامل.'],
+      ['جرّب الطلب بنفسك', 'اطلب من متجرك كعميل قبل أن تنشره لأحد. ستكتشف بنفسك أي التباس في الفورم أو الوصف وتصلحه قبل أول زائر حقيقي.'],
+      ['انشر وشارك رابطك', 'رابط متجرك جاهز للمشاركة على واتساب وصفحات التواصل من أول يوم. أول عشرة طلبات غالباً يأتون من دائرتك القريبة.'],
+    ] },
+  { slug: 'shipping-companies-linking', cat: 'الشحن والدفع', title: 'ربط شركات الشحن بمتجرك: من أين تبدأ؟', excerpt: 'كيف تختار شركة الشحن المناسبة، وماذا تجهّز قبل أول طلب يخرج من عندك.', date: '7 نوفمبر 2026', read: '5 دقائق', hue: ['#1F2937', '#F97316'],
+    body: [
+      ['اختر حسب محافظات عملائك', 'ليس كل شركة شحن تغطي كل المحافظات بنفس الجودة. اسأل عن أسعار وسرعة التوصيل في المحافظات التي يأتي منها معظم عملائك، وليس في القاهرة فقط.'],
+      ['افهم سياسة المرتجعات مسبقاً', 'المرتجع هو التكلفة الخفية للدفع عند الاستلام. اعرف كم تدفع عن الطلب المرتجع وكم يوماً تنتظر تحصيل مستحقاتك.'],
+      ['جهّز بيانات الشحنة مسبقاً', 'اسم عميل ورقم هاتف صحيح وعنوان مفصّل بالمعالم: ثلاثتها يقللون الرفض عند التسليم أكثر من أي شيء آخر.'],
+      ['ابدأ يدوياً ثم automatisiere عند الحاجة', 'في البداية إدخال البوليصات يدوياً كافٍ تماماً. عندما تتجاوز عشرات الطلبات يومياً يصبح التكامل الآلي مع شركة الشحن وقتاً موفراً حقيقياً.'],
+    ] },
+  { slug: 'cod-and-payment-gateways', cat: 'الشحن والدفع', title: 'الدفع عند الاستلام وبوابات الدفع: ما الأنسب لمتجرك؟', excerpt: 'لماذا يبقى الكاش عند الاستلام ملك السوق المصري، ومتى يستحق الدفع الإلكتروني التفعيل.', date: '3 نوفمبر 2026', read: '4 دقائق', hue: ['#312E81', '#A5B4FC'],
+    body: [
+      ['لماذا يفضل عملاؤك الكاش', 'الثقة: العميل يدفع بعد أن يمسك المنتج. مقاومة هذه العادة في البداية تعني خسارة مبيعات، فابدأ بما يعرفه السوق.'],
+      ['تكلفة الدفع عند الاستلام', 'ليست مجانية فعلياً: نسبة من الطلبات ترتجع، والشحن المرتجع يخصم من ربحك. تأكيد الطلبات قبل الشحن هو أقوى سلاح هنا.'],
+      ['متى تفعّل الدفع الإلكتروني', 'عندما يبدأ عملاء متكررون يسألون عنه، أو عندما تبيع منتجات رقمية أو اشتراكات. وقتها بوابة مثل Paymob تفتح لك البطاقات والمحافظ.'],
+      ['قاعدة عملية', 'كل وسيلة دفع إضافية يجب أن تخدم طلباً حقيقياً من عملائك، وليس انطباعاً تقنياً لديك.'],
+    ] },
+  { slug: 'first-customers-marketing', cat: 'التسويق', title: 'التسويق لمتجرك: كيف تجلب عملاءك الأوائل؟', excerpt: 'خطة أول 30 يوماً: من دائرتك القريبة إلى أول إعلان ممول بميزانية صغيرة محسوبة.', date: '29 أكتوبر 2026', read: '6 دقائق', hue: ['#3F3F1E', '#EAB308'],
+    body: [
+      ['ابدأ بمن يعرفك', 'شارك متجرك في مجموعات واتساب العائلية وصفحاتك الشخصية. أول عشرة عملاء يعطونك أهم شيء: ملاحظات صادقة وتقييمات أولى.'],
+      ['محتوى قصير يعرض المنتج', 'فيديو قصير يعرض المنتج وهو يُستخدم يتفوق على صورة ثابتة. انشر باستمرار على المنصة التي يقضي عليها جمهورك وقته، وليس على كل المنصات.'],
+      ['أول إعلان ممول', 'ابدأ بميزانية يومية صغيرة على جمهور محدد جغرافياً واهتماماته واضحة. قس نتيجة أسبوع كامل قبل أن تزيد أو توقف.'],
+      ['العميل القديم أرخص عميل', 'رسالة واتساب لعميل اشترى منك بعرض على منتج مكمّل تكلفتها صفر وعائدها أعلى من أي إعلان. اجمع أرقام عملائك واعتنِ بهم.'],
+    ] },
+];
+const BLOG_STATICS = {
+  'about-us': { title: 'من نحن', body: [
+    'اكتف اوردر منصة عربية لإنشاء المتاجر الإلكترونية، صُممت من البداية لتاجر الدفع عند الاستلام في مصر والوطن العربي: طلبات سريعة بدون تعقيد، تأكيد واتساب للطلبات، وقوالب عربية جاهزة للبيع من أول يوم.',
+    'نؤمن أن التجارة الإلكترونية يجب ألا تكون حكراً على من يجيد البرمجة أو من يملك ميزانيات ضخمة. لذلك نبني أدوات تختصر الطريق من الفكرة إلى أول طلب: متجرك يتجهز مجاناً، وتدفع فقط عندما تقرر النشر.',
+    'فريقنا يعمل من القاهرة، ودعمنا بالعربية على مدار الساعة عبر واتساب.',
+  ] },
+  'contact-us': { title: 'اتصل بنا', body: [
+    'أسرع طريقة للوصول إلينا هي واتساب: فريق الدعم يرد بالعربية على مدار الساعة، سواء كان سؤالك قبل الاشتراك أو مشكلة في متجرك الحالي.',
+    'اضغط زر واتساب الظاهر في أسفل الصفحة لبدء المحادثة مباشرة، وسيتولى فريقنا الرد في أقرب وقت.',
+    'لطلبات التطوير الخاص — قالب مخصص، تكامل خاص، أو ميزة تحتاجها لنشاطك — اكتب لنا على نفس الرقم مع وصف موجز لما تحتاجه وسنعود إليك بتقييم.',
+  ] },
+  'conditions': { title: 'سياسة الاستخدام', body: [
+    'باستخدامك منصة اكتف اوردر فأنت توافق على هذه الشروط: تقدم المنصة أدوات لإنشاء وإدارة متجرك الإلكتروني، وأنت مسؤول عن شرعية منتجاتك والتزامك بقوانين التجارة في بلدك.',
+    'الباقة المجانية تتيح تجهيز متجرك بالكامل دون نشره. النشر يتطلب اشتراكاً فعالاً، ويبقى متجرك وبياناتك محفوظة إن توقف الاشتراك مؤقتاً حتى التجديد.',
+    'يُحظر استخدام المنصة لبيع منتجات مخالفة للقانون أو منتهكة لحقوق الملكية الفكرية أو مضللة للعملاء، ويحق لنا إيقاف أي متجر يخالف ذلك.',
+    'قد نحدّث هذه الشروط من وقت لآخر، وسنعلن عن التغييرات الجوهرية داخل لوحة التحكم قبل سريانها.',
+  ] },
+  'privacy-policy': { title: 'سياسة الخصوصية', body: [
+    'نجمع الحد الأدنى من البيانات اللازمة لتشغيل حسابك ومتجرك: بيانات تسجيلك، ومحتوى متجرك، وبيانات الطلبات الواردة من عملائك لغرض إدارتها فقط.',
+    'بيانات عملاء متجرك (الأسماء وأرقام الهواتف والعناوين) ملك لك كتاجر، ولا نبيعها ولا نشاركها مع أي طرف ثالث لأغراض تسويقية.',
+    'نستخدم مزودي خدمة موثوقين للاستضافة وإرسال الرسائل، ويقتصر وصولهم على ما يلزم لتقديم الخدمة.',
+    'يمكنك طلب تصدير بياناتك أو حذف حسابك نهائياً في أي وقت عبر واتساب الدعم، وننفذ الحذف الكامل خلال 30 يوماً.',
+  ] },
+};
+const BLOG_CATS = ['الكل', 'ابدأ متجرك', 'إدارة متجرك', 'الشحن والدفع', 'التسويق'];
+
+function postCard(p, i, big) {
+  return `
+  <a href="/blog/${p.slug}/" class="group rounded-2xl border border-border bg-card overflow-hidden shadow-soft transition-all duration-300 hover:shadow-float hover:-translate-y-1 block" data-reveal="fade-up" style="--rv-delay:${(i % 3) * 0.08}s">
+    <div class="relative ${big ? 'h-56' : 'h-40'} grid place-items-center" style="background:linear-gradient(135deg,${p.hue[0]},color-mix(in oklab,${p.hue[0]} 55%,${p.hue[1]}))">
+      <span class="absolute top-3 start-3 rounded-full bg-white/90 px-3 py-1 text-[11.5px] font-bold text-foreground">${p.cat}</span>
+      <svg width="${big ? 46 : 34}" height="${big ? 46 : 34}" viewBox="0 0 24 24" fill="none" stroke="${p.hue[1]}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="opacity-90"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M7 9h10M7 13h6"/></svg>
+    </div>
+    <div class="p-5">
+      <h3 class="${big ? 'text-[19px]' : 'text-[15px]'} font-bold leading-7 group-hover:text-brand-foreground transition-colors">${p.title}</h3>
+      <p class="mt-1.5 text-[13px] leading-6 text-muted-foreground">${p.excerpt}</p>
+      <div class="mt-3 flex items-center gap-3 text-[12px] text-muted-foreground"><span>${p.date}</span><span>·</span><span>قراءة ${p.read}</span></div>
+    </div>
+  </a>`;
+}
+
+function blogIndex() {
+  const featured = BLOG_POSTS[0];
+  return base('المدونة | اكتف اوردر', `
+${siteHeader('light')}
+<section class="pt-32 pb-14 bg-background"><div class="mx-auto max-w-6xl px-4 sm:px-8">
+  <div class="max-w-2xl" data-reveal="fade-up">
+    <span class="inline-flex items-center gap-2 rounded-full bg-muted px-4 py-1.5 text-[13px] font-semibold text-muted-foreground">المدونة</span>
+    <h1 class="mt-4 text-[34px] sm:text-[42px] font-bold tracking-tight leading-snug">تعلّم التجارة الإلكترونية <span class="text-brand-foreground">خطوة بخطوة</span></h1>
+    <p class="mt-3 text-[16px] leading-7 text-muted-foreground">أدلة عملية مكتوبة لتجار الدفع عند الاستلام: إنشاء المتجر، الشحن، الدفع، وأولى حملاتك التسويقية.</p>
+  </div>
+  <div class="mt-10 grid md:grid-cols-2 gap-5">
+    ${postCard(featured, 0, true)}
+    <div class="grid gap-5">${BLOG_POSTS.slice(1, 3).map((p, i) => postCard(p, i + 1, false)).join('')}</div>
+  </div>
+  <div class="mt-10 flex flex-wrap gap-2" data-reveal="fade-up">
+    ${BLOG_CATS.map((c, i) => `<span class="rounded-full px-4 py-2 text-[13px] font-semibold ${i === 0 ? 'bg-night text-white' : 'bg-muted text-muted-foreground'}">${c}</span>`).join('')}
+  </div>
+  <div class="mt-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+    ${BLOG_POSTS.slice(3).map((p, i) => postCard(p, i, false)).join('')}
+  </div>
+</div></section>
+<section class="relative overflow-hidden bg-night text-night-foreground py-20">
+  <div class="hero-grid absolute inset-0 opacity-60"></div>
+  <div class="relative mx-auto max-w-3xl px-4 text-center" data-reveal="fade-up">
+    <h2 class="text-[28px] sm:text-[36px] font-bold tracking-tight">طبّق ما تقرأه فوراً — أنشئ متجرك مجاناً</h2>
+    <a class="btn-sheen mt-8 inline-block rounded-full bg-brand px-9 py-4 text-[16px] font-bold text-night transition-all duration-200 hover:bg-brand-bright glow-brand" href="/register">ابدأ متجرك مجاناً</a>
+  </div>
+</section>
+${siteFooter}`);
+}
+
+function blogPostPage(p) {
+  const related = BLOG_POSTS.filter(x => x.slug !== p.slug).slice(0, 3);
+  return base(p.title + ' | مدونة اكتف اوردر', `
+${siteHeader('light')}
+<article class="pt-32 pb-20 bg-background"><div class="mx-auto max-w-3xl px-4 sm:px-8">
+  <div data-reveal="fade-up">
+    <a href="/blog" class="text-[13px] font-bold text-brand-foreground hover:underline">← المدونة</a>
+    <span class="mt-4 inline-block rounded-full bg-muted px-3.5 py-1.5 text-[12px] font-bold text-muted-foreground">${p.cat}</span>
+    <h1 class="mt-3 text-[28px] sm:text-[36px] font-bold tracking-tight leading-snug">${p.title}</h1>
+    <div class="mt-3 flex items-center gap-3 text-[13px] text-muted-foreground"><span>${p.date}</span><span>·</span><span>قراءة ${p.read}</span></div>
+  </div>
+  <div class="mt-8 h-52 sm:h-64 rounded-3xl grid place-items-center" style="background:linear-gradient(135deg,${p.hue[0]},color-mix(in oklab,${p.hue[0]} 55%,${p.hue[1]}))" data-reveal="fade-up">
+    <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="${p.hue[1]}" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" class="opacity-90"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M7 9h10M7 13h6"/></svg>
+  </div>
+  <p class="mt-8 text-[17px] leading-8 font-medium text-foreground/90">${p.excerpt}</p>
+  ${p.body.map(sec => `
+  <h2 class="mt-10 text-[21px] font-bold tracking-tight" data-reveal="fade-up">${sec[0]}</h2>
+  <p class="mt-3 text-[15.5px] leading-8 text-foreground/80" data-reveal="fade-up">${sec[1]}</p>`).join('')}
+  <div class="mt-12 rounded-3xl bg-night text-night-foreground p-8 text-center" data-reveal="fade-up">
+    <h2 class="text-[20px] font-bold">جاهز تطبق؟ متجرك يتجهز مجاناً</h2>
+    <a class="btn-sheen mt-5 inline-block rounded-full bg-brand px-8 py-3.5 text-[15px] font-bold text-night transition-all duration-200 hover:bg-brand-bright" href="/register">ابدأ متجرك مجاناً</a>
+  </div>
+  <div class="mt-14">
+    <h2 class="text-[20px] font-bold tracking-tight">مقالات ذات صلة</h2>
+    <div class="mt-6 grid sm:grid-cols-3 gap-4">${related.map((r, i) => postCard(r, i, false)).join('')}</div>
+  </div>
+</div></article>
+${siteFooter}`);
+}
+
+function blogStaticPage(key) {
+  const p = BLOG_STATICS[key];
+  return base(p.title + ' | اكتف اوردر', `
+${siteHeader('light')}
+<div class="pt-32 pb-20 bg-background"><div class="mx-auto max-w-2xl px-4 sm:px-8">
+  <h1 class="text-[30px] sm:text-[38px] font-bold tracking-tight" data-reveal="fade-up">${p.title}</h1>
+  <div class="mt-8 space-y-5">${p.body.map(par => `<p class="text-[15.5px] leading-8 text-foreground/80" data-reveal="fade-up">${par}</p>`).join('')}</div>
+  <a class="mt-10 inline-flex items-center gap-2 rounded-full bg-brand px-7 py-3 text-[14px] font-bold text-night transition-all duration-200 hover:bg-brand-bright" href="https://wa.me/201011206670" target="_blank" rel="noopener">تواصل معنا واتساب</a>
+</div></div>
+${siteFooter}`);
+}
+
+module.exports = { landing, login: loginPage, register: registerPage, appShell, adminShell, storefront, productPage, checkoutPage, orderPage, comingSoon, notFound, onboarding, egp, esc, pricingPage, themesPage, blogIndex, blogPostPage, blogStaticPage, BLOG_POSTS };

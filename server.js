@@ -702,7 +702,14 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/') return html(res, 200, views.landing());
     if (pathname === '/pricing' || pathname === '/pricing/') return html(res, 200, views.pricingPage());
     if (pathname === '/themes' || pathname === '/themes/') return html(res, 200, views.themesPage());
-    if (pathname === '/blog' || pathname.startsWith('/blog/')) { res.writeHead(302, { Location: '/#faq' }); return res.end(); }
+    if (pathname === '/blog' || pathname === '/blog/') return html(res, 200, views.blogIndex());
+    if (pathname.startsWith('/blog/')) {
+      const bslug = pathname.replace(/^\/blog\//, '').replace(/\/$/, '');
+      const post = views.BLOG_POSTS.find(p => p.slug === bslug);
+      if (post) return html(res, 200, views.blogPostPage(post));
+      if (['about-us', 'contact-us', 'conditions', 'privacy-policy'].includes(bslug)) return html(res, 200, views.blogStaticPage(bslug));
+      return html(res, 404, views.notFound('الصفحة غير موجودة', 'المقال الذي تبحث عنه غير موجود'));
+    }
     if (pathname === '/login') return html(res, 200, views.login());
     if (pathname === '/register') return html(res, 200, views.register());
     if (pathname === '/app' || pathname.startsWith('/app/')) return html(res, 200, views.appShell());
