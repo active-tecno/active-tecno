@@ -107,6 +107,16 @@ const EASY_CATALOG = [
   { id: 'ec10', name: 'كوب حراري ستانلس يحافظ على الحرارة', description: 'كوب حراري ستانلس ستيل بجدار مزدوج، يحافظ على المشروبات ساخنة 6 ساعات وباردة 12 ساعة، بغطاء محكم ضد التسريب.', price: 340, compare_at_price: 450, cost: 150, sku: 'EC-HOME-03', stock: 70, category: 'المنزل' }
 ];
 const verifyCodes = new Map(); // email -> { code, userId, expires } — code is emailed when the email provider is configured; otherwise returned for the on-screen verifier
+// default policy pages every new store starts with (editable from الصفحات)
+function seedDefaultPages(storeId) {
+  const ins = db.prepare('INSERT OR IGNORE INTO pages (store_id, title, slug, content, in_header, in_footer, active) VALUES (?, ?, ?, ?, ?, ?, 1)');
+  const P = (t, s2, h, f, body) => ins.run(storeId, t, s2, body, h, f);
+  P('سياسات الخصوصية', 'privacy-policy', 0, 1, '<h3>خصوصية عملائك أولوية</h3><p>نحتفظ ببيانات الطلبات (الاسم ورقم الهاتف والعنوان) لغرض تجهيز الطلب والتوصيل فقط، ولا نشاركها مع أي طرف ثالث خارج شركات الشحن.</p><p>يمكن لأي عميل طلب حذف بياناته في أي وقت بالتواصل معنا مباشرة.</p>');
+  P('سياسة الاستبدال والاسترجاع', 'refund-policy', 1, 1, '<h3>الاستبدال والاسترجاع</h3><p>يمكنك طلب استبدال أو استرجاع المنتج خلال 14 يوماً من الاستلام بحالته الأصلية وبتغليفه.</p><p>فحص المنتج عند الاستلام متاح قبل الدفع، وفي حال وجود عيب مصنعي نتحمل تكلفة الشحن كاملة.</p>');
+  P('سياسة الشحن', 'shipping-policy', 1, 1, '<h3>الشحن والتوصيل</h3><p>نشحن لجميع المحافظات خلال 2 إلى 5 أيام عمل من تأكيد الطلب هاتفياً.</p><p>تكلفة الشحن تظهر بوضوح في صفحة إتمام الطلب قبل التأكيد، والدفع عند الاستلام متاح.</p>');
+  P('شروط الاستخدام', 'terms-and-conditions', 0, 1, '<h3>شروط الاستخدام</h3><p>باستخدامك هذا المتجر فأنت توافق على أن الطلب يُؤكد هاتفياً قبل الشحن، وأن الأسعار المعروضة تشمل الضرائب ولا تشمل الشحن إلا حيث يُذكر ذلك.</p>');
+}
+
 const api = {
   // auth
   'POST /api/auth/register': async (req, res) => {
@@ -128,6 +138,7 @@ const api = {
       }
     }
     db.prepare('INSERT INTO stores (user_id, name, slug, currency) VALUES (?, ?, ?, ?)').run(u.lastInsertRowid, storeName, finalSlug, cur);
+    seedDefaultPages(db.prepare('SELECT id FROM stores WHERE slug = ?').get(finalSlug).id);
     db.prepare('INSERT INTO team_members (store_id, email, name, role) VALUES (?, ?, ?, ?)')
       .run(db.prepare('SELECT id FROM stores WHERE slug = ?').get(finalSlug).id, email.toLowerCase(), name, 'owner');
     const code = String(Math.floor(100000 + Math.random() * 900000));
