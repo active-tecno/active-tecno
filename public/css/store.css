@@ -540,13 +540,13 @@ body:has(.pd-sticky) main.pd { padding-bottom: 80px; }
 @media (max-width: 640px) { .s-hero.hv-promo { grid-template-columns: 1fr; } }
 
 /* ---------- category display variants ---------- */
-.s-cats.v-circles, .s-cats.v-cards, .s-cats.v-icons { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; padding: 8px 4px 4px; }
+.s-cats.v-circles, .s-cats.v-icons { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; padding: 8px 4px 4px; }
 .cat-cell { display: flex; flex-direction: column; align-items: center; gap: 7px; text-decoration: none; color: inherit; min-width: 76px; }
 .v-circles .cat-thumb { width: 76px; height: 76px; border-radius: 50%; overflow: hidden; background: var(--ssf); display: grid; place-items: center; border: 1px solid color-mix(in srgb, var(--sp) 12%, transparent); }
 .v-circles .cat-thumb img { width: 100%; height: 100%; object-fit: cover; }
 .v-circles .cat-thumb i { font-style: normal; font-size: 24px; font-weight: 800; color: var(--sa); }
 .cat-cell b { font-size: 12.5px; font-weight: 600; }
-.v-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+.s-cats.v-cards { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; padding: 8px 4px; }
 .v-cards .cat-cell { background: var(--ssf); border-radius: var(--sr); padding: 12px; gap: 10px; }
 .v-cards .cat-thumb { width: 100%; aspect-ratio: 4/3; border-radius: calc(var(--sr) * .7); overflow: hidden; background: #fff; display: grid; place-items: center; }
 .v-cards .cat-thumb img { width: 100%; height: 100%; object-fit: cover; }
@@ -588,3 +588,8 @@ body:has(.pd-sticky) main.pd { padding-bottom: 80px; }
 .s-hero.hv-minimal { background-size: cover; background-position: center; min-height: min(52vh, 420px); display: flex; align-items: center; }
 .s-hero.hv-minimal .hv-m-in h1 { color: #fff; text-shadow: 0 2px 16px rgba(0,0,0,.5); }
 .s-hero.hv-minimal .hv-m-in p { color: rgba(255,255,255,.92); }
+/* generic fallback layout for default eo header (theme-scoped rules override) */
+.s-header.eo .dh-row{display:flex;align-items:center;gap:18px;max-width:1100px;margin:0 auto;padding:14px 16px}
+.s-header.eo .dh-links{flex:1;display:flex;gap:16px;justify-content:center;font-size:14px;flex-wrap:wrap}
+.s-header.eo .dh-links a{text-decoration:none;color:inherit;white-space:nowrap}
+.s-header.eo .dh-icons{display:flex;gap:8px;align-items:center}
