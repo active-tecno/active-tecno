@@ -52,7 +52,7 @@ registerView('transactions', async () => {
 
 // ---------- plugins (التطبيقات) ----------
 registerView('plugins', async () => {
-  const [intg, { settings }, { coupons }, { cross_sells }, { links }] = await Promise.all([
+  const [intg, { settings }, { coupons }, { items: cross_sells }, { links }] = await Promise.all([
     api('/api/store/integrations'), api('/api/store/settings'), api('/api/coupons'), api('/api/cross-sells'), api('/api/referral-links'),
   ]);
   let px = {}; try { px = JSON.parse(settings.theme_settings || '{}').pixels || {}; } catch (_) {}

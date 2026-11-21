@@ -610,7 +610,7 @@ function loginPage() {
   <section class="flex items-center justify-center px-4 py-14 min-h-screen lg:min-h-0">
     <div class="w-full max-w-sm" id="loginCard" data-reveal="fade-up">
       <div class="mb-8 lg:hidden">${logo}</div>
-      <h1 class="text-[26px] font-bold tracking-tight">مرحباً بعودتك 👋</h1>
+      <h1 class="text-[26px] font-bold tracking-tight">مرحباً بعودتك</h1>
       <p class="mt-1.5 text-[14px] text-muted-foreground">سجّل دخولك لمتابعة متجرك وطلباتك</p>
       <form id="loginForm" class="mt-8 space-y-4">
         <label class="block"><span class="block mb-1.5 text-[13.5px] font-semibold">البريد الإلكتروني</span>
