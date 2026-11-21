@@ -85,9 +85,9 @@ function landing() {
 
   <div class="relative mx-auto max-w-6xl px-4 sm:px-8 grid lg:grid-cols-2 gap-14 items-center">
     <div>
-      <div class="glass inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[13px] font-medium text-night-foreground/90 animate__animated animate__fadeInDown">
-        <span class="inline-block w-2 h-2 rounded-full bg-brand pulse-dot"></span>
-        منصة المتاجر العربية — صُنعت للسوق المصري
+      <div class="glass inline-flex items-center gap-2.5 rounded-full pe-4 ps-1.5 py-1.5 text-[13px] font-medium text-night-foreground/90 animate__animated animate__fadeInDown">
+        <span class="grid place-items-center rounded-full bg-brand/15 text-brand-bright text-[12px] font-bold px-2.5 py-0.5">#1</span>
+        المنصة العربية الأولى لتجار الدفع عند الاستلام
       </div>
       <h1 class="mt-6 text-[42px] sm:text-[56px] leading-[1.15] font-bold tracking-tight animate__animated animate__fadeInUp">
         أطلق متجرك الإلكتروني<br><span class="text-brand-bright">واستقبل أول طلب اليوم</span>
@@ -96,22 +96,33 @@ function landing() {
         قوالب عربية جاهزة، دفع عند الاستلام، تحليلات دقيقة، وأدوات بيع ترفع تحويلك — كل ذلك من لوحة واحدة، بدون سطر كود واحد.
       </p>
       <div class="mt-8 flex flex-wrap items-center gap-3 animate__animated animate__fadeInUp animate__delay-1s">
-        <a class="btn-sheen rounded-full bg-brand px-7 py-3.5 text-[15px] font-bold text-night transition-all duration-200 hover:bg-brand-bright glow-brand" href="/register">أنشئ متجرك مجاناً</a>
-        <a class="glass rounded-full px-7 py-3.5 text-[15px] font-semibold text-night-foreground transition-colors duration-200 hover:bg-white/10" href="/s/noura" target="_blank">شاهد متجراً تجريبياً</a>
+        <a class="btn-sheen rounded-full bg-white px-7 py-3.5 text-[15px] font-bold text-night transition-all duration-200 hover:bg-brand hover:shadow-[0_0_32px_-6px_var(--color-brand)]" href="/register">ابدأ متجرك مجاناً ←</a>
+        <a class="glass rounded-full px-7 py-3.5 text-[15px] font-semibold text-night-foreground transition-colors duration-200 hover:bg-white/10" href="/themes">تصفّح القوالب الجاهزة</a>
       </div>
-      <div class="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px] text-night-muted animate__animated animate__fadeInUp animate__delay-2s">
-        <span class="flex items-center gap-1.5"><span class="text-brand">${IC.check}</span>بدون بطاقة بنكية</span>
-        <span class="flex items-center gap-1.5"><span class="text-brand">${IC.check}</span>إطلاق خلال دقائق</span>
-        <span class="flex items-center gap-1.5"><span class="text-brand">${IC.check}</span>0% عمولة على المبيعات</span>
+      <p class="mt-5 text-[12.5px] text-night-muted animate__animated animate__fadeInUp animate__delay-2s">إنشاء المتجر مجاني · 0% عمولة على الطلبات · جاهز في أقل من 10 دقائق</p>
+      <div class="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px] text-night-muted animate__animated animate__fadeInUp animate__delay-2s">
+        <span class="flex items-center gap-1.5"><span class="text-brand">${IC.check}</span>دعم عربي 24/7</span>
+        <span class="flex items-center gap-1.5"><span class="text-brand">${IC.check}</span>دعم تسويقي</span>
+        <span class="flex items-center gap-1.5"><span class="text-brand">${IC.check}</span>طلبات غير محدودة</span>
         <span class="flex items-center gap-1.5"><span class="text-brand">${IC.check}</span>أكتف كونفيرم لتأكيد الطلبات</span>
       </div>
     </div>
 
     <div class="relative hidden lg:block animate__animated animate__fadeInLeft animate__delay-1s">
       <div class="glass rounded-2xl p-2 shadow-float glow-brand" style="--fl-rot:-2deg">
-        <img class="rounded-xl w-full" src="/public/img/hero-dashboard.svg" alt="لوحة تحكم اكتف اوردر">
+        <div class="rounded-xl overflow-hidden bg-[#0d1117]">
+          <div class="flex items-center gap-1.5 px-3 py-2 border-b border-white/10"><span class="w-2.5 h-2.5 rounded-full bg-[#ff5f57]"></span><span class="w-2.5 h-2.5 rounded-full bg-[#febc2e]"></span><span class="w-2.5 h-2.5 rounded-full bg-[#28c840]"></span><span class="ms-2 flex-1 rounded-md bg-white/10 px-3 py-1 text-[10px] text-white/60 text-left" dir="ltr">mystore.active-order.store</span></div>
+          <div class="bg-gradient-to-l from-brand to-[#1a9e1f] px-4 py-3 flex items-center justify-between"><span class="text-[13px] font-bold text-night">متجري</span><span class="rounded-full bg-white px-3 py-1 text-[10px] font-bold text-night">تسوّق الآن</span></div>
+          <div class="grid grid-cols-3 gap-2.5 p-3" dir="rtl">
+            ${['#264653','#5b4b8a','#1f6f4a'].map(c=>`<div class="rounded-lg bg-white/[0.07] p-2"><div class="rounded-md h-14 grid place-items-center" style="background:${c}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l1 14H5L6 7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg></div><div class="mt-2 h-1.5 rounded bg-white/25 w-3/4"></div><div class="mt-1.5 h-1.5 rounded bg-white/15 w-1/2"></div><div class="mt-2 rounded-full bg-brand text-night text-[9px] font-bold text-center py-1">اطلب الآن</div></div>`).join('')}
+          </div>
+        </div>
       </div>
-      <div class="glass absolute z-10 -top-12 -right-2 rounded-2xl px-5 py-4 animate-float-soft whitespace-nowrap" style="--fl-rot:2deg">
+      <div class="glass absolute z-10 top-1/3 -left-10 rounded-full px-3.5 py-2 flex items-center gap-2 animate-float whitespace-nowrap" style="animation-delay:.4s">
+        <span class="grid place-items-center w-6 h-6 rounded-full bg-brand/20 text-brand">${IC.truck || IC.check}</span>
+        <span class="text-[12px] font-semibold">تم الشحن</span>
+      </div>
+      <div class="glass absolute z-10 -top-10 -left-6 rounded-2xl px-5 py-4 animate-float-soft whitespace-nowrap" style="--fl-rot:2deg">
         <div class="text-[26px] font-bold text-brand-bright">#1</div>
         <div class="text-[12px] text-night-muted mt-0.5">منصة عربية للسوق المصري</div>
       </div>
