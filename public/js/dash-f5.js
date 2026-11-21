@@ -51,27 +51,29 @@ registerView('transactions', async () => {
 // ---------- plugins (التطبيقات) ----------
 registerView('plugins', async () => {
   const installed = [
-    ['pixel', 'اعدادات البيكسل', 'Meta وTikTok وSnap على صفحات متجرك', 'pixels-settings'],
-    ['capi', 'Conversion API', 'إرسال أحداث الشراء من السيرفر لـ Meta', 'pixel-conversion'],
-    ['ga', 'Google Analytics', 'تتبع الزيارات والتحويل عبر GA4', 'ga'],
-    ['coupons', 'كوبونات التخفيضات', 'أكواد خصم بنسبة أو مبلغ ثابت', 'coupons'],
-    ['feed', 'Google Merchant Feed', 'تصدير منتجاتك إلى Google Shopping', 'google-merchant'],
-    ['popup', 'Sales Popup', 'إشعارات الشراء المباشرة للزوار', 'sales-popup'],
-    ['cross', 'Cross Sell', 'اقتراح منتجات مكملة أثناء الدفع', 'cross-sell'],
-    ['down', 'Downsell', 'عرض أخير بخصم في صفحة الشكر', 'downsell'],
-    ['whatsapp', 'واتساب الرسمي من ميتا', 'تأكيدات الطلبات واسترجاع السلات', 'whatsapp-api'],
-    ['link', 'روابط الإحالة', 'تتبع طلبات المسوقين والمؤثرين', 'referral-link'],
+    ['pixel', 'اعدادات البيكسل', 'اربط فيسبوك وتيك توك وسناب بيكسل بصفحات متجرك لتتبع الزوار وقياس أداء حملاتك الإعلانية بدقة.', 'pixels-settings'],
+    ['capi', 'Conversion API', 'أرسل أحداث الشراء من السيرفر مباشرة إلى Meta لتحسين دقة التتبع واستهداف الإعلانات.', 'pixel-conversion'],
+    ['ga', 'Google Analytics', 'تتبع زيارات متجرك وتحويلاته عبر Google Analytics 4 بمجرد لصق معرّف القياس.', 'ga'],
+    ['coupons', 'كوبونات التخفيضات', 'أنشئ أكواد خصم بنسبة أو بمبلغ ثابت، وحدد شروط استخدامها وعدد مرات صلاحيتها.', 'coupons'],
+    ['feed', 'Google Merchant Feed', 'صدّر منتجات متجرك إلى Google Merchant Center لتظهر في نتائج Google Shopping.', 'google-merchant'],
+    ['popup', 'Sales Popup', 'أظهر إشعارات مشتريات حقيقية لزوار متجرك لبناء الثقة وتحفيز الطلب.', 'sales-popup'],
+    ['cross', 'Cross Sell', 'اقترح منتجات مكملة للعميل أثناء إتمام الطلب لرفع متوسط قيمة السلة.', 'cross-sell'],
+    ['down', 'Downsell', 'اعرض عرضًا أخيرًا بخصم في صفحة الشكر بعد إتمام الطلب لزيادة المبيعات.', 'downsell'],
+    ['whatsapp', 'واتساب الرسمي من ميتا', 'أرسل تأكيدات الطلبات ورسائل استرجاع السلات المتروكة عبر واتساب الرسمي من ميتا.', 'whatsapp-api'],
+    ['link', 'روابط الإحالة', 'تتبع الطلبات القادمة من روابط المسوقين والمؤثرين واعرف أداء كل رابط.', 'referral-link'],
   ];
   return `
   <div class="d-page">
-    ${topBar('التطبيقات', 'كل تطبيقات منصتك مثبتة وجاهزة — بدون رسوم إضافية', '')}
+    ${topBar('التطبيقات', 'هنا تجد التطبيقات التي تساعدك على تطوير متجرك وإضافة وظائف جديدة له', '')}
     <div class="pill-tabs" style="margin-bottom:14px"><button class="on">تطبيقات مثبتة (${installed.length})</button></div>
     <div class="apps-grid">
       ${installed.map(([ic, name, desc, route]) => `
       <div class="app-card" onclick="go('${route}')">
-        <div class="app-ic">${I(ic)}</div>
-        <b>${name}</b><span class="muted sm">${desc}</span>
-        <span class="chip st-delivered">مجانًا · مثبت</span>
+        <span class="app-gear">${I('settings')}</span>
+        <b>${name}</b>
+        <span class="app-sub muted">مجاني</span>
+        <p class="app-desc muted">${desc}</p>
+        <div class="app-foot"><span class="chip st-delivered">مثبت · مجاني</span></div>
       </div>`).join('')}
     </div>
   </div>`;
@@ -82,20 +84,40 @@ registerView('subscriptions', async () => {
   const d = await api('/api/activation');
   const pending = (d.requests || []).find(r => r.status === 'pending');
   return `
-  <div class="d-page">
-    ${topBar('اشترك في الباقة المميزة', 'خطة واحدة بكل المميزات — بدون عمولة على المبيعات', '')}
-    <div class="d-card plan-card">
-      <div class="plan-price"><b>50 ج.م</b><span>/ 30 يوم</span></div>
-      <ul class="plan-feats">
-        <li>${I('check')} متجر إلكتروني كامل بدومين مجاني على منصتنا</li>
-        <li>${I('check')} طلبات ومنتجات وFunnels غير محدودة</li>
-        <li>${I('check')} كل أدوات التسويق والتتبع والبيكسلات</li>
-        <li>${I('check')} 0% عمولة على مبيعاتك — كل الربح لك</li>
-        <li>${I('check')} دعم فني عبر واتساب</li>
-      </ul>
-      ${STORE.is_published ? `<div class="d-card" style="background:var(--green-soft,#eafbee)"><b>${I('check')} اشتراكك فعّال حتى ${esc(STORE.published_until || '')}</b></div>`
-      : pending ? `<div class="d-card warn"><b>طلب التفعيل قيد المراجعة — سيُفعّل خلال ساعات</b></div>`
-      : `<button class="btn primary btn-lg" onclick="go('top-up')">اشترك الآن — 50 ج.م</button>`}
+  <div class="d-page subs-page">
+    <div class="subs-hero">
+      <span class="subs-pill">${I('crown')} اكتف اوردر</span>
+      <h1 class="subs-title">أهلا بك في الاشتراكات <span class="subs-spark">${I('spark')}</span></h1>
+      <p class="muted">اشتراك شهري ثابت للحصول على عدد غير محدود من الطلبات وبدون عمولة على مبيعاتك</p>
+    </div>
+    <div class="d-card subs-current">
+      <div class="subs-cur-body">
+        <span class="muted sm">باقتك الحالية</span>
+        <h3>الباقة الشهرية — 50 ج.م / 30 يوم</h3>
+        ${STORE.is_published ? `<span class="chip st-delivered">فعّالة حتى ${esc(STORE.published_until || '')}</span>`
+        : pending ? `<span class="chip st-new">طلب التفعيل قيد المراجعة</span>`
+        : `<span class="chip">غير مفعّلة</span>`}
+      </div>
+      <button class="btn dark" onclick="go('top-up')">شحن المحفظة</button>
+    </div>
+    <div class="subs-plans">
+      <div class="d-card plan-card">
+        <div class="plan-head"><span class="muted">شهري</span></div>
+        <div class="plan-price"><b>50</b><span> ج.م / شهر</span></div>
+        <p class="muted">كل ما تحتاجه لإدارة متجرك واستقبال طلبات بلا حدود، بسعر ثابت تعرفه مقدمًا.</p>
+        ${STORE.is_published ? `<button class="btn primary btn-lg" disabled>باقتك الحالية</button>`
+        : pending ? `<button class="btn primary btn-lg" disabled>طلبك قيد المراجعة</button>`
+        : `<button class="btn primary btn-lg" onclick="go('top-up')">اشترك الآن ←</button>`}
+        <div class="plan-feats-title">ما تتضمنه الباقة</div>
+        <ul class="plan-feats">
+          <li>${I('check')} عدد غير محدود من الطلبات</li>
+          <li>${I('check')} بدون أي عمولة على مبيعاتك</li>
+          <li>${I('check')} متجر كامل بدومين مجاني على منصتنا</li>
+          <li>${I('check')} منتجات وFunnels غير محدودة</li>
+          <li>${I('check')} كل أدوات التسويق والتتبع والبيكسلات</li>
+          <li>${I('check')} دعم فني عبر واتساب</li>
+        </ul>
+      </div>
     </div>
   </div>`;
 });
@@ -160,30 +182,45 @@ async function bcSave() {
 async function bcDel(id) { if (!confirm('حذف هذا القسم؟ ستبقى مقالاته بدون قسم.')) return; await api('/api/blog-categories/' + id, { method: 'DELETE' }); toast('تم الحذف'); rerender(); }
 
 // ---------- community services (معرض الخدمات + خدمات التسويق) ----------
+const SRV_ITEMS = [
+  ['store', 'design', 'تصميم متجر احترافي', 'نصمم واجهة متجرك بالكامل بهويتك البصرية'],
+  ['image', 'design', 'تصوير منتجات', 'صور احترافية لمنتجاتك تجهز للنشر'],
+  ['pen', 'design', 'كتابة أوصاف ومحتوى', 'أوصاف منتجات وصفحات مقنعة بالعربية'],
+  ['marketing', 'marketing', 'إدارة حملات إعلانية', 'إدارة إعلانات فيسبوك وتيك توك وتحسين ROAS'],
+  ['video', 'marketing', 'فيديوهات إعلانية', 'مونتاج فيديوهات قصيرة للإعلانات والريلز'],
+  ['stats', 'marketing', 'تحليل أداء شهري', 'تقرير مبيعات وتوصيات نمو مخصصة لمتجرك'],
+];
+let SRV = { cat: 'all', q: '' };
 function servicesView(kind) {
-  const design = [
-    ['store', 'تصميم متجر احترافي', 'نصمم واجهة متجرك بالكامل بهويتك البصرية'],
-    ['image', 'تصوير منتجات', 'صور احترافية لمنتجاتك تجهز للنشر'],
-    ['pen', 'كتابة أوصاف ومحتوى', 'أوصاف منتجات وصفحات مقنعة بالعربية'],
-  ];
-  const marketing = [
-    ['marketing', 'إدارة حملات إعلانية', 'إدارة إعلانات فيسبوك وتيك توك وتحسين ROAS'],
-    ['video', 'فيديوهات إعلانية', 'مونتاج فيديوهات قصيرة للإعلانات والريلز'],
-    ['stats', 'تحليل أداء شهري', 'تقرير مبيعات وتوصيات نمو مخصصة لمتجرك'],
-  ];
-  const items = kind === 'marketing' ? marketing : design;
+  const cats = [['all', 'الكل'], ['design', 'تصميم'], ['marketing', 'تسويق']];
+  SRV = { cat: kind === 'marketing' ? 'marketing' : 'all', q: '' };
   return `
   <div class="d-page">
-    ${topBar(kind === 'marketing' ? 'خدمات التسويق' : 'معرض الخدمات', 'خدمات فريق اكتف لمتجرك — اطلب الخدمة ويتواصل معك الفريق', '')}
-    <div class="apps-grid">
-      ${items.map(([ic, name, desc]) => `
-      <div class="app-card"><div class="app-ic">${I(ic)}</div><b>${name}</b><span class="muted sm">${desc}</span>
-        <button class="btn sm primary" onclick="reqService('${esc(name)}')">اطلب الخدمة</button></div>`).join('')}
+    <div class="srv-hero">
+      <h2>${kind === 'marketing' ? 'خدمات التسويق' : 'معرض الخدمات'}</h2>
+      <p>خدمات فريق اكتف التي تساعدك على تطوير متجرك لأعلى مستوى</p>
+      <div class="srv-search">${I('search')}<input id="srvQ" placeholder="ابحث عن خدمة…" oninput="SRV.q=this.value;srvRenderList()"></div>
+    </div>
+    <div class="srv-body">
+      <div class="srv-cats d-card">
+        <div class="srv-cats-t">التصنيفات</div>
+        ${cats.map(([k, n]) => `<button class="srv-cat" data-cat="${k}" onclick="SRV.cat='${k}';srvRenderList()"><span>${n}</span><span class="srv-cnt">${k === 'all' ? SRV_ITEMS.length : SRV_ITEMS.filter(i => i[1] === k).length}</span></button>`).join('')}
+      </div>
+      <div class="srv-grid" id="srvGrid"></div>
     </div>
   </div>`;
 }
-registerView('services', async () => servicesView('design'));
-registerView('marketing-services', async () => servicesView('marketing'));
+function srvRenderList() {
+  const grid = document.getElementById('srvGrid'); if (!grid) return;
+  document.querySelectorAll('.srv-cat').forEach(b => b.classList.toggle('on', b.dataset.cat === SRV.cat));
+  const items = SRV_ITEMS.filter(i => (SRV.cat === 'all' || i[1] === SRV.cat) && (!SRV.q || (i[2] + i[3]).includes(SRV.q)));
+  grid.innerHTML = items.length ? items.map(([ic, , name, desc]) => `
+    <div class="app-card srv-card"><div class="app-ic">${I(ic)}</div><b>${name}</b><span class="muted sm">${desc}</span>
+      <button class="btn sm primary" onclick="reqService('${esc(name)}')">اطلب الخدمة</button></div>`).join('')
+    : `<div class="d-card empty" style="grid-column:1/-1"><h3>لا نتائج مطابقة</h3><p class="muted">جرّب كلمة بحث أخرى.</p></div>`;
+}
+registerView('services', async () => ({ html: servicesView('design'), after: srvRenderList }));
+registerView('marketing-services', async () => ({ html: servicesView('marketing'), after: srvRenderList }));
 async function reqService(name) {
   openModal('طلب خدمة: ' + name, `
     <label class="d-label">تفاصيل إضافية (اختياري)</label><textarea id="srvDetails" class="d-input" rows="4" placeholder="اكتب ما تحتاجه بالتحديد…"></textarea>

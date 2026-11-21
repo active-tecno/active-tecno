@@ -565,6 +565,13 @@ body.dash[data-theme="dark"] .act-banner.live .bn-ic svg { color: #4ade80; }
 .app-card .btn { align-self: flex-start; margin-top: 4px; }
 .app-card .chip { align-self: flex-start; }
 .app-ic { width: 42px; height: 42px; border-radius: 12px; background: var(--green-soft, #eafbee); color: var(--green); display: grid; place-items: center; }
+.app-card { position: relative; padding: 20px 18px 16px; gap: 6px; }
+.app-gear { position: absolute; top: 16px; inset-inline-end: 16px; color: oklch(.58 .01 260); }
+.app-gear svg { width: 18px; height: 18px; display: block; }
+.app-card>b { font-size: 15px; }
+.app-sub { font-size: 12.5px; }
+.app-desc { font-size: 13px; line-height: 1.8; margin: 0; }
+.app-foot { margin-top: auto; padding-top: 10px; display: flex; align-items: center; }
 .app-ic svg { width: 21px; height: 21px; }
 .plan-card { max-width: 560px; }
 .plan-price b { font-size: 40px; font-weight: 800; } .plan-price span { color: var(--muted); font-size: 15px; }
@@ -867,6 +874,45 @@ textarea.mono{font-family:ui-monospace,monospace;font-size:12.5px;direction:ltr;
 .save-pill{background:var(--night);color:#fff;border:0;border-radius:999px;padding:9px 22px;display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:var(--sh-md)}
 .save-pill svg{width:15px;height:15px}
 .save-pill:hover{opacity:.92}
+
+/* services EO style */
+.srv-hero{background:linear-gradient(135deg,oklch(.18 .02 260),oklch(.28 .09 155));border-radius:18px;color:#fff;padding:34px 30px;display:grid;gap:10px}
+.srv-hero h2{margin:0;font-size:26px;font-weight:800}
+.srv-hero p{margin:0;opacity:.75;font-size:14px}
+.srv-search{margin-top:12px;background:#fff;border-radius:12px;display:flex;align-items:center;gap:10px;padding:0 14px;height:46px;color:oklch(.55 .01 260)}
+.srv-search svg{width:18px;height:18px;flex-shrink:0}
+.srv-search input{border:0;outline:0;height:100%;flex:1;font-family:inherit;font-size:14px;color:var(--ink)}
+.srv-body{display:grid;grid-template-columns:230px 1fr;gap:14px;align-items:start}
+.srv-cats{padding:14px;display:grid;gap:4px}
+.srv-cats-t{font-weight:700;font-size:14px;padding:4px 8px 10px}
+.srv-cat{display:flex;align-items:center;justify-content:space-between;border:0;background:transparent;font-family:inherit;font-size:14px;padding:9px 10px;border-radius:10px;cursor:pointer;color:var(--ink)}
+.srv-cat:hover{background:var(--bg)}
+.srv-cat.on{background:var(--green-500);color:#fff;font-weight:700}
+.srv-cat.on .srv-cnt{background:rgb(255 255 255 / .25);color:#fff}
+.srv-cnt{background:var(--bg);border-radius:999px;padding:2px 9px;font-size:12px;color:var(--muted)}
+.srv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+.srv-card{cursor:default}
+
+/* subscriptions EO style */
+.subs-hero{text-align:center;display:grid;gap:10px;justify-items:center;padding:8px 0 4px}
+.subs-pill{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:5px 14px;font-size:12.5px;color:var(--muted)}
+.subs-pill svg{width:14px;height:14px}
+.subs-title{font-size:30px;font-weight:800;margin:0;display:flex;align-items:center;gap:10px}
+.subs-spark{color:#f5b50a;display:inline-flex}
+.subs-spark svg{width:26px;height:26px}
+.subs-hero .muted{max-width:520px}
+.subs-current{display:flex;align-items:center;justify-content:space-between;gap:16px;max-width:640px;width:100%;justify-self:center;padding:18px 22px}
+.subs-cur-body{display:grid;gap:6px;justify-items:start}
+.subs-cur-body h3{margin:0;font-size:17px}
+.subs-plans{display:flex;justify-content:center;width:100%}
+.plan-card{max-width:460px;width:100%;padding:26px;display:grid;gap:14px;justify-items:stretch;text-align:right}
+.plan-price{display:flex;align-items:baseline;gap:8px}
+.plan-price b{font-size:42px;font-weight:800}
+.plan-price span{color:var(--muted);font-size:15px}
+.plan-feats-title{font-weight:700;border-top:1px solid var(--line);padding-top:16px}
+.plan-feats{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.plan-feats li{display:flex;align-items:center;gap:9px;font-size:14px}
+.plan-feats svg{width:16px;height:16px;color:var(--green-600);flex-shrink:0}
 
 /* notifications EO style */
 .ntf-wrap{width:100%;max-width:880px;justify-self:center}
