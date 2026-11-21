@@ -548,3 +548,18 @@ body.dash[data-theme="dark"] .act-banner.live .bn-ic svg { color: #4ade80; }
 .copy-row .btn { white-space: nowrap; }
 
 .copy-row[hidden], [hidden].copy-row { display: none !important; }
+
+/* F5: apps/plugins + plans + services */
+.apps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.app-card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 8px; cursor: pointer; transition: all .18s; }
+.app-card:hover { border-color: var(--green); box-shadow: var(--shadow-soft, 0 6px 24px rgba(11,21,38,.07)); transform: translateY(-2px); }
+.app-card .btn { align-self: flex-start; margin-top: 4px; }
+.app-card .chip { align-self: flex-start; }
+.app-ic { width: 42px; height: 42px; border-radius: 12px; background: var(--green-soft, #eafbee); color: var(--green); display: grid; place-items: center; }
+.app-ic svg { width: 21px; height: 21px; }
+.plan-card { max-width: 560px; }
+.plan-price b { font-size: 40px; font-weight: 800; } .plan-price span { color: var(--muted); font-size: 15px; }
+.plan-feats { list-style: none; padding: 0; margin: 16px 0; display: flex; flex-direction: column; gap: 10px; }
+.plan-feats li { display: flex; align-items: center; gap: 10px; font-size: 14.5px; }
+.plan-feats svg { width: 18px; height: 18px; color: var(--green); flex: none; }
+.switch-row { display: flex; align-items: center; gap: 8px; margin: 12px 0; font-size: 14px; cursor: pointer; }

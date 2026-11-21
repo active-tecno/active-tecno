@@ -270,7 +270,7 @@ function renderChrome() {
       <nav id="dNav">${sideHtml()}</nav>
       <div class="d-upsell" id="dUpsell" ${STORE.is_published ? 'style="display:none"' : ''}>
         <h4>اشترك في الباقة المميزة</h4><p>ونمي متجرك!</p>
-        <button class="btn btn-teal" onclick="openActivation()">اشترك الآن</button>
+        <button class="btn btn-teal" onclick="go('subscriptions')">اشترك الآن</button>
       </div>
       <div class="d-side-foot">
         <a class="d-viewstore" href="/s/${esc(STORE.slug)}" target="_blank">${I('eye')} معاينة المتجر</a>

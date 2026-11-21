@@ -120,6 +120,13 @@ const api = {
     while (db.prepare('SELECT id FROM stores WHERE slug = ?').get(finalSlug)) finalSlug = `${s}-${++n}`;
     const cur = ['EGP', 'SAR', 'AED', 'USD'].includes(currency) ? currency : 'EGP';
     const u = db.prepare('INSERT INTO users (email, password_hash, name, phone) VALUES (?, ?, ?, ?)').run(email.toLowerCase(), hashPassword(password), name, String(phone || ''));
+    // platform referral attribution (اكتف affiliate): ?ref=<referral_code> captured by the register page
+    if (b.ref) {
+      const referrer = db.prepare('SELECT id FROM users WHERE referral_code = ?').get(String(b.ref).trim().toLowerCase());
+      if (referrer && referrer.id !== u.lastInsertRowid) {
+        try { db.prepare(`INSERT INTO referrals (referrer_user_id, referred_user_id, commission, status) VALUES (?, ?, 0, 'pending')`).run(referrer.id, u.lastInsertRowid); } catch (e) {}
+      }
+    }
     db.prepare('INSERT INTO stores (user_id, name, slug, currency) VALUES (?, ?, ?, ?)').run(u.lastInsertRowid, storeName, finalSlug, cur);
     db.prepare('INSERT INTO team_members (store_id, email, name, role) VALUES (?, ?, ?, ?)')
       .run(db.prepare('SELECT id FROM stores WHERE slug = ?').get(finalSlug).id, email.toLowerCase(), name, 'owner');
@@ -486,6 +493,77 @@ const api = {
     json(res, 200, { ok: true });
   },
 
+  // ---------- F5: blogs ----------
+  'GET /api/blog-categories': (req, res, user) => json(res, 200, {
+    cats: db.prepare(`SELECT c.*, (SELECT COUNT(*) FROM blog_posts p WHERE p.category_id = c.id) AS posts FROM blog_categories c WHERE c.store_id = ? ORDER BY c.id DESC`).all(getStoreForUser(user).id)
+  }),
+  'POST /api/blog-categories': async (req, res, user) => {
+    const b = await readJSON(req); if (!b || !String(b.name || '').trim()) return json(res, 400, { error: 'اسم القسم مطلوب' });
+    try {
+      const r = db.prepare('INSERT INTO blog_categories (store_id, name) VALUES (?, ?)').run(getStoreForUser(user).id, String(b.name).trim());
+      json(res, 201, { id: r.lastInsertRowid });
+    } catch (e) { json(res, 409, { error: 'هذا القسم موجود بالفعل' }); }
+  },
+  'DELETE /api/blog-categories/:id': (req, res, user, p) => {
+    db.prepare('DELETE FROM blog_categories WHERE id = ? AND store_id = ?').run(p.id, getStoreForUser(user).id);
+    json(res, 200, { ok: true });
+  },
+  'GET /api/blog-posts': (req, res, user) => json(res, 200, {
+    posts: db.prepare(`SELECT p.*, c.name AS category_name FROM blog_posts p LEFT JOIN blog_categories c ON c.id = p.category_id WHERE p.store_id = ? ORDER BY p.id DESC`).all(getStoreForUser(user).id)
+  }),
+  'POST /api/blog-posts': async (req, res, user) => {
+    const b = await readJSON(req); if (!b || !String(b.title || '').trim()) return json(res, 400, { error: 'عنوان المقال مطلوب' });
+    const store = getStoreForUser(user);
+    let slug = String(b.slug || b.title).toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]+/g, '-').replace(/^-+|-+$/g, '') || 'post', fs = slug, n = 1;
+    while (db.prepare('SELECT id FROM blog_posts WHERE store_id = ? AND slug = ?').get(store.id, fs)) fs = `${slug}-${++n}`;
+    const r = db.prepare('INSERT INTO blog_posts (store_id, category_id, title, slug, body, status) VALUES (?, ?, ?, ?, ?, ?)')
+      .run(store.id, b.category_id || null, String(b.title).trim(), fs, String(b.body || ''), b.status === 'published' ? 'published' : 'draft');
+    json(res, 201, { id: r.lastInsertRowid, slug: fs });
+  },
+  'PUT /api/blog-posts/:id': async (req, res, user, p) => {
+    const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
+    const post = db.prepare('SELECT * FROM blog_posts WHERE id = ? AND store_id = ?').get(p.id, getStoreForUser(user).id);
+    if (!post) return json(res, 404, { error: 'المقال غير موجود' });
+    db.prepare('UPDATE blog_posts SET category_id = ?, title = ?, body = ?, status = ? WHERE id = ?')
+      .run(b.category_id !== undefined ? (b.category_id || null) : post.category_id, String(b.title ?? post.title).trim(), String(b.body ?? post.body), ['draft', 'published'].includes(b.status) ? b.status : post.status, post.id);
+    json(res, 200, { ok: true });
+  },
+  'DELETE /api/blog-posts/:id': (req, res, user, p) => {
+    db.prepare('DELETE FROM blog_posts WHERE id = ? AND store_id = ?').run(p.id, getStoreForUser(user).id);
+    json(res, 200, { ok: true });
+  },
+
+  // ---------- F5: platform referral (نظام التسويق بالعمولة) ----------
+  'GET /api/referrals': (req, res, user) => {
+    if (!user.referral_code) {
+      const code = 'at' + user.id.toString(36) + Math.random().toString(36).slice(2, 6);
+      db.prepare('UPDATE users SET referral_code = ? WHERE id = ?').run(code, user.id);
+      user.referral_code = code;
+    }
+    const rows = db.prepare(`SELECT r.*, u.name AS referred_name, u.email AS referred_email FROM referrals r JOIN users u ON u.id = r.referred_user_id WHERE r.referrer_user_id = ? ORDER BY r.id DESC`).all(user.id);
+    const credited = rows.filter(r => r.status !== 'paid').reduce((t, r) => t + r.commission, 0);
+    const paid = rows.filter(r => r.status === 'paid').reduce((t, r) => t + r.commission, 0);
+    const withdrawals = db.prepare('SELECT * FROM withdrawal_requests WHERE user_id = ? ORDER BY id DESC').all(user.id);
+    json(res, 200, { code: user.referral_code, referrals: rows, balance: credited, paid, withdrawals });
+  },
+  'POST /api/withdrawals': async (req, res, user) => {
+    const b = await readJSON(req); if (!b || !(+b.amount > 0) || !String(b.account || '').trim()) return json(res, 400, { error: 'المبلغ والحساب مطلوبان' });
+    const bal = db.prepare(`SELECT COALESCE(SUM(commission),0) s FROM referrals WHERE referrer_user_id = ? AND status = 'credited'`).get(user.id).s;
+    if (+b.amount > bal) return json(res, 400, { error: `رصيدك المتاح للسحب ${bal} ج.م فقط` });
+    const r = db.prepare('INSERT INTO withdrawal_requests (user_id, amount, method, account) VALUES (?, ?, ?, ?)').run(user.id, +b.amount, String(b.method || 'instapay'), String(b.account).trim());
+    json(res, 201, { id: r.lastInsertRowid });
+  },
+
+  // ---------- F5: dev requests (طلب تطويرات) ----------
+  'GET /api/dev-requests': (req, res, user) => json(res, 200, {
+    requests: db.prepare('SELECT * FROM dev_requests WHERE user_id = ? ORDER BY id DESC').all(user.id)
+  }),
+  'POST /api/dev-requests': async (req, res, user) => {
+    const b = await readJSON(req); if (!b || !String(b.title || '').trim()) return json(res, 400, { error: 'عنوان الطلب مطلوب' });
+    const r = db.prepare('INSERT INTO dev_requests (user_id, title, details) VALUES (?, ?, ?)').run(user.id, String(b.title).trim(), String(b.details || ''));
+    json(res, 201, { id: r.lastInsertRowid });
+  },
+
   // ---------- F4: marketing tools ----------
   'GET /api/marketing': (req, res, user) => {
     const store = getStoreForUser(user);
@@ -788,6 +866,11 @@ const api = {
     const until = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
     db.prepare(`UPDATE activation_requests SET status = 'approved', reviewed_at = datetime('now') WHERE id = ?`).run(p.id);
     db.prepare('UPDATE stores SET is_published = 1, published_until = ? WHERE id = ?').run(until, r.store_id);
+    // affiliate commission: 20% of the activation amount goes to the referrer, once per referred user
+    try {
+      const ref = db.prepare(`SELECT * FROM referrals WHERE referred_user_id = ? AND status = 'pending'`).get(r.user_id);
+      if (ref) db.prepare(`UPDATE referrals SET commission = ?, status = 'credited' WHERE id = ?`).run(r.amount * 0.2, ref.id);
+    } catch (e) {}
     json(res, 200, { ok: true, published_until: until });
   },
   'POST /api/admin/activations/:id/reject': async (req, res, user, p) => {
@@ -1083,9 +1166,9 @@ const server = http.createServer(async (req, res) => {
     }
     if (pathname === '/admin') return html(res, 200, views.adminShell());
 
-    const storeMatch = pathname.match(/^\/s\/([a-z0-9\u0600-\u06FF-]+)(\/p\/(\d+)|\/f\/(\d+)|\/checkout|\/verified|\/order\/([A-Z0-9-]+))?\/?$/i);
+    const storeMatch = pathname.match(/^\/s\/([a-z0-9\u0600-\u06FF-]+)(\/p\/(\d+)|\/f\/(\d+)|\/checkout|\/verified|\/blog|\/blog\/([^\/]+)|\/order\/([A-Z0-9-]+))?\/?$/i);
     if (storeMatch) {
-      const [, slug, sub, productId, funnelId, orderNumber] = storeMatch;
+      const [, slug, sub, productId, funnelId, , orderNumber] = storeMatch;
       const store = db.prepare('SELECT * FROM stores WHERE slug = ?').get(slug);
       if (!store) return html(res, 404, views.notFound('المتجر غير موجود', 'تأكد من الرابط أو تواصل مع صاحب المتجر.'));
       const theme = db.prepare('SELECT * FROM themes WHERE id = ?').get(store.theme_id);
@@ -1107,6 +1190,12 @@ const server = http.createServer(async (req, res) => {
         if (!store.is_published && !owner) return html(res, 200, views.comingSoon(store));
         db.prepare('UPDATE funnels SET views = views + 1 WHERE id = ?').run(funnel.id);
         return html(res, 200, views.funnelPage(store, funnel, product, themeConfig, owner));
+      }
+      if (sub === '/blog') return html(res, 200, views.storeBlogIndex(store, themeConfig));
+      if (sub && sub.startsWith('/blog/')) {
+        const post = db.prepare(`SELECT p.*, c.name AS category_name FROM blog_posts p LEFT JOIN blog_categories c ON c.id = p.category_id WHERE p.store_id = ? AND p.slug = ? AND p.status = 'published'`).get(store.id, sub.slice(6));
+        if (!post) return html(res, 404, views.notFound());
+        return html(res, 200, views.storeBlogPost(store, post, themeConfig));
       }
       if (sub === '/verified') {
         const stats = db.prepare(`SELECT COUNT(*) c, COALESCE(SUM(total),0) t FROM orders WHERE store_id = ? AND status NOT IN ('cancelled','returned')`).get(store.id);

@@ -540,6 +540,7 @@ document.getElementById('regForm').addEventListener('submit', async e => {
   delete body.password2;
   body.phone = '+20' + String(body.phone || '').replace(/\D/g, '').replace(/^0+/, '');
   body.storeName = body.slug;
+  body.ref = new URLSearchParams(location.search).get('ref') || '';
   const r = await fetch('/api/auth/register', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
   const d = await r.json();
   if (!r.ok) { err.textContent = d.error || 'حدث خطأ'; return; }
@@ -706,7 +707,7 @@ function appShell() {
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Rubik:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/public/css/dashboard.css">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23141924'/%3E%3Cpath d='M9 20l7-11 7 11' stroke='%2327cd27' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-</head><body class="dash"><div id="root"></div><script src="/public/js/dash-core.js"></script><script src="/public/js/dash-legacy.js"></script><script src="/public/js/dash-home.js"></script><script src="/public/js/dash-orders.js"></script><script src="/public/js/dash-products.js"></script><script src="/public/js/dash-funnels.js"></script><script src="/public/js/dash-marketing.js"></script></body></html>`;
+</head><body class="dash"><div id="root"></div><script src="/public/js/dash-core.js"></script><script src="/public/js/dash-legacy.js"></script><script src="/public/js/dash-home.js"></script><script src="/public/js/dash-orders.js"></script><script src="/public/js/dash-products.js"></script><script src="/public/js/dash-funnels.js"></script><script src="/public/js/dash-marketing.js"></script><script src="/public/js/dash-f5.js"></script></body></html>`;
 }
 
 function adminShell() {
@@ -924,6 +925,44 @@ document.getElementById('fnForm')?.addEventListener('submit', async e => {
   location.href = '/s/' + SLUG + '/order/' + d.number;
 });
 </script>
+</body></html>`;
+}
+
+function storeBlogIndex(store, t) {
+  const posts = db.prepare(`SELECT p.*, c.name AS category_name FROM blog_posts p LEFT JOIN blog_categories c ON c.id = p.category_id WHERE p.store_id = ? AND p.status = 'published' ORDER BY p.id DESC`).all(store.id);
+  return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, `المدونة | ${store.name}`)}</head>
+<body class="store ${t.dark ? 'dark' : ''}">
+${demoBar(store)}${storeHeader(store, t)}
+<main class="wrap">
+<h1 class="pg-title">المدونة</h1>
+${posts.length ? `<div class="blog-grid">${posts.map(p => `
+<a class="blog-card" href="/s/${esc(store.slug)}/blog/${esc(p.slug)}">
+${p.category_name ? `<span class="blog-cat">${esc(p.category_name)}</span>` : ''}
+<h3>${esc(p.title)}</h3>
+<p>${esc((p.body || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 140))}…</p>
+<span class="blog-date">${esc((p.created_at || '').slice(0, 10))}</span></a>`).join('')}</div>`
+  : `<div class="s-empty">لا توجد مقالات منشورة بعد — تابعنا قريباً</div>`}
+</main>
+<footer class="s-footer"><p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>
+${storeScripts(store)}
+</body></html>`;
+}
+
+function storeBlogPost(store, p, t) {
+  const more = db.prepare(`SELECT title, slug FROM blog_posts WHERE store_id = ? AND status = 'published' AND id != ? ORDER BY id DESC LIMIT 3`).all(store.id, p.id);
+  return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>${storeHead(store, t, `${p.title} | ${store.name}`)}</head>
+<body class="store ${t.dark ? 'dark' : ''}">
+${demoBar(store)}${storeHeader(store, t)}
+<main class="wrap blog-post">
+<a class="blog-back" href="/s/${esc(store.slug)}/blog">→ كل المقالات</a>
+${p.category_name ? `<span class="blog-cat">${esc(p.category_name)}</span>` : ''}
+<h1 class="pg-title">${esc(p.title)}</h1>
+<span class="blog-date">${esc((p.created_at || '').slice(0, 10))}</span>
+<article class="blog-body">${p.body}</article>
+${more.length ? `<h3 class="blog-more-t">مقالات أخرى</h3><div class="blog-grid">${more.map(m => `<a class="blog-card" href="/s/${esc(store.slug)}/blog/${esc(m.slug)}"><h3>${esc(m.title)}</h3></a>`).join('')}</div>` : ''}
+</main>
+<footer class="s-footer"><p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>
+${storeScripts(store)}
 </body></html>`;
 }
 
@@ -1299,4 +1338,4 @@ ${siteHeader('light')}
 ${siteFooter}`);
 }
 
-module.exports = { landing, login: loginPage, register: registerPage, appShell, adminShell, storefront, productPage, checkoutPage, funnelPage, orderPage, verifiedPage, comingSoon, notFound, onboarding, egp, esc, pricingPage, themesPage, blogIndex, blogPostPage, blogStaticPage, BLOG_POSTS };
+module.exports = { landing, login: loginPage, register: registerPage, appShell, adminShell, storefront, productPage, checkoutPage, funnelPage, orderPage, verifiedPage, storeBlogIndex, storeBlogPost, comingSoon, notFound, onboarding, egp, esc, pricingPage, themesPage, blogIndex, blogPostPage, blogStaticPage, BLOG_POSTS };
