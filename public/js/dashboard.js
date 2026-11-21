@@ -75,7 +75,7 @@ function shell(content) {
   const hash = location.hash.replace('#/', '') || 'overview';
   return `<div class="d-layout">
   <aside class="d-side" id="dSide">
-    <a class="brand" href="/"><svg viewBox="0 0 32 32" width="28" height="28"><rect width="32" height="32" rx="8" fill="rgba(255,255,255,.12)"/><path d="M9 20l7-11 7 11" stroke="#00BFAF" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="brand-name">اكتف <b>تكنو</b></span></a>
+    <a class="brand" href="/"><svg viewBox="0 0 32 32" width="28" height="28"><rect width="32" height="32" rx="8" fill="rgba(255,255,255,.12)"/><path d="M9 20l7-11 7 11" stroke="#27cd27" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="brand-name">اكتف <b>تكنو</b></span></a>
     ${NAV.map(([k, ic, l]) => `<button class="d-link ${hash === k ? 'on' : ''}" onclick="go('${k}')"><span class="ic">${I(ic)}</span>${l}${k === 'orders' && ME?.newOrders ? `<span class="badge">${ME.newOrders}</span>` : ''}</button>`).join('')}
     <div class="d-side-foot">
       <a class="d-viewstore" href="/s/${esc(STORE.slug)}" target="_blank">${I('eye')} معاينة المتجر <span style="margin-inline-start:auto">↗</span></a>
@@ -94,7 +94,7 @@ const topBar = (title, sub, actions = '') => `<div class="d-top">
 
 function activationBanner() {
   if (STORE.is_published) {
-    return `<div class="act-banner live"><div class="txt"><h3>✅ متجرك منشور ويعمل</h3><p>النشر فعّال حتى ${esc(STORE.published_until || '')} — رابط متجرك: <a href="/s/${esc(STORE.slug)}" target="_blank" style="color:#fff;text-decoration:underline" class="mono">/s/${esc(STORE.slug)}</a></p></div>
+    return `<div class="act-banner live"><div class="txt"><h3>متجرك منشور ويعمل</h3><p>النشر فعّال حتى ${esc(STORE.published_until || '')} — رابط متجرك: <a href="/s/${esc(STORE.slug)}" target="_blank" style="color:#fff;text-decoration:underline" class="mono">/s/${esc(STORE.slug)}</a></p></div>
     <a class="btn btn-teal" href="/s/${esc(STORE.slug)}" target="_blank">افتح المتجر ↗</a></div>`;
   }
   const pending = (ME.activations || []).find(a => a.status === 'pending');
@@ -119,7 +119,7 @@ async function submitActivation() {
   const method = $('#actMethod').value, reference = $('#actRef').value.trim();
   if (!reference) return toast('أدخل رقم المرجع', 'err');
   await api('/api/activation', { method: 'POST', body: { method, reference } });
-  closeModal(); toast('تم إرسال طلب التفعيل — سنراجعه قريباً ✅'); route();
+  closeModal(); toast('تم إرسال طلب التفعيل — سنراجعه قريباً'); route();
 }
 
 // ---------- overview ----------
@@ -127,14 +127,14 @@ function assistantCard(d, products) {
   const tips = [];
   if (d.conversion < 3 && d.views > 50) tips.push(`معدل التحويل ${d.conversion}% أقل من المعتاد — جرّب كوبون ترحيبي أو قلّل خطوات صفحة الشراء.`);
   const low = products.filter(p => p.status === 'active' && p.stock > 0 && p.stock <= p.low_stock_threshold);
-  if (low.length) tips.push(`⚠️ مخزون منخفض: ${low.map(p => `«${p.name}» (${p.stock})`).join('، ')} — أعد التعبئة قبل نفاده.`);
+  if (low.length) tips.push(`مخزون منخفض: ${low.map(p => `«${p.name}» (${p.stock})`).join('، ')} — أعد التعبئة قبل نفاده.`);
   const out = products.filter(p => p.status === 'active' && p.stock <= 0);
   if (out.length) tips.push(`🚫 نفد: ${out.map(p => `«${p.name}»`).join('، ')} — يظهر للعملاء كغير متاح.`);
-  if (d.top[0]) tips.push(`🏆 «${d.top[0].name}» هو الأكثر مبيعاً (${d.top[0].qty} قطعة) — فعّل عليه كروس سيل لرفع متوسط الطلب.`);
-  if (d.statusCounts.new > 2) tips.push(`📦 لديك ${d.statusCounts.new} طلبات جديدة لم تُؤكد — أرسل أكتف كونفيرم الآن لتقليل الإلغاء.`);
-  if (!tips.length) tips.push('كل شيء يسير بشكل ممتاز 🎉 — شارك رابط متجرك لزيادة الزيارات.');
-  return `<div class="card" style="background:linear-gradient(90deg,#12213E,#1B3059);color:#fff;margin-bottom:16px">
-    <h3 style="color:#fff">🤖 مساعد اكتف الذكي</h3>
+  if (d.top[0]) tips.push(`«${d.top[0].name}» هو الأكثر مبيعاً (${d.top[0].qty} قطعة) — فعّل عليه كروس سيل لرفع متوسط الطلب.`);
+  if (d.statusCounts.new > 2) tips.push(`لديك ${d.statusCounts.new} طلبات جديدة لم تُؤكد — أرسل أكتف كونفيرم الآن لتقليل الإلغاء.`);
+  if (!tips.length) tips.push('كل شيء يسير بشكل ممتاز — شارك رابط متجرك لزيادة الزيارات.');
+  return `<div class="card" style="background:linear-gradient(90deg,oklch(.18 .012 260),oklch(.24 .012 260));color:#fff;margin-bottom:16px">
+    <h3 style="color:#fff">مساعد اكتف الذكي</h3>
     <div style="display:grid;gap:8px">${tips.map(t => `<div style="background:rgba(255,255,255,.07);border-radius:11px;padding:10px 14px;font-size:13.5px;line-height:1.8">${t}</div>`).join('')}</div></div>`;
 }
 function drawChart(daily) {
@@ -155,7 +155,7 @@ function drawChart(daily) {
   grad.addColorStop(0, 'rgba(0,191,175,.25)'); grad.addColorStop(1, 'rgba(0,191,175,0)');
   ctx.beginPath();
   vals.forEach((v, i) => { const x = px + cw * i, y = py + ch * (1 - v / max); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
-  ctx.strokeStyle = '#00BFAF'; ctx.lineWidth = 2.5; ctx.lineJoin = 'round'; ctx.stroke();
+  ctx.strokeStyle = '#27cd27'; ctx.lineWidth = 2.5; ctx.lineJoin = 'round'; ctx.stroke();
   ctx.lineTo(px + cw * (days.length - 1), py + ch); ctx.lineTo(px, py + ch); ctx.closePath(); ctx.fillStyle = grad; ctx.fill();
 }
 
@@ -171,7 +171,7 @@ async function viewOrders() {
      <div id="ordersWrap">${renderOrders(d.orders)}</div>`);
 }
 function renderOrders(orders) {
-  if (!orders.length) return `<div class="card"><div class="empty"><div class="big">📦</div><b>لا توجد طلبات بعد</b><p>شارك رابط متجرك وستظهر الطلبات هنا فوراً</p><a class="btn btn-teal" href="/s/${esc(STORE.slug)}" target="_blank">افتح متجرك</a></div></div>`;
+  if (!orders.length) return `<div class="card"><div class="empty"><div class="big">${ICONS.orders}</div><b>لا توجد طلبات بعد</b><p>شارك رابط متجرك وستظهر الطلبات هنا فوراً</p><a class="btn btn-teal" href="/s/${esc(STORE.slug)}" target="_blank">افتح متجرك</a></div></div>`;
   if (ordersView === 'list') {
     return `<div class="card tbl-wrap"><table class="tbl"><thead><tr><th>الطلب</th><th>العميل</th><th>الهاتف</th><th>الإجمالي</th><th>الحالة</th><th>التاريخ</th><th></th></tr></thead><tbody>
       ${orders.map(o => `<tr><td class="mono">${esc(o.number)}</td><td><b>${esc(o.customer_name)}</b></td><td class="mono">${esc(o.customer_phone)}</td><td><b>${egp(o.total)}</b></td><td>${stChip(o.status)}</td><td class="muted small">${fmtDate(o.created_at)}</td><td><button class="btn btn-soft btn-sm" onclick="openOrder(${o.id})">التفاصيل</button></td></tr>`).join('')}</tbody></table></div>`;
@@ -218,7 +218,7 @@ async function openOrder(id) {
       <tr><td><b>الإجمالي (COD)</b></td><td><b style="color:var(--teal)">${egp(o.total)}</b></td></tr></tbody></table>
     <h3 style="margin:16px 0 8px;font-size:14px">سجل الحالات</h3>
     <div class="muted small">${h.history.map(x => `${STATUS[x.status]?.ar || x.status} — ${fmtDate(x.created_at)}`).join(' ← ')}</div>
-    <h3 style="margin:16px 0 8px;font-size:14px">✨ أكتف كونفيرم — تأكيد واتساب برد 1 أو 2</h3>
+    <h3 style="margin:16px 0 8px;font-size:14px">أكتف كونفيرم — تأكيد واتساب برد 1 أو 2</h3>
     <div class="wa-msg-preview" id="waPreview">أهلاً ${esc(o.customer_name)} 👋
 طلبك ${esc(o.number)} من ${esc(STORE.name)}
 الإجمالي: ${egp(o.total)} — الدفع عند الاستلام
@@ -228,7 +228,7 @@ async function openOrder(id) {
     <div id="waSimStatus" class="muted small" style="margin:8px 0 0"></div>
     <div class="m-actions" style="flex-wrap:wrap">
       <button class="btn btn-teal btn-sm" style="flex:1" onclick="sendActiveConfirm(${o.id})">📨 إرسال تأكيد أكتف كونفيرم</button>
-      <a class="btn btn-soft btn-sm" style="flex:1" href="https://wa.me/2${esc(o.customer_phone)}?text=${waText}" target="_blank" rel="noopener" onclick="markWa(${o.id})">💬 فتح واتساب يدوياً</a>
+      <a class="btn btn-soft btn-sm" style="flex:1" href="https://wa.me/2${esc(o.customer_phone)}?text=${waText}" target="_blank" rel="noopener" onclick="markWa(${o.id})">فتح واتساب يدوياً</a>
       ${nextStatuses(o.status).map(n => `<button class="btn btn-navy btn-sm" style="flex:1" onclick="moveOrder(${o.id},'${n}');closeModal()">${STATUS[n].ar}</button>`).join('')}
       <button class="btn btn-danger-soft btn-sm" style="flex:1" onclick="blockPhone(${o.id})">🚫 حظر الرقم</button>
     </div>`);
@@ -260,7 +260,7 @@ async function viewProducts() {
   return shell(topBar('المنتجات', `${d.products.length} منتج`, `<button class="btn btn-teal" onclick="openProduct()">+ منتج جديد</button>`) +
     (d.products.length ? `<div class="card tbl-wrap"><table class="tbl"><thead><tr><th>المنتج</th><th>السعر</th><th>المخزون</th><th>القسم</th><th>الحالة</th><th></th></tr></thead><tbody>
       ${d.products.map(p => { const img = JSON.parse(p.images || '[]')[0] || '';
-        const stock = p.stock <= 0 ? '<span class="stock-out">نفد</span>' : p.stock <= p.low_stock_threshold ? `<span class="stock-low">${p.stock} ⚠️</span>` : `<span class="stock-ok">${p.stock}</span>`;
+        const stock = p.stock <= 0 ? '<span class="stock-out">نفد</span>' : p.stock <= p.low_stock_threshold ? `<span class="stock-low">${p.stock} قطع</span>` : `<span class="stock-ok">${p.stock}</span>`;
         return `<tr><td class="prod-cell">${img ? `<img src="${esc(img)}">` : ''}<b>${esc(p.name)}</b></td>
         <td><b>${egp(p.price)}</b>${p.compare_at_price ? `<br><s class="muted small">${egp(p.compare_at_price)}</s>` : ''}</td>
         <td>${stock}</td><td class="muted">${esc(p.category || '—')}</td>
@@ -318,7 +318,7 @@ async function saveProduct(id) {
   };
   if (!body.name || !(body.price > 0)) return toast('أدخل الاسم والسعر', 'err');
   await api(id ? `/api/products/${id}` : '/api/products', { method: id ? 'PUT' : 'POST', body });
-  closeModal(); toast(id ? 'تم حفظ المنتج ✅' : 'تمت إضافة المنتج 🎉'); route();
+  closeModal(); toast(id ? 'تم حفظ المنتج' : 'تمت إضافة المنتج'); route();
 }
 async function delProduct(id) {
   if (!confirm('حذف هذا المنتج نهائياً؟')) return;
@@ -337,12 +337,12 @@ async function viewCarts() {
         <td class="mono">${esc(c.customer_phone || '—')}</td>
         <td class="muted small">${fmtDate(c.updated_at)}</td>
         <td style="white-space:nowrap">${c.recovered ? '<span class="chip st-delivered">تم الاسترجاع</span>' : `
-          ${c.customer_phone ? `<a class="btn btn-teal btn-sm" target="_blank" rel="noopener" href="https://wa.me/2${esc(c.customer_phone)}?text=${encodeURIComponent(`أهلاً 👋 لاحظنا أنك تركت بعض المنتجات في سلتك من ${STORE.name} — أكمل طلبك الآن قبل نفاد الكمية 🛒`)}">💬 تذكير واتساب</a>` : ''}
+          ${c.customer_phone ? `<a class="btn btn-teal btn-sm" target="_blank" rel="noopener" href="https://wa.me/2${esc(c.customer_phone)}?text=${encodeURIComponent(`أهلاً 👋 لاحظنا أنك تركت بعض المنتجات في سلتك من ${STORE.name} — أكمل طلبك الآن قبل نفاد الكمية 🛒`)}">تذكير واتساب</a>` : ''}
           <button class="btn btn-soft btn-sm" onclick="markRecovered(${c.id})">تم الاسترجاع</button>`}</td></tr>`).join('')}</tbody></table></div>
       <div class="card"><h3>💡 نصيحة</h3><p class="muted small">التواصل خلال أول ساعة من ترك السلة يرفع الاسترجاع 3 أضعاف. أرسل تذكير واتساب بخصم بسيط عبر كوبون.</p></div>`
-    : `<div class="card"><div class="empty"><div class="big">🛒</div><b>لا سلات متروكة</b><p>عندما يضيف عميل منتجات ولا يكمل الشراء ستظهر سلته هنا مع زر استرجاع واتساب</p></div></div>`));
+    : `<div class="card"><div class="empty"><div class="big">${ICONS.carts}</div><b>لا سلات متروكة</b><p>عندما يضيف عميل منتجات ولا يكمل الشراء ستظهر سلته هنا مع زر استرجاع واتساب</p></div></div>`));
 }
-async function markRecovered(id) { await api(`/api/carts/${id}/recovered`, { method: 'PUT' }); toast('تم تعليم السلة كمسترجعة ✅'); route(); }
+async function markRecovered(id) { await api(`/api/carts/${id}/recovered`, { method: 'PUT' }); toast('تم تعليم السلة كمسترجعة'); route(); }
 
 // ---------- customers ----------
 async function viewCustomers() {
@@ -395,7 +395,7 @@ async function viewShipping() {
     </div><div class="m-actions"><button class="btn btn-teal" onclick="saveZone()">إضافة المنطقة</button></div></div>
     ${d.zones.length ? `<div class="card tbl-wrap"><table class="tbl"><thead><tr><th>المنطقة</th><th>المحافظات</th><th>السعر</th><th>مجاني فوق</th><th></th></tr></thead><tbody>
       ${d.zones.map(z => `<tr><td><b>${esc(z.name)}</b></td><td class="muted small">${esc(z.governorates)}</td><td>${egp(z.price)}</td><td>${z.free_over ? egp(z.free_over) : '—'}</td><td><button class="btn btn-danger-soft btn-sm" onclick="delZone(${z.id})">حذف</button></td></tr>`).join('')}</tbody></table></div>` : ''}
-    <div class="card"><h3>🚚 الشحن المجاني العام</h3><div class="f-grid"><div class="f-field"><label>شحن مجاني لكل الطلبات فوق (ج.م — 0 لتعطيل)</label><input id="freeOver" type="number" min="0" value="${STORE.free_shipping_over || 0}"></div></div>
+    <div class="card"><h3>الشحن المجاني العام</h3><div class="f-grid"><div class="f-field"><label>شحن مجاني لكل الطلبات فوق (ج.م — 0 لتعطيل)</label><input id="freeOver" type="number" min="0" value="${STORE.free_shipping_over || 0}"></div></div>
     <div class="m-actions"><button class="btn btn-teal" onclick="saveFreeOver()">حفظ</button></div></div>`);
 }
 async function saveZone() {
@@ -435,8 +435,8 @@ async function viewCustomize() {
         <b>${esc(t.name_ar)}</b><small>${esc(t.category)}${t.is_premium ? ` · ${egp(t.price)}` : ' · مجاني'}</small></div>`).join('')}
     </div></div>
     <div class="card"><h3>الألوان</h3>
-      <div class="color-row"><label>اللون الأساسي</label><input type="color" id="cPrimary" value="${settings.primary || d.themes.find(t => t.id === cur)?.config.primary || '#12213E'}"></div>
-      <div class="color-row"><label>لون الأزرار والتمييز</label><input type="color" id="cAccent" value="${settings.accent || d.themes.find(t => t.id === cur)?.config.accent || '#00BFAF'}"></div>
+      <div class="color-row"><label>اللون الأساسي</label><input type="color" id="cPrimary" value="${settings.primary || d.themes.find(t => t.id === cur)?.config.primary || '#141924'}"></div>
+      <div class="color-row"><label>لون الأزرار والتمييز</label><input type="color" id="cAccent" value="${settings.accent || d.themes.find(t => t.id === cur)?.config.accent || '#27cd27'}"></div>
       <button class="btn btn-soft btn-sm" onclick="previewColors()">معاينة فورية</button>
     </div>
     <div class="card"><h3>إعلان أعلى المتجر</h3>
@@ -471,7 +471,7 @@ async function viewTracking() {
   const settings = JSON.parse(STORE.theme_settings || '{}');
   const px = settings.pixels || {};
   return shell(topBar('البيكسلات والتتبع', 'اربط منصات الإعلانات بمتجرك') +
-    `<div class="card"><h3>🎯 بيكسلات المنصات</h3><div class="f-grid">
+    `<div class="card"><h3>بيكسلات المنصات</h3><div class="f-grid">
       <div class="f-field"><label>Meta Pixel ID</label><input id="pxMeta" dir="ltr" value="${esc(px.meta || '')}" placeholder="1234567890"></div>
       <div class="f-field"><label>TikTok Pixel ID</label><input id="pxTiktok" dir="ltr" value="${esc(px.tiktok || '')}"></div>
       <div class="f-field"><label>Snapchat Pixel ID</label><input id="pxSnap" dir="ltr" value="${esc(px.snap || '')}"></div>
@@ -484,7 +484,7 @@ async function savePixels() {
   const settings = JSON.parse(STORE.theme_settings || '{}');
   settings.pixels = { meta: $('#pxMeta').value.trim(), tiktok: $('#pxTiktok').value.trim(), snap: $('#pxSnap').value.trim(), google: $('#pxGoogle').value.trim(), capi: $('#pxCapi').value.trim() };
   const d = await api('/api/store', { method: 'PUT', body: { theme_settings: settings } });
-  STORE = d.store; toast('تم حفظ إعدادات التتبع 🎯');
+  STORE = d.store; toast('تم حفظ إعدادات التتبع');
 }
 
 // ---------- team ----------
@@ -637,15 +637,15 @@ async function viewOverview() {
   const allDone = checklist.every(c => c.done);
   const funnelMax = Math.max(d.funnel.page_view, 1);
   const funnelSteps = [['page_view', 'زيارة المتجر'], ['product_view', 'مشاهدة منتج'], ['add_to_cart', 'إضافة للسلة'], ['begin_checkout', 'بدء الشراء'], ['purchase', 'طلب مكتمل']];
-  const html = shell(topBar('نظرة عامة', `أهلاً ${esc(ME.user.name)} 👋`) +
+  const html = shell(topBar('نظرة عامة', `أهلاً ${esc(ME.user.name)}`) +
     activationBanner() +
-    (allDone ? '' : `<div class="card"><h3>🎯 خطوات إطلاق متجرك</h3><div class="check">${checklist.map(c => `<div class="check-item ${c.done ? 'done' : ''}"><span class="tick">✓</span>${c.label}${!c.done && c.go ? `<button class="btn btn-soft btn-sm go" onclick="go('${c.go}')">ابدأ</button>` : ''}</div>`).join('')}</div></div>`) +
+    (allDone ? '' : `<div class="card"><h3>خطوات إطلاق متجرك</h3><div class="check">${checklist.map(c => `<div class="check-item ${c.done ? 'done' : ''}"><span class="tick">✓</span>${c.label}${!c.done && c.go ? `<button class="btn btn-soft btn-sm go" onclick="go('${c.go}')">ابدأ</button>` : ''}</div>`).join('')}</div></div>`) +
     `<div class="stat-grid">
-      <div class="stat"><span class="ic">💰</span><div class="lbl">الإيرادات (30 يوم)</div><div class="val">${egp(d.revenue)}</div></div>
-      <div class="stat"><span class="ic">📦</span><div class="lbl">الطلبات</div><div class="val">${d.orders}</div></div>
-      <div class="stat"><span class="ic">👁️</span><div class="lbl">زيارات المتجر</div><div class="val">${d.views}</div></div>
-      <div class="stat"><span class="ic">📈</span><div class="lbl">معدل التحويل</div><div class="val">${d.conversion}<small>%</small></div></div>
-      <div class="stat"><span class="ic">🧾</span><div class="lbl">متوسط قيمة الطلب</div><div class="val">${egp(d.aov)}</div></div>
+      <div class="stat"><span class="ic">${ICONS.payments}</span><div class="lbl">الإيرادات (30 يوم)</div><div class="val">${egp(d.revenue)}</div></div>
+      <div class="stat"><span class="ic">${ICONS.orders}</span><div class="lbl">الطلبات</div><div class="val">${d.orders}</div></div>
+      <div class="stat"><span class="ic">${ICONS.eye}</span><div class="lbl">زيارات المتجر</div><div class="val">${d.views}</div></div>
+      <div class="stat"><span class="ic">${ICONS.overview}</span><div class="lbl">معدل التحويل</div><div class="val">${d.conversion}<small>%</small></div></div>
+      <div class="stat"><span class="ic">${ICONS.coupons}</span><div class="lbl">متوسط قيمة الطلب</div><div class="val">${egp(d.aov)}</div></div>
     </div>
     ${assistantCard(d, prods.products)}
     <div class="grid-2">

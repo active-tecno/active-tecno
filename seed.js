@@ -10,7 +10,7 @@ function hashPassword(password) {
 
 const THEMES = [
   { id: 'modern', name_ar: 'عصري — أزياء', category: 'أزياء وموضة', is_premium: 0, price: 0,
-    config: { primary: '#12213E', accent: '#00BFAF', bg: '#FFFFFF', surface: '#F6F8FC', radius: 18, header: 'centered', card: 'elevated', font: 'IBM Plex Sans Arabic' } },
+    config: { primary: '#141924', accent: '#27cd27', bg: '#FFFFFF', surface: '#F6F8FC', radius: 18, header: 'centered', card: 'elevated', font: 'IBM Plex Sans Arabic' } },
   { id: 'tech', name_ar: 'تقني — إلكترونيات', category: 'إلكترونيات', is_premium: 0, price: 0,
     config: { primary: '#0B1526', accent: '#3B82F6', bg: '#FFFFFF', surface: '#F1F5F9', radius: 12, header: 'split', card: 'flat', font: 'IBM Plex Sans Arabic' } },
   { id: 'boutique', name_ar: 'بوتيك — تجميل وعناية', category: 'تجميل وعناية', is_premium: 0, price: 0,

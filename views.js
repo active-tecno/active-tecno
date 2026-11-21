@@ -27,139 +27,255 @@ const IC = {
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const egp = n => `${Number(n || 0).toLocaleString('ar-EG')} ج.م`;
 // placeholder image for products without one
-const ph = (name = '?') => 'data:image/svg+xml;base64,' + Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#12213E"/><stop offset="1" stop-color="#00BFAF"/></linearGradient></defs><rect width="800" height="800" fill="url(#g)"/><text x="400" y="460" font-size="260" text-anchor="middle" font-family="sans-serif" font-weight="700" fill="rgba(255,255,255,.85)">${name.trim().charAt(0)}</text></svg>`).toString('base64');
+const ph = (name = '?') => 'data:image/svg+xml;base64,' + Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#141924"/><stop offset="1" stop-color="#27cd27"/></linearGradient></defs><rect width="800" height="800" fill="url(#g)"/><text x="400" y="460" font-size="260" text-anchor="middle" font-family="sans-serif" font-weight="700" fill="rgba(255,255,255,.85)">${name.trim().charAt(0)}</text></svg>`).toString('base64');
 
 function base(title, body, extraHead = '') {
   return `<!DOCTYPE html><html dir="rtl" lang="ar"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${esc(title)}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/public/css/main.css">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2312213E'/%3E%3Cpath d='M9 20l7-11 7 11' stroke='%2300BFAF' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-${extraHead}</head><body>${body}</body></html>`;
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Rubik:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/public/css/animate.min.css">
+<link rel="stylesheet" href="/public/css/app.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23141924'/%3E%3Cpath d='M9 20l7-11 7 11' stroke='%2327cd27' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+${extraHead}</head><body class="bg-background text-foreground font-arabic antialiased">${body}<script src="/public/js/reveal.js"></script></body></html>`;
 }
 
-const logo = `<a class="brand" href="/"><span class="brand-mark"><svg viewBox="0 0 32 32" width="30" height="30"><rect width="32" height="32" rx="8" fill="#12213E"/><path d="M9 20l7-11 7 11" stroke="#00BFAF" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="brand-name">اكتف <b>تكنو</b></span></a>`;
+const logo = `<a class="flex items-center gap-2 shrink-0" href="/"><span class="grid place-items-center"><svg viewBox="0 0 32 32" width="30" height="30"><rect width="32" height="32" rx="8" fill="#141924"/><path d="M9 20l7-11 7 11" stroke="#27cd27" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="text-[17px] font-bold tracking-tight">اكتف <b class="text-brand">تكنو</b></span></a>`;
 
 // ---------- landing ----------
 function landing() {
   const storesCount = db.prepare('SELECT COUNT(*) c FROM stores').get().c;
   return base('اكتف تكنو | أنشئ متجرك الإلكتروني في دقائق', `
-<header class="land-nav"><div class="wrap">${logo}
-<nav><a href="#features">المميزات</a><a href="#themes">القوالب</a><a href="#pricing">التسعير</a><a href="/login">دخول</a></nav>
-<a class="btn btn-teal" href="/register">ابدأ مجاناً</a></div></header>
+<header class="fixed top-0 inset-x-0 z-50 bg-night/80 backdrop-blur-xl border-b border-night-border">
+  <div class="relative mx-auto flex h-16 items-center justify-between gap-2 px-4 sm:px-8 max-w-6xl">
+    ${logo}
+    <nav class="hidden items-center gap-0.5 lg:flex text-night-foreground/85">
+      <a class="rounded-full px-3.5 py-2 text-[14px] font-medium transition-colors duration-150 hover:bg-white/[0.06] hover:text-white" href="#features">المميزات</a>
+      <a class="rounded-full px-3.5 py-2 text-[14px] font-medium transition-colors duration-150 hover:bg-white/[0.06] hover:text-white" href="#themes">القوالب</a>
+      <a class="rounded-full px-3.5 py-2 text-[14px] font-medium transition-colors duration-150 hover:bg-white/[0.06] hover:text-white" href="#pricing">التسعير</a>
+      <a class="rounded-full px-3.5 py-2 text-[14px] font-medium transition-colors duration-150 hover:bg-white/[0.06] hover:text-white" href="#faq">الأسئلة</a>
+    </nav>
+    <div class="flex items-center gap-2">
+      <a class="rounded-full px-3.5 py-2 text-[14px] font-medium text-night-foreground/85 transition-colors hover:text-white" href="/login">تسجيل دخول</a>
+      <a class="rounded-full bg-white px-4 py-2 text-[14px] font-semibold text-night transition-all duration-200 hover:bg-brand hover:text-night hover:shadow-[0_0_28px_-6px_var(--color-brand)]" href="/register">ابدأ متجرك مجاناً</a>
+    </div>
+  </div>
+</header>
 
-<section class="hero"><div class="wrap">
-<div class="hero-badge"><span class="pulse"></span>منصة المتاجر العربية — صُنعت للسوق المصري</div>
-<h1>أطلق متجرك الإلكتروني<br><span class="grad">واستقبل أول طلب اليوم</span></h1>
-<p class="hero-sub">قوالب عربية جاهزة، دفع عند الاستلام، تحليلات دقيقة، وأدوات بيع ترفع تحويلك — كل ذلك من لوحة واحدة، بدون سطر كود واحد.</p>
-<div class="hero-cta"><a class="btn btn-teal btn-lg" href="/register">أنشئ متجرك مجاناً</a><a class="btn btn-ghost btn-lg" href="/s/noura" target="_blank">شاهد متجراً تجريبياً</a></div>
-<div class="hero-trust"><span>${IC.check}بدون بطاقة بنكية</span><span>${IC.check}إطلاق خلال دقائق</span><span>${IC.check}0% عمولة على المبيعات</span><span>${IC.check}أكتف كونفيرم لتأكيد الطلبات</span></div>
-<div class="hero-shot"><img src="/public/img/hero-dashboard.svg" alt="لوحة تحكم اكتف تكنو"></div>
+<section class="relative overflow-hidden bg-night text-night-foreground pt-32 pb-10">
+  <div class="hero-grid absolute inset-0"></div>
+  <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[520px] rounded-full opacity-25 blur-[120px]" style="background: radial-gradient(closest-side, var(--color-brand), transparent)"></div>
+  <div class="absolute top-24 -right-40 w-[420px] h-[420px] rounded-full opacity-15 blur-[100px]" style="background: radial-gradient(closest-side, var(--color-chart-2), transparent); animation: rv-aurora-a 14s ease-in-out infinite"></div>
+  <div class="absolute bottom-0 -left-40 w-[420px] h-[420px] rounded-full opacity-10 blur-[100px]" style="background: radial-gradient(closest-side, var(--color-brand), transparent); animation: rv-aurora-b 16s ease-in-out infinite"></div>
+
+  <div class="relative mx-auto max-w-6xl px-4 sm:px-8 grid lg:grid-cols-2 gap-14 items-center">
+    <div>
+      <div class="glass inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[13px] font-medium text-night-foreground/90 animate__animated animate__fadeInDown">
+        <span class="inline-block w-2 h-2 rounded-full bg-brand pulse-dot"></span>
+        منصة المتاجر العربية — صُنعت للسوق المصري
+      </div>
+      <h1 class="mt-6 text-[42px] sm:text-[56px] leading-[1.15] font-bold tracking-tight animate__animated animate__fadeInUp">
+        أطلق متجرك الإلكتروني<br><span class="text-brand-bright">واستقبل أول طلب اليوم</span>
+      </h1>
+      <p class="mt-5 text-[17px] leading-8 text-night-muted max-w-xl animate__animated animate__fadeInUp animate__delay-1s">
+        قوالب عربية جاهزة، دفع عند الاستلام، تحليلات دقيقة، وأدوات بيع ترفع تحويلك — كل ذلك من لوحة واحدة، بدون سطر كود واحد.
+      </p>
+      <div class="mt-8 flex flex-wrap items-center gap-3 animate__animated animate__fadeInUp animate__delay-1s">
+        <a class="btn-sheen rounded-full bg-brand px-7 py-3.5 text-[15px] font-bold text-night transition-all duration-200 hover:bg-brand-bright glow-brand" href="/register">أنشئ متجرك مجاناً</a>
+        <a class="glass rounded-full px-7 py-3.5 text-[15px] font-semibold text-night-foreground transition-colors duration-200 hover:bg-white/10" href="/s/noura" target="_blank">شاهد متجراً تجريبياً</a>
+      </div>
+      <div class="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px] text-night-muted animate__animated animate__fadeInUp animate__delay-2s">
+        <span class="flex items-center gap-1.5"><span class="text-brand">${IC.check}</span>بدون بطاقة بنكية</span>
+        <span class="flex items-center gap-1.5"><span class="text-brand">${IC.check}</span>إطلاق خلال دقائق</span>
+        <span class="flex items-center gap-1.5"><span class="text-brand">${IC.check}</span>0% عمولة على المبيعات</span>
+        <span class="flex items-center gap-1.5"><span class="text-brand">${IC.check}</span>أكتف كونفيرم لتأكيد الطلبات</span>
+      </div>
+    </div>
+
+    <div class="relative hidden lg:block animate__animated animate__fadeInLeft animate__delay-1s">
+      <div class="glass rounded-2xl p-2 shadow-float glow-brand" style="--fl-rot:-2deg">
+        <img class="rounded-xl w-full" src="/public/img/hero-dashboard.svg" alt="لوحة تحكم اكتف تكنو">
+      </div>
+      <div class="glass absolute z-10 -top-12 -right-2 rounded-2xl px-5 py-4 animate-float-soft whitespace-nowrap" style="--fl-rot:2deg">
+        <div class="text-[26px] font-bold text-brand-bright">#1</div>
+        <div class="text-[12px] text-night-muted mt-0.5">منصة عربية للسوق المصري</div>
+      </div>
+      <div class="glass absolute z-10 -bottom-8 -left-6 rounded-2xl px-4 py-3 flex items-center gap-3 animate-float whitespace-nowrap" style="animation-delay:.8s">
+        <span class="grid place-items-center w-10 h-10 rounded-full bg-brand text-night">${IC.bag}</span>
+        <div><div class="text-[13px] font-semibold">طلب جديد</div><div class="text-[12px] text-night-muted flex items-center gap-1"><span class="text-brand">${IC.check}</span>تم الدفع — جاهز للشحن الآن</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="relative mx-auto max-w-6xl px-4 sm:px-8 mt-20">
+    <div class="grid grid-cols-2 lg:grid-cols-4 divide-x divide-x-reverse divide-night-border border-t border-night-border">
+      <div class="py-8 text-center" data-reveal="fade-up"><div class="text-[34px] font-bold text-brand-bright">${storesCount > 1 ? '+' + storesCount : '1'}</div><div class="text-[13px] text-night-muted mt-1">متجر يعمل على اكتف تكنو</div></div>
+      <div class="py-8 text-center" data-reveal="fade-up" style="--rv-delay:.1s"><div class="text-[34px] font-bold text-brand-bright">0%</div><div class="text-[13px] text-night-muted mt-1">عمولة على الطلبات</div></div>
+      <div class="py-8 text-center" data-reveal="fade-up" style="--rv-delay:.2s"><div class="text-[34px] font-bold text-brand-bright">50 <span class="text-[16px]">ج.م</span></div><div class="text-[13px] text-night-muted mt-1">فقط كل 30 يوم</div></div>
+      <div class="py-8 text-center" data-reveal="fade-up" style="--rv-delay:.3s"><div class="text-[34px] font-bold text-brand-bright">100%</div><div class="text-[13px] text-night-muted mt-1">عربي و RTL</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="features" class="py-24 bg-background"><div class="mx-auto max-w-6xl px-4 sm:px-8">
+  <div class="max-w-2xl" data-reveal="fade-up">
+    <span class="text-[13px] font-semibold text-brand-foreground">المميزات</span>
+    <h2 class="mt-2 text-[32px] sm:text-[38px] font-bold tracking-tight leading-snug">كل ما يحتاجه تاجر الـ <span class="text-brand-foreground">COD</span> المصري</h2>
+    <p class="mt-3 text-[16px] leading-7 text-muted-foreground">أدوات مترابطة تختصر وقت التشغيل وترفع معدل إتمام الطلبات على الموبايل.</p>
+  </div>
+  <div class="mt-12 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    ${[
+      [IC.bag,'متجر جاهز في دقائق','قوالب عربية سريعة متوافقة مع الموبايل. اختر قالباً، عدّل الألوان، وانشر.'],
+      [IC.box,'لوحة طلبات ذكية','كانبان للطلبات بحالاتها من جديد إلى مُسلَّم، مع سجل كامل لكل حركة وتصدير شركات الشحن.'],
+      [IC.chat,'تأكيد واتساب','أرسل تأكيد الطلب للعميل على واتساب بضغطة واحدة برسالة جاهزة تلقائياً.'],
+      [IC.cart,'السلات المتروكة','شاهد من أضاف للسلة ولم يشترِ، واسترجعه برسالة واتساب جاهزة قبل أن يذهب لمنافس.'],
+      [IC.shield,'حظر الطلبات الوهمية','احظر أرقام الهواتف المزعجة مرة واحدة وتتوقف طلباتها نهائياً عن الوصول.'],
+      [IC.trend,'Upsell و Cross-sell','اقترح منتجات مكملة قبل الدفع وارفع متوسط قيمة الطلب بدون مجهود.'],
+      [IC.target,'بيكسلات و CAPI','اربط Meta و TikTok و Snap و Google مع Conversions API من إعدادات التتبع.'],
+      [IC.chart,'تحليلات وفانل','إيرادات، طلبات، معدل تحويل، وفانل كامل من الزيارة حتى الشراء.'],
+      [IC.ticket,'كوبونات وشحن مرن','كوبونات بنسبة أو مبلغ ثابت، مناطق شحن بأسعار مختلفة، وشحن مجاني فوق حد معين.'],
+    ].map((f,i)=>`
+    <div class="group rounded-2xl border border-border bg-card p-6 shadow-soft transition-all duration-300 hover:shadow-float hover:-translate-y-1 hover:border-brand/40" data-reveal="fade-up" style="--rv-delay:${(i%3)*0.08}s">
+      <div class="grid place-items-center w-11 h-11 rounded-xl bg-brand-soft text-brand-foreground transition-colors duration-300 group-hover:bg-brand group-hover:text-night">${f[0]}</div>
+      <h3 class="mt-4 text-[16px] font-bold">${f[1]}</h3>
+      <p class="mt-1.5 text-[14px] leading-6 text-muted-foreground">${f[2]}</p>
+    </div>`).join('')}
+  </div>
 </div></section>
-
-<section class="strip"><div class="wrap strip-grid">
-<div><b>${storesCount > 1 ? '+' + storesCount : ''} متجر</b><span>يعمل على اكتف تكنو</span></div>
-<div><b><em>0%</em></b><span>عمولة على الطلبات</span></div>
-<div><b>50 <em>ج.م</em></b><span>فقط كل 30 يوم</span></div>
-<div><b><em>100%</em></b><span>عربي و RTL</span></div>
-</div></section>
-
-<section id="features" class="section"><div class="wrap">
-<h2>كل ما يحتاجه تاجر الـ COD المصري</h2><p class="section-sub">أدوات مترابطة تختصر وقت التشغيل وترفع معدل إتمام الطلبات على الموبايل.</p>
-<div class="feat-grid">
-<div class="feat"><div class="feat-ic">${IC.bag}</div><h3>متجر جاهز في دقائق</h3><p>قوالب عربية سريعة متوافقة مع الموبايل. اختر قالباً، عدّل الألوان، وانشر.</p></div>
-<div class="feat"><div class="feat-ic">${IC.box}</div><h3>لوحة طلبات ذكية</h3><p>كانبان للطلبات بحالاتها من جديد إلى مُسلَّم، مع سجل كامل لكل حركة وتصدير شركات الشحن.</p></div>
-<div class="feat"><div class="feat-ic">${IC.chat}</div><h3>تأكيد واتساب</h3><p>أرسل تأكيد الطلب للعميل على واتساب بضغطة واحدة برسالة جاهزة تلقائياً.</p></div>
-<div class="feat"><div class="feat-ic">${IC.cart}</div><h3>السلات المتروكة</h3><p>شاهد من أضاف للسلة ولم يشترِ، واسترجعه برسالة واتساب جاهزة قبل أن يذهب لمنافس.</p></div>
-<div class="feat"><div class="feat-ic">${IC.shield}</div><h3>حظر الطلبات الوهمية</h3><p>احظر أرقام الهواتف المزعجة مرة واحدة وتتوقف طلباتها نهائياً عن الوصول.</p></div>
-<div class="feat"><div class="feat-ic">${IC.trend}</div><h3>Upsell و Cross-sell</h3><p>اقترح منتجات مكملة قبل الدفع وارفع متوسط قيمة الطلب بدون مجهود.</p></div>
-<div class="feat"><div class="feat-ic">${IC.target}</div><h3>بيكسلات و CAPI</h3><p>اربط Meta و TikTok و Snap و Google مع Conversions API من إعدادات التتبع.</p></div>
-<div class="feat"><div class="feat-ic">${IC.chart}</div><h3>تحليلات وفانل</h3><p>إيرادات، طلبات، معدل تحويل، وفانل كامل من الزيارة حتى الشراء.</p></div>
-<div class="feat"><div class="feat-ic">${IC.ticket}</div><h3>كوبونات وشحن مرن</h3><p>كوبونات بنسبة أو مبلغ ثابت، مناطق شحن بأسعار مختلفة، وشحن مجاني فوق حد معين.</p></div>
-</div></div></section>
 
 ${activeConfirmSection()}
-<section id="themes" class="section alt"><div class="wrap">
-<h2>قوالب عربية تبيع عنك</h2><p class="section-sub">خصّص الألوان والشعار والأقسام مباشرة من لوحة التحكم — بدون كود.</p>
-<div class="theme-row">
-<div class="theme-card"><div class="theme-prev" style="--tp:#12213E;--ta:#00BFAF"><span>عصري</span></div><h3>عصري — أزياء</h3><p>شبكة صور جريئة لمتاجر الموضة</p></div>
-<div class="theme-card"><div class="theme-prev" style="--tp:#0B1526;--ta:#3B82F6"><span>تقني</span></div><h3>تقني — إلكترونيات</h3><p>يبرز المواصفات والشراء السريع</p></div>
-<div class="theme-card"><div class="theme-prev" style="--tp:#4A2C3D;--ta:#D98E9A"><span>بوتيك</span></div><h3>بوتيك — تجميل</h3><p>ألوان هادئة وإحساس راقٍ يبني الثقة</p></div>
-<div class="theme-card"><div class="theme-prev" style="--tp:#14532D;--ta:#F59E0B"><span>طازج</span></div><h3>طازج — عروض</h3><p>مثالي للعروض والسوبرماركت</p></div>
-</div></div></section>
 
-<section id="pricing" class="section"><div class="wrap">
-<h2>تسعير بسيط بلا مفاجآت</h2>
-<div class="price-card">
-<div class="price-head"><span class="price-badge">الخطة الوحيدة — كل شيء مشمول</span>
-<div class="price-num">50 <small>ج.م / 30 يوم</small></div>
-<p>جهّز متجرك مجاناً بالكامل، وادفع فقط عندما تقرر النشر.</p></div>
-<ul class="price-list">
-<li>${IC.check}منتجات وطلبات غير محدودة</li><li>${IC.check}0% عمولة على مبيعاتك</li><li>${IC.check}كل القوالب والتحليلات</li><li>${IC.check}ربط دومين خاص</li><li>${IC.check}فريق وصلاحيات</li><li>${IC.check}دفع عبر InstaPay أو Vodafone Cash</li>
-</ul>
-<a class="btn btn-teal btn-lg" href="/register">ابدأ الآن مجاناً</a>
-</div></div></section>
-
-
-<section class="section alt"><div class="wrap">
-<span class="kicker">قالوا عنا</span>
-<h2>تجار يبيعون كل يوم على اكتف تكنو</h2><p class="section-sub">من أول طلب حتى مئات الطلبات شهرياً — هكذا تغيّرت شغلتهم معنا.</p>
-<div class="testi-grid">
-<div class="testi"><div class="stars">★★★★★</div><p>«أول مرة أطلق متجر بدون ما أحتاج مطوّر. القالب جاهز والطلبات دخلت من أول أسبوع، ولوحة الطلبات وفّرت عليّا ساعات شغل يومياً.»</p><div class="who"><span class="avatar">ن</span><div><b>نورهان سامي</b><span>متجر أزياء نسائية — القاهرة</span></div></div></div>
-<div class="testi"><div class="stars">★★★★★</div><p>«أكتف كونفيرم غيّر اللعبة. نسبة الطلبات الوهمية نزلت لأقل من النص لأن العميل بيأكد بنفسه على واتساب قبل ما أشحن.»</p><div class="who"><span class="avatar">م</span><div><b>محمد عبد الرحمن</b><span>إلكترونيات وموبايلات — الجيزة</span></div></div></div>
-<div class="testi"><div class="stars">★★★★★</div><p>«التحليلات خلتني أعرف بالظبط أنهي منتج بييجي منه الربح، والسلات المتروكة رجّعتلي عملاء كنت بخسرهم من غير ما أعرف.»</p><div class="who"><span class="avatar">س</span><div><b>سارة المصري</b><span>مستحضرات تجميل — الإسكندرية</span></div></div></div>
-</div></div></section>
-
-<section class="section"><div class="wrap">
-<span class="kicker">أسئلة شائعة</span>
-<h2>كل ما تريد معرفته قبل أن تبدأ</h2><p class="section-sub">إجابات مباشرة بدون مصطلحات معقدة.</p>
-<div class="faq">
-<details><summary>هل أحتاج خبرة برمجية لإطلاق متجري؟</summary><p>إطلاقاً. تختار القالب، تضيف منتجاتك من لوحة التحكم، وتنشر. كل شيء يعمل بالعربي ومن الموبايل، ولا تكتب سطر كود واحد.</p></details>
-<details><summary>كيف يصلني فلوس المبيعات؟</summary><p>الدفع عند الاستلام يصلك مباشرة من شركة الشحن. ومع ربط Paymob تستقبل مدفوعات البطاقات والمحافظ في حسابك البنكي تلقائياً — اكتف تكنو لا تأخذ أي عمولة.</p></details>
-<details><summary>ما هو أكتف كونفيرم؟</summary><p>نظام تأكيد طلبات تلقائي: عميلك يستلم رسالة واتساب بمجرد الطلب، يرد 1 للتأكيد أو 2 للإلغاء، وتتحدث الحالة في لوحتك فوراً. يحميك من الشحن لعناوين وهمية.</p></details>
-<details><summary>هل أستطيع إيقاف الاشتراك في أي وقت؟</summary><p>نعم. الاشتراك 50 ج.م كل 30 يوماً بدون التزام سنوي، ومتجرك وبياناتك تظل محفوظة لو قررت العودة.</p></details>
-<details><summary>هل أستطيع ربط دومين خاص بمتجري؟</summary><p>نعم، من إعدادات المتجر تربط دومينك الخاص (مثل store.com) خلال دقائق مع شهادة حماية تلقائية.</p></details>
-</div></div></section>
-
-<section class="cta-final"><div class="wrap">
-<h2>جاهز تبيع أونلاين؟</h2><p>انضم لتجار اكتف تكنو وابدأ رحلتك اليوم.</p>
-<a class="btn btn-teal btn-lg" href="/register">أنشئ متجرك مجاناً</a>
+<section id="themes" class="py-24 bg-subtle"><div class="mx-auto max-w-6xl px-4 sm:px-8">
+  <div class="max-w-2xl" data-reveal="fade-up">
+    <span class="text-[13px] font-semibold text-brand-foreground">القوالب</span>
+    <h2 class="mt-2 text-[32px] sm:text-[38px] font-bold tracking-tight">قوالب عربية تبيع عنك</h2>
+    <p class="mt-3 text-[16px] leading-7 text-muted-foreground">خصّص الألوان والشعار والأقسام مباشرة من لوحة التحكم — بدون كود.</p>
+  </div>
+  <div class="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    ${[
+      ['#141924','#27cd27','عصري','عصري — أزياء','شبكة صور جريئة لمتاجر الموضة'],
+      ['#0B1526','#3B82F6','تقني','تقني — إلكترونيات','يبرز المواصفات والشراء السريع'],
+      ['#4A2C3D','#D98E9A','بوتيك','بوتيك — تجميل','ألوان هادئة وإحساس راقٍ يبني الثقة'],
+      ['#14532D','#F59E0B','طازج','طازج — عروض','مثالي للعروض والسوبرماركت'],
+    ].map((t,i)=>`
+    <div class="group rounded-2xl border border-border bg-card overflow-hidden shadow-soft transition-all duration-300 hover:shadow-float hover:-translate-y-1" data-reveal="fade-up" style="--rv-delay:${i*0.08}s">
+      <div class="h-36 grid place-items-center transition-transform duration-500 group-hover:scale-[1.04]" style="background:linear-gradient(135deg,${t[0]},color-mix(in oklab,${t[0]} 70%,${t[1]}))"><span class="rounded-full px-4 py-1.5 text-[13px] font-bold" style="background:${t[1]};color:#0a0f14">${t[2]}</span></div>
+      <div class="p-5"><h3 class="text-[15px] font-bold">${t[3]}</h3><p class="mt-1 text-[13px] leading-6 text-muted-foreground">${t[4]}</p></div>
+    </div>`).join('')}
+  </div>
 </div></section>
 
-<footer class="land-foot"><div class="wrap">
-<div class="foot-grid">
-<div>${logo}<p class="foot-desc">منصة عربية متكاملة لإنشاء المتاجر الإلكترونية، مبنية خصيصاً لتجار الدفع عند الاستلام في مصر والوطن العربي.</p></div>
-<div><h4>المنتج</h4><a href="#features">المميزات</a><a href="#themes">القوالب</a><a href="#pricing">التسعير</a><a href="/s/noura" target="_blank">متجر تجريبي</a></div>
-<div><h4>الشركة</h4><a href="#">من نحن</a><a href="#">المدونة</a><a href="#">تواصل معنا</a></div>
-<div><h4>قانوني</h4><a href="#">شروط الاستخدام</a><a href="#">سياسة الخصوصية</a><a href="#">سياسة الاسترجاع</a></div>
-</div>
-<div class="foot-base"><span>اكتف تكنو © 2026 — جميع الحقوق محفوظة</span><span>صُنعت في القاهرة</span></div>
+<section id="pricing" class="py-24 bg-background"><div class="mx-auto max-w-6xl px-4 sm:px-8">
+  <div class="text-center max-w-2xl mx-auto" data-reveal="fade-up">
+    <span class="text-[13px] font-semibold text-brand-foreground">التسعير</span>
+    <h2 class="mt-2 text-[32px] sm:text-[38px] font-bold tracking-tight">تسعير بسيط بلا مفاجآت</h2>
+  </div>
+  <div class="mt-12 mx-auto max-w-lg rounded-3xl border border-brand/40 bg-card p-8 shadow-float relative overflow-hidden" data-reveal="pop">
+    <div class="absolute -top-20 -left-20 w-56 h-56 rounded-full opacity-20 blur-[70px]" style="background:var(--color-brand)"></div>
+    <div class="relative">
+      <span class="inline-block rounded-full bg-brand-soft px-4 py-1.5 text-[13px] font-bold text-brand-foreground">الخطة الوحيدة — كل شيء مشمول</span>
+      <div class="mt-5 text-[52px] font-bold leading-none">50 <span class="text-[16px] font-semibold text-muted-foreground">ج.م / 30 يوم</span></div>
+      <p class="mt-3 text-[14px] text-muted-foreground">جهّز متجرك مجاناً بالكامل، وادفع فقط عندما تقرر النشر.</p>
+      <ul class="mt-6 space-y-3 text-[14px]">
+        ${['منتجات وطلبات غير محدودة','0% عمولة على مبيعاتك','كل القوالب والتحليلات','ربط دومين خاص','فريق وصلاحيات','دفع عبر InstaPay أو Vodafone Cash'].map(x=>`<li class="flex items-center gap-2.5"><span class="grid place-items-center w-5 h-5 rounded-full bg-brand-soft text-brand-foreground">${IC.check}</span>${x}</li>`).join('')}
+      </ul>
+      <a class="btn-sheen mt-8 block text-center rounded-full bg-brand px-7 py-3.5 text-[15px] font-bold text-night transition-all duration-200 hover:bg-brand-bright" href="/register">ابدأ الآن مجاناً</a>
+    </div>
+  </div>
+</div></section>
+
+<section class="py-24 bg-subtle"><div class="mx-auto max-w-6xl px-4 sm:px-8">
+  <div class="max-w-2xl" data-reveal="fade-up">
+    <span class="text-[13px] font-semibold text-brand-foreground">قالوا عنا</span>
+    <h2 class="mt-2 text-[32px] sm:text-[38px] font-bold tracking-tight">تجار يبيعون كل يوم على اكتف تكنو</h2>
+    <p class="mt-3 text-[16px] leading-7 text-muted-foreground">من أول طلب حتى مئات الطلبات شهرياً — هكذا تغيّرت شغلتهم معنا.</p>
+  </div>
+  <div class="mt-12 grid lg:grid-cols-3 gap-4">
+    ${[
+      ['ن','نورهان سامي','متجر أزياء نسائية — القاهرة','أول مرة أطلق متجر بدون ما أحتاج مطوّر. القالب جاهز والطلبات دخلت من أول أسبوع، ولوحة الطلبات وفّرت عليّا ساعات شغل يومياً.'],
+      ['م','محمد عبد الرحمن','إلكترونيات وموبايلات — الجيزة','أكتف كونفيرم غيّر اللعبة. نسبة الطلبات الوهمية نزلت لأقل من النص لأن العميل بيأكد بنفسه على واتساب قبل ما أشحن.'],
+      ['س','سارة المصري','مستحضرات تجميل — الإسكندرية','التحليلات خلتني أعرف بالظبط أنهي منتج بييجي منه الربح، والسلات المتروكة رجّعتلي عملاء كنت بخسرهم من غير ما أعرف.'],
+    ].map((t,i)=>`
+    <figure class="rounded-2xl border border-border bg-card p-6 shadow-soft transition-all duration-300 hover:shadow-float hover:-translate-y-1" data-reveal="fade-up" style="--rv-delay:${i*0.1}s">
+      <div class="flex gap-0.5 text-brand text-[15px]">★★★★★</div>
+      <blockquote class="mt-3 text-[14.5px] leading-7">«${t[3]}»</blockquote>
+      <figcaption class="mt-5 flex items-center gap-3">
+        <span class="grid place-items-center w-10 h-10 rounded-full bg-brand-soft text-brand-foreground font-bold">${t[0]}</span>
+        <div><div class="text-[14px] font-bold">${t[1]}</div><div class="text-[12.5px] text-muted-foreground">${t[2]}</div></div>
+      </figcaption>
+    </figure>`).join('')}
+  </div>
+</div></section>
+
+<section id="faq" class="py-24 bg-background"><div class="mx-auto max-w-3xl px-4 sm:px-8">
+  <div class="text-center" data-reveal="fade-up">
+    <span class="text-[13px] font-semibold text-brand-foreground">أسئلة شائعة</span>
+    <h2 class="mt-2 text-[32px] sm:text-[38px] font-bold tracking-tight">كل ما تريد معرفته قبل أن تبدأ</h2>
+    <p class="mt-3 text-[16px] text-muted-foreground">إجابات مباشرة بدون مصطلحات معقدة.</p>
+  </div>
+  <div class="mt-10 space-y-3">
+    ${[
+      ['هل أحتاج خبرة برمجية لإطلاق متجري؟','إطلاقاً. تختار القالب، تضيف منتجاتك من لوحة التحكم، وتنشر. كل شيء يعمل بالعربي ومن الموبايل، ولا تكتب سطر كود واحد.'],
+      ['كيف يصلني فلوس المبيعات؟','الدفع عند الاستلام يصلك مباشرة من شركة الشحن. ومع ربط Paymob تستقبل مدفوعات البطاقات والمحافظ في حسابك البنكي تلقائياً — اكتف تكنو لا تأخذ أي عمولة.'],
+      ['ما هو أكتف كونفيرم؟','نظام تأكيد طلبات تلقائي: عميلك يستلم رسالة واتساب بمجرد الطلب، يرد 1 للتأكيد أو 2 للإلغاء، وتتحدث الحالة في لوحتك فوراً. يحميك من الشحن لعناوين وهمية.'],
+      ['هل أستطيع إيقاف الاشتراك في أي وقت؟','نعم. الاشتراك 50 ج.م كل 30 يوماً بدون التزام سنوي، ومتجرك وبياناتك تظل محفوظة لو قررت العودة.'],
+      ['هل أستطيع ربط دومين خاص بمتجري؟','نعم، من إعدادات المتجر تربط دومينك الخاص (مثل store.com) خلال دقائق مع شهادة حماية تلقائية.'],
+    ].map((q,i)=>`
+    <details class="group rounded-2xl border border-border bg-card px-6 shadow-soft transition-colors duration-200 open:border-brand/40" data-reveal="fade-up" style="--rv-delay:${i*0.06}s">
+      <summary class="flex cursor-pointer items-center justify-between py-5 text-[15px] font-bold list-none [&::-webkit-details-marker]:hidden">${q[0]}<span class="grid place-items-center w-7 h-7 rounded-full bg-muted text-muted-foreground transition-transform duration-300 group-open:rotate-45 group-open:bg-brand-soft group-open:text-brand-foreground"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></summary>
+      <p class="pb-5 text-[14px] leading-7 text-muted-foreground">${q[1]}</p>
+    </details>`).join('')}
+  </div>
+</div></section>
+
+<section class="relative overflow-hidden bg-night text-night-foreground py-24">
+  <div class="hero-grid absolute inset-0 opacity-60"></div>
+  <div class="absolute -bottom-48 left-1/2 -translate-x-1/2 w-[800px] h-[420px] rounded-full opacity-20 blur-[110px]" style="background: radial-gradient(closest-side, var(--color-brand), transparent)"></div>
+  <div class="relative mx-auto max-w-3xl px-4 text-center" data-reveal="fade-up">
+    <h2 class="text-[34px] sm:text-[44px] font-bold tracking-tight">جاهز تبيع أونلاين؟</h2>
+    <p class="mt-4 text-[16px] text-night-muted">انضم لتجار اكتف تكنو وابدأ رحلتك اليوم.</p>
+    <a class="btn-sheen mt-8 inline-block rounded-full bg-brand px-9 py-4 text-[16px] font-bold text-night transition-all duration-200 hover:bg-brand-bright glow-brand" href="/register">أنشئ متجرك مجاناً</a>
+  </div>
+</section>
+
+<footer class="bg-night text-night-foreground border-t border-night-border"><div class="mx-auto max-w-6xl px-4 sm:px-8 py-14">
+  <div class="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+    <div>${logo}<p class="mt-4 text-[13.5px] leading-6 text-night-muted">منصة عربية متكاملة لإنشاء المتاجر الإلكترونية، مبنية خصيصاً لتجار الدفع عند الاستلام في مصر والوطن العربي.</p></div>
+    <div><h4 class="text-[14px] font-bold mb-4">المنتج</h4><div class="flex flex-col gap-2.5 text-[13.5px] text-night-muted"><a class="hover:text-brand-bright transition-colors" href="#features">المميزات</a><a class="hover:text-brand-bright transition-colors" href="#themes">القوالب</a><a class="hover:text-brand-bright transition-colors" href="#pricing">التسعير</a><a class="hover:text-brand-bright transition-colors" href="/s/noura" target="_blank">متجر تجريبي</a></div></div>
+    <div><h4 class="text-[14px] font-bold mb-4">الشركة</h4><div class="flex flex-col gap-2.5 text-[13.5px] text-night-muted"><a class="hover:text-brand-bright transition-colors" href="#">من نحن</a><a class="hover:text-brand-bright transition-colors" href="#">المدونة</a><a class="hover:text-brand-bright transition-colors" href="#">تواصل معنا</a></div></div>
+    <div><h4 class="text-[14px] font-bold mb-4">قانوني</h4><div class="flex flex-col gap-2.5 text-[13.5px] text-night-muted"><a class="hover:text-brand-bright transition-colors" href="#">شروط الاستخدام</a><a class="hover:text-brand-bright transition-colors" href="#">سياسة الخصوصية</a><a class="hover:text-brand-bright transition-colors" href="#">سياسة الاسترجاع</a></div></div>
+  </div>
+  <div class="mt-12 pt-6 border-t border-night-border flex flex-wrap items-center justify-between gap-3 text-[12.5px] text-night-muted"><span>اكتف تكنو © 2026 — جميع الحقوق محفوظة</span><span>صُنعت في القاهرة</span></div>
 </div></footer>
 `);
 }
 
+
 // ---------- auth ----------
+const inputCls = 'w-full rounded-xl border border-input bg-surface px-4 py-3 text-[14px] outline-none transition-all duration-150 focus:ring-4 focus:ring-ring/30 focus:border-brand';
 function authCard(kind) {
   const isLogin = kind === 'login';
   return base(isLogin ? 'تسجيل الدخول | اكتف تكنو' : 'إنشاء حساب | اكتف تكنو', `
-<div class="auth-wrap"><div class="auth-card" id="authCard">
-${logo}
-<h1>${isLogin ? 'أهلاً بعودتك' : 'أنشئ متجرك مجاناً'}</h1>
-<p class="auth-sub">${isLogin ? 'سجّل دخولك لإدارة متجرك' : '30 ثانية وتكون جاهز — بدون بطاقة بنكية'}</p>
-<form id="authForm" class="auth-form">
-${isLogin ? '' : `<label>اسمك<input name="name" required placeholder="مثال: نورا محمود"></label>
-<label>اسم المتجر<input name="storeName" required placeholder="مثال: متجر نورا"></label>`}
-<label>البريد الإلكتروني<input name="email" type="email" required placeholder="you@example.com" dir="ltr"></label>
-<label>كلمة المرور<input name="password" type="password" required minlength="8" placeholder="8 أحرف على الأقل" dir="ltr"></label>
-<div class="auth-err" id="authErr"></div>
-<button class="btn btn-teal btn-lg full" type="submit">${isLogin ? 'دخول' : 'إنشاء الحساب'}</button>
-</form>
-${isLogin ? `<p class="auth-alt">ليس لديك حساب؟ <a href="/register">ابدأ مجاناً</a></p>
-<div class="auth-demo">حساب تجريبي: <code dir="ltr">demo@activetecno.software / demo1234</code></div>`
-: `<p class="auth-alt">لديك حساب بالفعل؟ <a href="/login">سجّل دخولك</a></p>`}
-</div></div>
+<div class="min-h-screen grid place-items-center bg-subtle px-4 py-14 relative overflow-hidden">
+  <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[400px] rounded-full opacity-[0.10] blur-[110px]" style="background:radial-gradient(closest-side,var(--color-brand),transparent)"></div>
+  <div class="relative w-full max-w-md rounded-3xl border border-border bg-card p-8 shadow-float" id="authCard" data-reveal="pop">
+    <div class="flex justify-center">${logo}</div>
+    <h1 class="mt-7 text-center text-[24px] font-bold tracking-tight">${isLogin ? 'أهلاً بعودتك' : 'أنشئ متجرك مجاناً'}</h1>
+    <p class="mt-1.5 text-center text-[14px] text-muted-foreground">${isLogin ? 'سجّل دخولك لإدارة متجرك' : '30 ثانية وتكون جاهز — بدون بطاقة بنكية'}</p>
+    <form id="authForm" class="mt-7 space-y-4">
+      ${isLogin ? '' : `<label class="block"><span class="block mb-1.5 text-[13.5px] font-semibold">اسمك</span><input class="${inputCls}" name="name" required placeholder="مثال: نورا محمود"></label>
+      <label class="block"><span class="block mb-1.5 text-[13.5px] font-semibold">اسم المتجر</span><input class="${inputCls}" name="storeName" required placeholder="مثال: متجر نورا"></label>`}
+      <label class="block"><span class="block mb-1.5 text-[13.5px] font-semibold">البريد الإلكتروني</span><input class="${inputCls}" name="email" type="email" required placeholder="you@example.com" dir="ltr"></label>
+      <label class="block"><span class="block mb-1.5 text-[13.5px] font-semibold">كلمة المرور</span><input class="${inputCls}" name="password" type="password" required minlength="8" placeholder="8 أحرف على الأقل" dir="ltr"></label>
+      <div class="text-[13px] font-medium text-red-600 min-h-[18px]" id="authErr"></div>
+      <button class="btn-sheen w-full rounded-full bg-brand py-3.5 text-[15px] font-bold text-night transition-all duration-200 hover:bg-brand-bright" type="submit">${isLogin ? 'دخول' : 'إنشاء الحساب'}</button>
+    </form>
+    ${isLogin ? `<p class="mt-5 text-center text-[13.5px] text-muted-foreground">ليس لديك حساب؟ <a class="font-bold text-brand-foreground hover:underline" href="/register">ابدأ مجاناً</a></p>
+    <div class="mt-4 rounded-xl bg-muted px-4 py-3 text-center text-[12.5px] text-muted-foreground">حساب تجريبي: <code dir="ltr" class="font-semibold text-foreground">demo@activetecno.software / demo1234</code></div>`
+    : `<p class="mt-5 text-center text-[13.5px] text-muted-foreground">لديك حساب بالفعل؟ <a class="font-bold text-brand-foreground hover:underline" href="/login">سجّل دخولك</a></p>`}
+  </div>
+</div>
 <script>
 const IS_LOGIN = ${isLogin};
 document.getElementById('authForm').addEventListener('submit', async e => {
@@ -174,13 +290,13 @@ document.getElementById('authForm').addEventListener('submit', async e => {
 });
 function showVerify(email, devCode, emailSent) {
   document.getElementById('authCard').innerHTML = \`
-  <h1>تحقق من بريدك</h1>
-  <p class="auth-sub">أرسلنا رمز تحقق من 6 أرقام إلى <b dir="ltr">\` + email + \`</b></p>
-  \` + (devCode ? '<div class="verify-code-card"><div class="vc-label">بيئة العرض — خدمة البريد غير مفعّلة بعد</div><div class="vc-code">' + devCode + '</div><div class="vc-note">أدخل الرمز بالأسفل لإتمام إنشاء متجرك</div></div>' : '') + \`
-  <form id="verifyForm" class="auth-form">
-    <label>كود التحقق<input name="code" required inputmode="numeric" maxlength="6" placeholder="______" dir="ltr" style="text-align:center;font-size:22px;letter-spacing:8px"></label>
-    <div class="auth-err" id="vErr"></div>
-    <button class="btn btn-teal btn-lg full" type="submit">تأكيد البريد وإنشاء المتجر</button>
+  <h1 class="text-center text-[24px] font-bold tracking-tight">تحقق من بريدك</h1>
+  <p class="mt-1.5 text-center text-[14px] text-muted-foreground">أرسلنا رمز تحقق من 6 أرقام إلى <b dir="ltr">\` + email + \`</b></p>
+  \` + (devCode ? '<div class="mt-5 rounded-2xl border border-warning/40 bg-warning-soft p-4 text-center"><div class="text-[12px] font-semibold text-muted-foreground">بيئة العرض — خدمة البريد غير مفعّلة بعد</div><div dir="ltr" class="mt-2 text-[30px] font-bold tracking-[10px] text-brand-foreground">' + devCode + '</div><div class="mt-1 text-[12px] text-muted-foreground">أدخل الرمز بالأسفل لإتمام إنشاء متجرك</div></div>' : '') + \`
+  <form id="verifyForm" class="mt-6 space-y-4">
+    <label class="block"><span class="block mb-1.5 text-[13.5px] font-semibold">كود التحقق</span><input class="${inputCls}" name="code" required inputmode="numeric" maxlength="6" placeholder="______" dir="ltr" style="text-align:center;font-size:22px;letter-spacing:8px"></label>
+    <div class="text-[13px] font-medium text-red-600 min-h-[18px]" id="vErr"></div>
+    <button class="btn-sheen w-full rounded-full bg-brand py-3.5 text-[15px] font-bold text-night transition-all duration-200 hover:bg-brand-bright" type="submit">تأكيد البريد وإنشاء المتجر</button>
   </form>\`;
   document.getElementById('verifyForm').addEventListener('submit', async e => {
     e.preventDefault();
@@ -198,57 +314,53 @@ function showVerify(email, devCode, emailSent) {
 function onboarding(store) {
   const themes = db.prepare('SELECT * FROM themes').all().map(t => ({ ...t, config: JSON.parse(t.config) }));
   return base('خطوات إطلاق متجرك | اكتف تكنو', `
-<div class="auth-wrap"><div class="auth-card" style="max-width:520px">
-${logo}
-<div class="ob-steps"><span class="ob-dot on" id="dot1">1</span><span class="ob-line"></span><span class="ob-dot" id="dot2">2</span><span class="ob-line"></span><span class="ob-dot" id="dot3">3</span></div>
-<div id="obStep1">
-  <h1 style="font-size:21px">اختر قالب متجرك 🎨</h1>
-  <p class="auth-sub">كل القوالب عربية وسريعة ومتوافقة مع الموبايل — تقدر تغيّرها في أي وقت</p>
-  <div class="ob-themes">${themes.map(t => `
-    <div class="theme-opt ${t.id === store.theme_id ? 'on' : ''}" data-t="${t.id}" onclick="pickObTheme(this)">
-      <div class="dots"><span style="background:${t.config.primary}"></span><span style="background:${t.config.accent}"></span><span style="background:${t.config.surface}"></span></div>
-      <b>${esc(t.name_ar)}</b><small>${esc(t.category)}${t.is_premium ? ' · بريميوم' : ' · مجاني'}</small></div>`).join('')}</div>
-  <button class="btn btn-teal btn-lg full" onclick="obGo(2)">التالي — أضف أول منتج</button>
+<div class="min-h-screen grid place-items-center bg-subtle px-4 py-14 relative overflow-hidden">
+  <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[400px] rounded-full opacity-[0.10] blur-[110px]" style="background:radial-gradient(closest-side,var(--color-brand),transparent)"></div>
+  <div class="relative w-full max-w-xl rounded-3xl border border-border bg-card p-8 shadow-float" data-reveal="pop">
+    <div class="flex justify-center">${logo}</div>
+    <div class="flex items-center justify-center gap-0 my-7">
+      <span id="dot1" class="ob-dot on">1</span><span class="w-14 h-0.5 bg-border"></span>
+      <span id="dot2" class="ob-dot">2</span><span class="w-14 h-0.5 bg-border"></span>
+      <span id="dot3" class="ob-dot">3</span>
+    </div>
+    <div id="obStep1">
+      <h1 class="text-center text-[21px] font-bold tracking-tight">اختر قالب متجرك</h1>
+      <p class="mt-1.5 text-center text-[13.5px] text-muted-foreground">كل القوالب عربية وسريعة ومتوافقة مع الموبايل — تقدر تغيّرها في أي وقت</p>
+      <div class="mt-6 grid grid-cols-2 gap-3 mb-6">${themes.map(t => `
+        <div class="theme-opt ${t.id === store.theme_id ? 'on' : ''}" data-t="${t.id}" onclick="pickObTheme(this)">
+          <div class="flex gap-1.5 mb-2.5"><span class="w-5 h-5 rounded-md" style="background:${t.config.primary}"></span><span class="w-5 h-5 rounded-md" style="background:${t.config.accent}"></span><span class="w-5 h-5 rounded-md" style="background:${t.config.surface}"></span></div>
+          <b class="block text-[13.5px]">${esc(t.name_ar)}</b><small class="text-[11.5px] text-muted-foreground">${esc(t.category)}${t.is_premium ? ' · بريميوم' : ' · مجاني'}</small></div>`).join('')}</div>
+      <button class="btn-sheen w-full rounded-full bg-brand py-3.5 text-[15px] font-bold text-night transition-all duration-200 hover:bg-brand-bright" onclick="obGo(2)">التالي — أضف أول منتج</button>
+    </div>
+    <div id="obStep2" hidden>
+      <h1 class="text-center text-[21px] font-bold tracking-tight">أضف أول منتج</h1>
+      <p class="mt-1.5 text-center text-[13.5px] text-muted-foreground">منتج واحد يكفي للانطلاق — تقدر تضيف الباقي من لوحة التحكم</p>
+      <form class="mt-6 space-y-4" id="obProdForm">
+        <label class="block"><span class="block mb-1.5 text-[13.5px] font-semibold">اسم المنتج</span><input class="${inputCls}" name="name" placeholder="مثال: عباية كلاسيك"></label>
+        <label class="block"><span class="block mb-1.5 text-[13.5px] font-semibold">السعر (ج.م)</span><input class="${inputCls}" name="price" type="number" min="1" placeholder="500"></label>
+        <div class="text-[13px] font-medium text-red-600 min-h-[18px]" id="obErr"></div>
+        <button class="btn-sheen w-full rounded-full bg-brand py-3.5 text-[15px] font-bold text-night transition-all duration-200 hover:bg-brand-bright" type="submit">حفظ المنتج والمتابعة</button>
+        <button class="w-full rounded-full py-3 text-[14px] font-semibold text-muted-foreground transition-colors hover:text-foreground" type="button" onclick="obGo(3)">تخطَّ الآن</button>
+      </form>
+    </div>
+    <div id="obStep3" hidden>
+      <div class="grid place-items-center my-4"><span class="grid place-items-center w-16 h-16 rounded-full bg-brand text-night glow-brand"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></div>
+      <h1 class="text-center text-[21px] font-bold tracking-tight">متجرك جاهز!</h1>
+      <p class="mt-2 text-center text-[13.5px] leading-7 text-muted-foreground">رابط متجرك: <b class="font-mono text-foreground" dir="ltr">/s/${esc(store.slug)}</b><br>فعّل النشر بـ 50 ج.م كل 30 يوم وابدأ استقبال الطلبات.</p>
+      <a class="btn-sheen mt-6 block text-center w-full rounded-full bg-brand py-3.5 text-[15px] font-bold text-night transition-all duration-200 hover:bg-brand-bright" href="/app">الذهاب إلى لوحة التحكم</a>
+    </div>
+  </div>
 </div>
-<div id="obStep2" hidden>
-  <h1 style="font-size:21px">أضف أول منتج 🛍️</h1>
-  <p class="auth-sub">منتج واحد يكفي للانطلاق — تقدر تضيف الباقي من لوحة التحكم</p>
-  <form class="auth-form" id="obProdForm">
-    <label>اسم المنتج<input name="name" placeholder="مثال: عباية كلاسيك"></label>
-    <label>السعر (ج.م)<input name="price" type="number" min="1" placeholder="500"></label>
-    <div class="auth-err" id="obErr"></div>
-    <button class="btn btn-teal btn-lg full" type="submit">حفظ المنتج والمتابعة</button>
-    <button class="btn full" type="button" style="background:transparent;color:var(--mut)" onclick="obGo(3)">تخطَّ الآن</button>
-  </form>
-</div>
-<div id="obStep3" hidden>
-  <div style="display:grid;place-items:center;margin:4px 0 14px"><span style="width:64px;height:64px;border-radius:50%;background:var(--teal-500);color:#fff;display:grid;place-items:center"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></div>
-  <h1 style="font-size:21px;text-align:center">متجرك جاهز!</h1>
-  <p class="auth-sub" style="text-align:center">رابط متجرك: <b class="mono" dir="ltr">/s/${esc(store.slug)}</b><br>فعّل النشر بـ 50 ج.م كل 30 يوم وابدأ استقبال الطلبات.</p>
-  <a class="btn btn-teal btn-lg full" href="/app">الذهاب إلى لوحة التحكم</a>
-</div>
-</div></div>
 <style>
-.ob-steps{display:flex;align-items:center;justify-content:center;gap:0;margin:6px 0 22px}
-.ob-dot{width:34px;height:34px;border-radius:50%;background:var(--bg);color:var(--mut);display:grid;place-items:center;font-weight:700;font-size:14px;border:2px solid var(--line)}
-.ob-dot.on{background:var(--teal);border-color:var(--teal);color:#fff}
-.ob-line{width:60px;height:2px;background:var(--line)}
-.ob-themes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
-.ob-themes .theme-opt{border:2px solid var(--line);border-radius:14px;padding:12px;cursor:pointer;transition:all .15s}
-.ob-themes .theme-opt.on{border-color:var(--teal);background:var(--teal-soft)}
-.ob-themes .dots{display:flex;gap:6px;margin-bottom:8px}
-.ob-themes .dots span{width:20px;height:20px;border-radius:7px}
-.ob-themes b{font-size:13.5px;display:block}
-.ob-themes small{color:var(--mut);font-size:11.5px}
-.mail-sim{background:#F0F7FF;border:1px solid #BFDBFE;border-radius:14px;overflow:hidden;margin-bottom:18px;text-align:start}
-.mail-sim-head{background:#DBEAFE;padding:9px 14px;font-size:12.5px;color:#1E40AF;font-weight:600}
-.mail-sim-body{padding:14px;font-size:13.5px;color:var(--ink)}
-.mail-sim-body span{display:block;color:var(--mut);font-size:11.5px;margin-top:6px}
-.mail-sim-code{font-size:28px;font-weight:700;letter-spacing:10px;text-align:center;color:var(--teal);margin:8px 0;direction:ltr}
+.ob-dot{width:34px;height:34px;border-radius:50%;background:var(--color-surface);color:var(--color-muted-foreground);display:grid;place-items:center;font-weight:700;font-size:14px;border:2px solid var(--color-border);transition:all .25s var(--ease-out-quint)}
+.ob-dot.on{background:var(--color-brand);border-color:var(--color-brand);color:var(--color-night)}
+.ob-themes .theme-opt, .theme-opt{border:2px solid var(--color-border);border-radius:14px;padding:12px;cursor:pointer;transition:all .2s var(--ease-out-quint)}
+.theme-opt:hover{border-color:color-mix(in oklab,var(--color-brand) 40%,transparent)}
+.theme-opt.on{border-color:var(--color-brand);background:var(--color-brand-soft)}
 </style>
 <script>
 let obTheme = '${esc(store.theme_id)}';
-function pickObTheme(el){ document.querySelectorAll('.ob-themes .theme-opt').forEach(x=>x.classList.remove('on')); el.classList.add('on'); obTheme = el.dataset.t; saveObTheme(); }
+function pickObTheme(el){ document.querySelectorAll('.theme-opt').forEach(x=>x.classList.remove('on')); el.classList.add('on'); obTheme = el.dataset.t; saveObTheme(); }
 async function saveObTheme(){ await fetch('/api/store',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({theme_id:obTheme})}); }
 function obGo(n){ for(let i=1;i<=3;i++){ document.getElementById('obStep'+i).hidden = i!==n; document.getElementById('dot'+i).classList.toggle('on', i<=n); } }
 document.getElementById('obProdForm').addEventListener('submit', async e=>{
@@ -268,9 +380,9 @@ function appShell() {
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>لوحة التحكم | اكتف تكنو</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Rubik:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/public/css/dashboard.css">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2312213E'/%3E%3Cpath d='M9 20l7-11 7 11' stroke='%2300BFAF' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23141924'/%3E%3Cpath d='M9 20l7-11 7 11' stroke='%2327cd27' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 </head><body class="dash"><div id="root"></div><script src="/public/js/dashboard.js"></script></body></html>`;
 }
 
@@ -279,20 +391,20 @@ function adminShell() {
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>لوحة الإدارة | اكتف تكنو</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Rubik:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/public/css/dashboard.css">
 </head><body class="dash admin"><div id="root"></div><script src="/public/js/admin.js"></script></body></html>`;
 }
 
 // ---------- storefront ----------
 function themeVars(t) {
-  return `--sp:${t.primary || '#12213E'};--sa:${t.accent || '#00BFAF'};--sbg:${t.bg || '#fff'};--ssf:${t.surface || '#F6F8FC'};--sr:${t.radius ?? 16}px;`;
+  return `--sp:${t.primary || '#141924'};--sa:${t.accent || '#27cd27'};--sbg:${t.bg || '#fff'};--ssf:${t.surface || '#F6F8FC'};--sr:${t.radius ?? 16}px;`;
 }
 function storeHead(store, t, title) {
   return `<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${esc(title)}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Rubik:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/public/css/store.css">
 <style>:root{${themeVars(t)}}</style>`;
 }
@@ -413,14 +525,14 @@ function orderPage(store, o, t) {
 <main class="done">
 <div class="done-card">
 <div class="done-check">${IC.check}</div>
-<h1>شكراً ${esc(o.customer_name)}! 🎉</h1>
+<h1>شكراً ${esc(o.customer_name)}!</h1>
 <p>تم استلام طلبك <b>${esc(o.number)}</b> بنجاح وسنتواصل معك لتأكيد الشحن.</p>
 <div class="done-items">${items.map(i => `<div class="done-item"><span>${esc(i.name)} × ${i.qty}</span><b>${egp(i.price * i.qty)}</b></div>`).join('')}
 <div class="done-item dim"><span>الشحن</span><b>${o.shipping ? egp(o.shipping) : 'مجاني'}</b></div>
 ${o.discount ? `<div class="done-item dim"><span>الخصم${o.coupon_code ? ` (${esc(o.coupon_code)})` : ''}</span><b>−${egp(o.discount)}</b></div>` : ''}
 <div class="done-item total"><span>الإجمالي عند الاستلام</span><b>${egp(o.total)}</b></div></div>
 <div class="done-actions">
-${waLink ? `<a class="s-btn" href="${waLink}" target="_blank" rel="noopener">تواصل معنا واتساب 💬</a>` : ''}
+${waLink ? `<a class="s-btn" href="${waLink}" target="_blank" rel="noopener">تواصل معنا واتساب</a>` : ''}
 <a class="s-btn ghost" href="/s/${esc(store.slug)}">متابعة التسوق</a></div>
 </div></main>
 <footer class="s-footer"><p>يعمل بواسطة <a href="/">اكتف تكنو</a></p></footer>
@@ -430,30 +542,39 @@ ${waLink ? `<a class="s-btn" href="${waLink}" target="_blank" rel="noopener">ت�
 // ---------- landing: Active Confirm section ----------
 function activeConfirmSection() {
   return `
-<section class="section ac-sec"><div class="wrap ac-grid">
-<div class="ac-copy">
-<div class="hero-badge"><span class="pulse"></span>أكتف كونفيرم — حصرياً في اكتف تكنو</div>
-<h2 style="text-align:start">أكّد طلبات COD على واتساب<br>برسالة واحدة ورد <b class="grad">1 أو 2</b></h2>
-<p class="section-sub" style="text-align:start;margin:14px 0 22px">كل طلب جديد يصل عميلك تلقائياً رسالة واتساب جاهزة: يرد <b>1</b> فيتأكد الطلب، أو <b>2</b> فيُلغى — ويتحدث وضعه في لوحتك لحظياً. قلّل الطلبات الوهمية ووفّر ساعات المكالمات.</p>
-<div class="ac-points"><span>${IC.check}تأكيد فوري بدون مكالمات</span><span>${IC.check}تحديث حالة الطلب تلقائياً</span><span>${IC.check}يقلل المرتجعات والطلبات الوهمية</span></div>
-<a class="btn btn-teal btn-lg" href="/register">جرّب أكتف كونفيرم مجاناً</a>
+<section class="py-24 bg-subtle overflow-hidden"><div class="mx-auto max-w-6xl px-4 sm:px-8 grid lg:grid-cols-2 gap-14 items-center">
+<div data-reveal="fade-right">
+  <span class="inline-flex items-center gap-2 rounded-full bg-brand-soft px-4 py-1.5 text-[13px] font-bold text-brand-foreground"><span class="inline-block w-2 h-2 rounded-full bg-brand pulse-dot"></span>أكتف كونفيرم — حصرياً في اكتف تكنو</span>
+  <h2 class="mt-5 text-[30px] sm:text-[38px] font-bold tracking-tight leading-snug">أكّد طلبات COD على واتساب<br>برسالة واحدة ورد <span class="text-brand-foreground">1 أو 2</span></h2>
+  <p class="mt-4 text-[16px] leading-8 text-muted-foreground">كل طلب جديد يصل عميلك تلقائياً رسالة واتساب جاهزة: يرد <b>1</b> فيتأكد الطلب، أو <b>2</b> فيُلغى — ويتحدث وضعه في لوحتك لحظياً. قلّل الطلبات الوهمية ووفّر ساعات المكالمات.</p>
+  <div class="mt-6 space-y-2.5 text-[14.5px] font-medium">
+    <span class="flex items-center gap-2.5"><span class="grid place-items-center w-5 h-5 rounded-full bg-brand-soft text-brand-foreground">${IC.check}</span>تأكيد فوري بدون مكالمات</span>
+    <span class="flex items-center gap-2.5"><span class="grid place-items-center w-5 h-5 rounded-full bg-brand-soft text-brand-foreground">${IC.check}</span>تحديث حالة الطلب تلقائياً</span>
+    <span class="flex items-center gap-2.5"><span class="grid place-items-center w-5 h-5 rounded-full bg-brand-soft text-brand-foreground">${IC.check}</span>يقلل المرتجعات والطلبات الوهمية</span>
+  </div>
+  <a class="btn-sheen mt-8 inline-block rounded-full bg-brand px-7 py-3.5 text-[15px] font-bold text-night transition-all duration-200 hover:bg-brand-bright" href="/register">جرّب أكتف كونفيرم مجاناً</a>
 </div>
-<div class="ac-phone">
-<div class="ac-chat">
-<div class="wa-in">أهلاً مريم 👋<br>طلبك <b>NO-1027</b> من متجر نورا<br>الإجمالي: 780 ج.م — دفع عند الاستلام<br><br>رد بـ <b>1</b> لتأكيد الطلب ✅<br>رد بـ <b>2</b> للإلغاء ❌</div>
-<div class="wa-out">1</div>
-<div class="wa-in">تم تأكيد طلبك بنجاح 🎉<br>شحنك في الطريق قريباً 🚚</div>
-<div class="ac-sys">${IC.check}تحدّثت حالة الطلب إلى «مؤكد» في لوحة التحكم</div>
-</div>
+<div class="relative" data-reveal="fade-left">
+  <div class="absolute inset-0 -m-8 rounded-full opacity-25 blur-[80px]" style="background:radial-gradient(closest-side,var(--color-brand),transparent)"></div>
+  <div class="relative mx-auto max-w-sm rounded-[28px] border border-border bg-card p-5 shadow-float space-y-3">
+    <div class="flex items-center gap-3 pb-3 border-b border-border">
+      <span class="grid place-items-center w-9 h-9 rounded-full bg-brand-soft text-brand-foreground font-bold text-[14px]">ن</span>
+      <div><div class="text-[13.5px] font-bold">متجر نورا</div><div class="text-[11.5px] text-brand-foreground font-medium">متصل الآن</div></div>
+    </div>
+    <div class="max-w-[85%] rounded-2xl rounded-tr-md bg-muted px-4 py-3 text-[13.5px] leading-6" data-reveal="fade-up">أهلاً مريم 👋<br>طلبك <b>NO-1027</b> من متجر نورا<br>الإجمالي: 780 ج.م — دفع عند الاستلام<br><br>رد بـ <b>1</b> لتأكيد الطلب ✅<br>رد بـ <b>2</b> للإلغاء ❌</div>
+    <div class="flex justify-start" dir="ltr"><div class="rounded-2xl rounded-tl-md bg-brand px-5 py-2.5 text-[14px] font-bold text-night" data-reveal="pop" style="--rv-delay:.2s">1</div></div>
+    <div class="max-w-[85%] rounded-2xl rounded-tr-md bg-muted px-4 py-3 text-[13.5px] leading-6" data-reveal="fade-up" style="--rv-delay:.35s">تم تأكيد طلبك بنجاح 🎉<br>شحنك في الطريق قريباً 🚚</div>
+    <div class="flex items-center justify-center gap-1.5 pt-1 text-[12px] font-semibold text-brand-foreground" data-reveal="fade-up" style="--rv-delay:.5s">${IC.check}تحدّثت حالة الطلب إلى «مؤكد» في لوحة التحكم</div>
+  </div>
 </div>
 </div></section>`;
 }
 
 function comingSoon(store) {
-  return base(store.name, `<div class="cs"><h1>${esc(store.name)}</h1><p>المتجر تحت التجهيز حالياً — عد قريباً ✨</p></div>`);
+  return base(store.name, `<div class="min-h-screen grid place-items-center bg-subtle px-4 text-center"><div data-reveal="pop"><div class="flex justify-center mb-6">${logo}</div><h1 class="text-[28px] font-bold">${esc(store.name)}</h1><p class="mt-2 text-[15px] text-muted-foreground">المتجر تحت التجهيز حالياً — عد قريباً ✨</p></div></div>`);
 }
 function notFound(title, msg) {
-  return base(title, `<div class="cs"><h1>${esc(title)}</h1><p>${esc(msg)}</p><a class="btn btn-teal" href="/">العودة للرئيسية</a></div>`);
+  return base(title, `<div class="min-h-screen grid place-items-center bg-subtle px-4 text-center"><div data-reveal="pop"><h1 class="text-[28px] font-bold">${esc(title)}</h1><p class="mt-2 text-[15px] text-muted-foreground">${esc(msg)}</p><a class="btn-sheen mt-6 inline-block rounded-full bg-brand px-7 py-3 text-[14px] font-bold text-night transition-all duration-200 hover:bg-brand-bright" href="/">العودة للرئيسية</a></div></div>`);
 }
 
 function cartDrawer(store) {

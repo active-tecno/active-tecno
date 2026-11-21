@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+@theme {
+  /* EasyOrders design tokens (extracted from their live CSS) */
+  --color-background: oklch(.985 .002 247);
+  --color-foreground: oklch(.18 .015 260);
+  --color-surface: oklch(1 0 0);
+  --color-subtle: oklch(.967 .003 247);
+  --color-card: oklch(1 0 0);
+  --color-brand: oklch(.69 .19 148);
+  --color-brand-bright: oklch(.74 .19 148);
+  --color-brand-soft: oklch(.96 .04 150);
+  --color-brand-foreground: oklch(.38 .11 152);
+  --color-muted: oklch(.962 .004 247);
+  --color-muted-foreground: oklch(.5 .015 257);
+  --color-accent: oklch(.955 .006 247);
+  --color-success: oklch(.56 .16 150);
+  --color-success-soft: oklch(.96 .04 150);
+  --color-warning: oklch(.7 .16 65);
+  --color-warning-soft: oklch(.97 .04 85);
+  --color-info: oklch(.58 .17 250);
+  --color-info-soft: oklch(.96 .025 250);
+  --color-border: oklch(.925 .005 247);
+  --color-input: oklch(.91 .006 247);
+  --color-ring: oklch(.69 .19 148);
+  --color-chart-1: oklch(.66 .18 150);
+  --color-chart-2: oklch(.6 .15 200);
+  --color-chart-3: oklch(.6 .17 262);
+  --color-chart-4: oklch(.75 .15 75);
+  --color-chart-5: oklch(.62 .2 320);
+
+  /* dark surfaces (their hero/dark sections) */
+  --color-night: oklch(.145 .01 260);
+  --color-night-2: oklch(.18 .012 260);
+  --color-night-3: oklch(.24 .012 260);
+  --color-night-foreground: oklch(.97 .003 247);
+  --color-night-muted: oklch(.72 .012 257);
+  --color-night-border: oklch(1 0 0 / 9%);
+
+  --font-sans: "Inter", "IBM Plex Sans Arabic", ui-sans-serif, system-ui, sans-serif;
+  --font-arabic: "IBM Plex Sans Arabic", "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --radius-lg: .75rem;
+
+  --shadow-soft: 0 0 0 1px rgb(16 24 40 / .04), 0 1px 2px rgb(16 24 40 / .04), 0 4px 12px -2px rgb(16 24 40 / .05);
+  --shadow-float: 0 0 0 1px rgb(16 24 40 / .04), 0 2px 4px rgb(16 24 40 / .04), 0 12px 24px -6px rgb(16 24 40 / .08), 0 32px 64px -16px rgb(16 24 40 / .12);
+  --shadow-elevated: 0 12px 32px -12px rgb(16 24 40 / .18), 0 2px 6px -2px rgb(16 24 40 / .06);
+
+  --ease-out-quint: cubic-bezier(.22, 1, .36, 1);
+}
+
+/* ---------- reveal motion system (equivalent to theirs) ---------- */
+@keyframes rv-fade-up { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: none; } }
+@keyframes rv-fade-down { from { opacity: 0; transform: translateY(-28px); } to { opacity: 1; transform: none; } }
+@keyframes rv-fade-right { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+@keyframes rv-fade-left { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+@keyframes rv-pop-in { 0% { opacity: 0; transform: scale(.86); } 60% { transform: scale(1.03); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes rv-scale-in { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: scale(1); } }
+@keyframes rv-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
+@keyframes rv-float-soft { 0%,100% { transform: translateY(0) rotate(var(--fl-rot, 0deg)); } 50% { transform: translateY(-9px) rotate(var(--fl-rot, 0deg)); } }
+@keyframes rv-pulse-dot { 0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-brand) 55%, transparent); } 70% { box-shadow: 0 0 0 9px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+@keyframes rv-marquee { from { transform: translateX(0); } to { transform: translateX(50%); } }
+@keyframes rv-sheen { from { transform: translateX(-120%) skewX(-18deg); } to { transform: translateX(240%) skewX(-18deg); } }
+@keyframes rv-aurora-a { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(6%, -8%) scale(1.12); } }
+@keyframes rv-aurora-b { 0%,100% { transform: translate(0,0) scale(1.05); } 50% { transform: translate(-7%, 6%) scale(.95); } }
+
+[data-reveal] { opacity: 0; }
+[data-reveal].rv-in { animation-duration: .9s; animation-fill-mode: both; animation-timing-function: var(--ease-out-quint); animation-delay: var(--rv-delay, 0s); }
+[data-reveal="fade-up"].rv-in { animation-name: rv-fade-up; }
+[data-reveal="fade-down"].rv-in { animation-name: rv-fade-down; }
+[data-reveal="fade-right"].rv-in { animation-name: rv-fade-right; }
+[data-reveal="fade-left"].rv-in { animation-name: rv-fade-left; }
+[data-reveal="pop"].rv-in { animation-name: rv-pop-in; }
+[data-reveal="scale"].rv-in { animation-name: rv-scale-in; }
+
+.animate-float { animation: rv-float 6s ease-in-out infinite; }
+.animate-float-soft { animation: rv-float-soft 7s ease-in-out infinite; }
+.pulse-dot { animation: rv-pulse-dot 1.8s var(--ease-out-quint) infinite; }
+
+/* hero grid + glow backdrop like easyorders.eg landing */
+.hero-grid {
+  background-image:
+    linear-gradient(color-mix(in oklab, var(--color-night-foreground) 4.5%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklab, var(--color-night-foreground) 4.5%, transparent) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 90% 80% at 50% 0%, black 30%, transparent 78%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 80% at 50% 0%, black 30%, transparent 78%);
+}
+.glass { background: color-mix(in oklab, var(--color-night-foreground) 5%, transparent); border: 1px solid color-mix(in oklab, var(--color-night-foreground) 10%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+.glow-brand { box-shadow: 0 0 80px -12px color-mix(in oklab, var(--color-brand) 45%, transparent); }
+
+/* sheen sweep on primary buttons */
+.btn-sheen { position: relative; overflow: hidden; }
+.btn-sheen::after { content: ""; position: absolute; inset-block: 0; width: 38%; background: linear-gradient(90deg, transparent, rgb(255 255 255 / .35), transparent); transform: translateX(-120%) skewX(-18deg); animation: rv-sheen 3.2s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] { opacity: 1 !important; animation: none !important; }
+  .animate-float, .animate-float-soft, .pulse-dot, .btn-sheen::after { animation: none !important; }
+}
+
+@layer base {
+  svg:not([width]):not([height]) { width: 1.15em; height: 1.15em; flex-shrink: 0; }
+}

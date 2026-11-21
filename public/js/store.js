@@ -29,7 +29,7 @@ function addToCart(id, name, price, image, qty = 1) {
   if (ex) ex.qty = Math.min(ex.qty + qty, 20); else cart.push({ id, name, price, image, qty });
   setCart(cart);
   track('add_to_cart', id);
-  toast('تمت الإضافة إلى السلة ✅');
+  toast('تمت الإضافة إلى السلة');
   toggleCart(true);
 }
 function buyNow(id, name, price, image, qty = 1) {
@@ -62,7 +62,7 @@ function renderCartUI() {
       <img src="${escH(i.image)}" alt="">
       <div class="ci-info"><b>${escH(i.name)}</b><span>${egp(i.price)} × ${i.qty}</span></div>
       <div class="ci-qty"><button onclick="changeQty(${i.id},1)">+</button><span>${i.qty}</span><button onclick="changeQty(${i.id},-1)">−</button></div>
-    </div>`).join('') : `<div class="cart-empty">سلتك فارغة 🛒<br>أضف منتجات وابدأ التسوق</div>`;
+    </div>`).join('') : `<div class="cart-empty">سلتك فارغة<br>أضف منتجات وابدأ التسوق</div>`;
   }
   const tot = document.getElementById('cartTotal');
   if (tot) tot.textContent = egp(cart.reduce((s, i) => s + i.price * i.qty, 0));
@@ -130,7 +130,7 @@ function drawSummary() {
   document.getElementById('coSummary').innerHTML = `<h3>ملخص الطلب</h3>
     ${cart.map(i => `<div class="co-line"><img src="${escH(i.image)}"><div class="cl-info"><b>${escH(i.name)}</b><span>الكمية: ${i.qty}</span></div><b>${egp(i.price * i.qty)}</b></div>`).join('')}
     <div class="co-tot"><span>المجموع الفرعي</span><span>${egp(subtotal)}</span></div>
-    <div class="co-tot"><span>الشحن</span>${shipping ? `<span>${egp(shipping)}</span>` : `<span class="free">مجاني 🎉</span>`}</div>
+    <div class="co-tot"><span>الشحن</span>${shipping ? `<span>${egp(shipping)}</span>` : `<span class="free">مجاني</span>`}</div>
     ${coState.discount ? `<div class="co-tot"><span>الخصم (${escH(coState.coupon)})</span><span>−${egp(coState.discount)}</span></div>` : ''}
     <div class="co-tot grand"><span>الإجمالي عند الاستلام</span><span>${egp(total)}</span></div>`;
 }

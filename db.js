@@ -213,6 +213,13 @@ const migrations = [
     ALTER TABLE orders ADD COLUMN payment_status TEXT NOT NULL DEFAULT 'unpaid';
     ALTER TABLE orders ADD COLUMN payment_ref TEXT;
     `
+  },
+  {
+    id: '004_brand_palette',
+    sql: `
+    UPDATE themes SET config = REPLACE(REPLACE(config, '#12213E', '#141924'), '#00BFAF', '#27cd27');
+    UPDATE stores SET theme_settings = REPLACE(REPLACE(theme_settings, '#12213E', '#141924'), '#00BFAF', '#27cd27');
+    `
   }
 ];
 

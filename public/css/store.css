@@ -1,6 +1,6 @@
 /* store.css — storefront (themeable via CSS vars per store) — v2 */
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body.store { font-family: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, sans-serif; background: var(--sbg); color: var(--sp); -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+body.store { font-family: "Inter", "IBM Plex Sans Arabic", ui-sans-serif, system-ui, sans-serif; background: var(--sbg); color: var(--sp); -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
 body.store.dark { color: #EDF1F7; }
 a { color: inherit; text-decoration: none; }
 button { font-family: inherit; cursor: pointer; }
@@ -22,7 +22,7 @@ body.store.dark .s-cart-btn { color: #fff; }
 .s-hero p { color: color-mix(in srgb, var(--sp) 62%, white); margin: 14px auto 28px; max-width: 540px; line-height: 1.9; font-size: 15.5px; }
 body.store.dark .s-hero p { color: #A9B4C9; }
 .s-hero-cta { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
-.s-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: var(--sa); color: #fff; border: 0; border-radius: calc(var(--sr) * .8); padding: 12px 28px; font-weight: 600; font-size: 15px; transition: transform .15s, filter .15s, box-shadow .15s; box-shadow: 0 8px 20px -10px color-mix(in srgb, var(--sa) 70%, transparent); }
+.s-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: var(--sa); color: #fff; border: 0; border-radius: 999px; padding: 12px 28px; font-weight: 600; font-size: 15px; transition: transform .2s cubic-bezier(.22,1,.36,1), filter .2s, box-shadow .2s; box-shadow: 0 8px 20px -10px color-mix(in srgb, var(--sa) 70%, transparent); }
 .s-btn:hover { filter: brightness(1.07); transform: translateY(-1px); }
 .s-btn:active { transform: scale(.97); }
 .s-btn svg { width: 17px; height: 17px; }
@@ -40,7 +40,7 @@ body.store.dark .s-cat { color: #C7D0E2; }
 
 .s-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; padding: 8px 22px 34px; max-width: 1140px; margin: 0 auto; }
 .p-card { position: relative; background: var(--sbg); border: 1px solid color-mix(in srgb, var(--sp) 9%, transparent); border-radius: var(--sr); overflow: hidden; transition: transform .2s, box-shadow .2s; display: block; }
-.p-card:hover { transform: translateY(-4px); box-shadow: 0 18px 36px -16px rgba(0,0,0,.28); }
+.p-card:hover { transform: translateY(-4px); box-shadow: 0 0 0 1px rgb(16 24 40 / .04), 0 12px 24px -6px rgb(16 24 40 / .10), 0 32px 64px -16px rgb(16 24 40 / .14); }
 .p-img { aspect-ratio: 1; background: var(--ssf); overflow: hidden; }
 .p-img img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .35s ease; }
 .p-card:hover .p-img img { transform: scale(1.045); }

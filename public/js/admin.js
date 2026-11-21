@@ -43,7 +43,7 @@ function shell(content) {
   const hash = location.hash.replace('#/', '') || 'overview';
   return `<div class="d-layout">
   <aside class="d-side" id="dSide">
-    <a class="brand" href="/"><svg viewBox="0 0 32 32" width="28" height="28"><rect width="32" height="32" rx="8" fill="rgba(255,255,255,.12)"/><path d="M9 20l7-11 7 11" stroke="#00BFAF" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="brand-name">اكتف <b>تكنو</b></span></a>
+    <a class="brand" href="/"><svg viewBox="0 0 32 32" width="28" height="28"><rect width="32" height="32" rx="8" fill="rgba(255,255,255,.12)"/><path d="M9 20l7-11 7 11" stroke="#27cd27" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="brand-name">اكتف <b>تكنو</b></span></a>
     <div style="padding:0 10px 14px"><span class="chip st-shipped">لوحة إدارة المنصة</span></div>
     ${NAV.map(([k, ic, l]) => `<button class="d-link ${hash === k ? 'on' : ''}" onclick="location.hash='#/${k}'"><span class="ic">${I(ic)}</span>${l}${k === 'activations' && window._pending ? `<span class="badge">${window._pending}</span>` : ''}</button>`).join('')}
     <div class="d-side-foot"><a class="d-link" href="/app"><span class="ic">${I('stores')}</span>لوحة التاجر</a><button class="d-link" onclick="logout()"><span class="ic">${I('logout')}</span>تسجيل الخروج</button></div>
@@ -86,7 +86,7 @@ function actTable(reqs) {
 }
 async function approveAct(id) {
   const d = await api(`/api/admin/activations/${id}/approve`, { method: 'POST' });
-  toast(`تم التفعيل حتى ${d.published_until} ✅`); route();
+  toast(`تم التفعيل حتى ${d.published_until}`); route();
 }
 async function rejectAct(id) {
   const note = prompt('سبب الرفض (يظهر للتاجر):') || '';
@@ -112,7 +112,7 @@ function merchTable(ms) {
 async function togglePublish(storeId, published) {
   if (!storeId) return toast('لا يوجد متجر', 'err');
   await api(`/api/admin/stores/${storeId}/publish`, { method: 'PUT', body: { published: !!published } });
-  toast(published ? 'تم النشر ✅' : 'تم إيقاف النشر'); route();
+  toast(published ? 'تم النشر' : 'تم إيقاف النشر'); route();
 }
 async function searchMerchants(q) {
   const d = await api('/api/admin/merchants' + (q ? `?q=${encodeURIComponent(q)}` : ''));
