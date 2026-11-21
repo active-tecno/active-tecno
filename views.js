@@ -812,7 +812,9 @@ function storeSettingsKV(store) {
   return Object.fromEntries(db.prepare('SELECT key, value FROM store_settings WHERE store_id = ?').all(store.id).map(r => [r.key, r.value]));
 }
 function designAssets(store) {
-  try { return JSON.parse(storeSettingsKV(store).design_assets || '[]'); } catch (_) { return []; }
+  const kv = storeSettingsKV(store);
+  if (kv.design_assets_enabled !== '1') return []; // opt-in: merchant JS/CSS on the platform origin is off until explicitly enabled
+  try { return JSON.parse(kv.design_assets || '[]'); } catch (_) { return []; }
 }
 function uiBlocks(store, pos) {
   let u = {}; try { u = JSON.parse(storeSettingsKV(store).ui_blocks || '{}'); } catch (_) {}
@@ -1265,7 +1267,7 @@ if(f)f.addEventListener('submit',async function(e){
   var d=await r.json();
   if(!r.ok){document.getElementById('pdErr').textContent=d.error||'حدث خطأ، حاول مرة أخرى';btn.disabled=false;btn.textContent=${JSON.stringify(buyText)};return;}
   if(window.pxPurchase)pxPurchase(PXVAL>0?PXVAL:PPRICE*q);
-  location.href='/s/'+SLUG+'/order/'+d.number;
+  location.href='/s/'+SLUG+'/order/'+d.number+'?t='+encodeURIComponent(d.token||'');
 });
 var rv=document.getElementById('rvForm');
 if(rv)rv.addEventListener('submit',async function(e){
@@ -1396,7 +1398,7 @@ document.getElementById('fnForm')?.addEventListener('submit', async e => {
   const d = await r.json();
   if (!r.ok) { document.getElementById('fnErr').textContent = d.error || 'حدث خطأ، حاول مرة أخرى'; btn.disabled = false; btn.textContent = 'تأكيد الطلب'; return; }
   if (window.pxPurchase) pxPurchase(FN_PRICE * fnQ);
-  location.href = '/s/' + SLUG + '/order/' + d.number;
+  location.href = '/s/' + SLUG + '/order/' + d.number + '?t=' + encodeURIComponent(d.token || '');
 });
 </script>
 </body></html>`;
@@ -1479,7 +1481,7 @@ function orderPage(store, o, t) {
           <button class="s-btn" onclick="dsellBuy(this, ${dp.id}, '${esc(o.number)}')">أضِفه لطلبي بـ ${egp(dPrice)}</button>
           <div class="auth-err" id="dsellErr"></div></div></div>
         </div>
-        <script>async function dsellBuy(btn, pid, num){btn.disabled=true;btn.textContent='جاري الإضافة…';const r=await fetch('/api/public/${esc(store.slug)}/orders/'+num+'/downsell',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product_id:pid})});const d=await r.json();if(!r.ok){document.getElementById('dsellErr').textContent=d.error||'حدث خطأ';btn.disabled=false;btn.textContent='حاول مرة أخرى';return;}location.href='/s/${esc(store.slug)}/order/'+d.number;}</script>`;
+        <script>async function dsellBuy(btn, pid, num){btn.disabled=true;btn.textContent='جاري الإضافة…';const tk=new URLSearchParams(location.search).get('t')||'';const r=await fetch('/api/public/${esc(store.slug)}/orders/'+num+'/downsell',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product_id:pid,token:tk})});const d=await r.json();if(!r.ok){document.getElementById('dsellErr').textContent=d.error||'حدث خطأ';btn.disabled=false;btn.textContent='حاول مرة أخرى';return;}location.href='/s/${esc(store.slug)}/order/'+d.number+'?t='+encodeURIComponent(d.token||'');}</script>`;
       }
     }
   } catch (e) {}

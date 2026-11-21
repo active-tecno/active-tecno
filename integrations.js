@@ -13,7 +13,7 @@ const PROVIDERS = {
   },
   whatsapp: {
     label: 'WhatsApp Cloud API — أكتف كونفيرم',
-    keys: ['WHATSAPP_TOKEN', 'WHATSAPP_PHONE_NUMBER_ID'],
+    keys: ['WHATSAPP_TOKEN', 'WHATSAPP_PHONE_NUMBER_ID', 'WHATSAPP_APP_SECRET'],
     base: 'https://graph.facebook.com/v20.0',
   },
   email: {

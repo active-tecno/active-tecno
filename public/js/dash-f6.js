@@ -252,9 +252,23 @@ registerView('settings/sessions', async () => {
     <div style="flex:1"><h3>جلسة <span class="mono small" dir="ltr">${esc(x.hint)}…</span> ${x.current ? '<span class="chip st-live">الجلسة الحالية</span>' : ''}</h3>
     <p class="muted small">بدأت: ${esc((x.created_at || '').replace('T', ' ').slice(0, 16))} · تنتهي: ${esc((x.expires_at || '').slice(0, 10))}</p></div></div>`).join('');
   return settingsShell('settings/sessions', 'جلسات الدخول', 'الأجهزة المتصلة بحسابك', `
+    <div class="card"><h3>تغيير كلمة المرور</h3>
+      <div class="f-field"><label>كلمة المرور الحالية</label><input id="pwCur" type="password" dir="ltr" autocomplete="current-password"></div>
+      <div class="f-field"><label>كلمة المرور الجديدة (8 أحرف على الأقل)</label><input id="pwNext" type="password" dir="ltr" autocomplete="new-password"></div>
+      <div class="f-field"><label>تأكيد كلمة المرور الجديدة</label><input id="pwNext2" type="password" dir="ltr" autocomplete="new-password"></div>
+      <div class="m-actions"><button class="btn btn-primary" onclick="changePassword()">تغيير كلمة المرور</button></div>
+      <p class="muted small">بعد التغيير تُنهى كل الجلسات الأخرى تلقائياً.</p></div>
     <div class="card"><h3>الجلسات النشطة</h3>${rows || '<p class="muted small">لا توجد جلسات.</p>'}</div>
     <div class="m-actions"><button class="btn btn-danger-soft" onclick="revokeOtherSessions()">إنهاء كل الجلسات الأخرى</button></div>`);
 });
+async function changePassword() {
+  const cur = document.getElementById('pwCur').value, n1 = document.getElementById('pwNext').value, n2 = document.getElementById('pwNext2').value;
+  if (n1.length < 8) return toast('كلمة المرور الجديدة 8 أحرف على الأقل', 'err');
+  if (n1 !== n2) return toast('تأكيد كلمة المرور غير مطابق', 'err');
+  const r = await api('/api/auth/change-password', { method: 'POST', body: { current: cur, next: n1 } });
+  if (r.error) return toast(r.error, 'err');
+  toast('تم تغيير كلمة المرور'); route();
+}
 async function revokeOtherSessions() {
   await api('/api/settings/sessions/revoke-others', { method: 'POST' });
   toast('تم إنهاء الجلسات الأخرى'); route();

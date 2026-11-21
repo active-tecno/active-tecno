@@ -479,6 +479,10 @@ const migrations = [
     ALTER TABLE products ADD COLUMN settings TEXT NOT NULL DEFAULT '{}';
     UPDATE products SET stock_tracking = 1;
     `
+  },
+  {
+    id: '018_order_track_token',
+    sql: `ALTER TABLE orders ADD COLUMN track_token TEXT;`
   }
 ];
 

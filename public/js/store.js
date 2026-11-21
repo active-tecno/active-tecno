@@ -250,7 +250,7 @@ document.addEventListener('submit', async e => {
     return;
   }
   localStorage.removeItem(CART_KEY);
-  location.href = `/s/${SLUG}/order/${d.number}`;
+  location.href = `/s/${SLUG}/order/${d.number}?t=${encodeURIComponent(d.token || '')}`;
 });
 
 renderCartUI();

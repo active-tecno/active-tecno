@@ -11,6 +11,7 @@ const { APP_VERSION } = require('./version');
 const integ = require('./integrations');
 
 seed({ demo: !PROD });
+try { db.prepare("UPDATE orders SET track_token = lower(hex(randomblob(16))) WHERE track_token IS NULL OR track_token = ''").run(); } catch (e) {}
 
 const REFERRAL_PROGRAM_ENABLED = false; // referral accruals + payouts paused pending owner terms (reversible)
 const ORDER_STATUSES = ['new', 'confirmed', 'pending_payment', 'paid', 'payment_failed', 'preparing', 'awaiting_shipping', 'shipped', 'delivered', 'cancelled', 'returned_from_shipping', 'return_requested', 'returning', 'returned'];
@@ -92,6 +93,7 @@ function loginFailed(key) {
   if (!r || r.resetAt < now) loginFails.set(key, { count: 1, resetAt: now + LOGIN_WINDOW_MS }); else r.count++;
 }
 const regHits = new Map();
+const pubHits = new Map();
 function tooManyHits(map, key, max, windowMs) {
   const now = Date.now(); const r = map.get(key);
   if (!r || r.resetAt < now) { map.set(key, { count: 1, resetAt: now + windowMs }); return false; }
@@ -231,12 +233,14 @@ const api = {
     const code = String(Math.floor(100000 + Math.random() * 900000));
     verifyCodes.set(email.toLowerCase(), { code, userId: u.lastInsertRowid, expires: Date.now() + 10 * 60000 });
     const mail = await integ.sendVerificationEmail({ to: email.toLowerCase(), code });
-    json(res, 201, { ok: true, slug: finalSlug, needs_verification: true, email_sent: !mail.simulated, dev_code: mail.simulated ? code : undefined });
+    json(res, 201, { ok: true, slug: finalSlug, needs_verification: true, email_sent: !mail.simulated, dev_code: (!PROD && mail.simulated) ? code : undefined });
   },
   'POST /api/auth/verify': async (req, res) => {
     const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
     const rec = verifyCodes.get(String(b.email || '').toLowerCase());
     if (!rec || rec.expires < Date.now()) return json(res, 400, { error: 'انتهت صلاحية الكود — أعد التسجيل' });
+    rec.attempts = (rec.attempts || 0) + 1;
+    if (rec.attempts > 8) { verifyCodes.delete(String(b.email || '').toLowerCase()); return json(res, 429, { error: 'محاولات كثيرة — أعد التسجيل' }); }
     if (String(b.code || '').trim() !== rec.code) return json(res, 400, { error: 'كود التحقق غير صحيح' });
     verifyCodes.delete(String(b.email).toLowerCase());
     createSession(req, res, rec.userId);
@@ -263,6 +267,17 @@ const api = {
     const u = db.prepare('INSERT INTO users (email, password_hash, name, is_admin) VALUES (?, ?, ?, 1)').run(email, hashPassword(String(b.password)), String(b.name).trim());
     createSession(req, res, u.lastInsertRowid);
     json(res, 201, { ok: true });
+  },
+  'POST /api/auth/change-password': async (req, res, user) => {
+    if (!user) return json(res, 401, { error: 'unauthenticated' });
+    if (tooManyHits(pubHits, 'pw|' + clientIp(req), 10, 60 * 60 * 1000)) return json(res, 429, { error: 'محاولات كثيرة — جرّب لاحقاً' });
+    const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
+    if (!hashPasswordVerify(String(b.current || ''), user.password_hash)) return json(res, 400, { error: 'كلمة المرور الحالية غير صحيحة' });
+    if (String(b.next || '').length < 8) return json(res, 400, { error: 'كلمة المرور الجديدة 8 أحرف على الأقل' });
+    db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hashPassword(String(b.next)), user.id);
+    const token = parseCookies(req).at_session || '';
+    db.prepare('DELETE FROM sessions WHERE user_id = ? AND token != ?').run(user.id, token);
+    json(res, 200, { ok: true });
   },
   'POST /api/auth/logout': (req, res) => { clearSession(res, req); json(res, 200, { ok: true }); },
   'GET /api/me': (req, res, user) => {
@@ -489,6 +504,9 @@ const api = {
     json(res, 200, { ok: true });
   },
   'GET /api/orders/:id/history': (req, res, user, p) => {
+    const store = getStoreForUser(user);
+    const own = db.prepare('SELECT id FROM orders WHERE id = ? AND store_id = ?').get(p.id, store.id);
+    if (!own) return json(res, 404, { error: 'الطلب غير موجود' });
     json(res, 200, { history: db.prepare('SELECT * FROM order_status_history WHERE order_id = ? ORDER BY created_at').all(p.id) });
   },
   'POST /api/orders/:id/block-phone': (req, res, user, p) => {
@@ -585,6 +603,7 @@ const api = {
     json(res, 200, { ok: true });
   },
   'POST /api/public/:slug/newsletter': async (req, res, user, p) => {
+    if (tooManyHits(pubHits, 'nl|' + clientIp(req), 10, 60 * 60 * 1000)) return json(res, 429, { error: 'محاولات كثيرة — جرّب لاحقاً' });
     const b = await readJSON(req); const email = String((b && b.email) || '').trim().toLowerCase();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json(res, 400, { error: 'بريد إلكتروني غير صالح' });
     const store = db.prepare('SELECT * FROM stores WHERE slug = ?').get(p.slug);
@@ -691,6 +710,8 @@ const api = {
     const b = await readJSON(req); if (!b || !b.product_id || !String(b.customer_name || '').trim()) return json(res, 400, { error: 'بيانات غير صالحة' });
     const store = db.prepare('SELECT * FROM stores WHERE slug = ?').get(p.slug);
     if (!store) return json(res, 404, { error: 'المتجر غير موجود' });
+    if (tooManyHits(pubHits, 'rev|' + clientIp(req) + '|' + p.slug, 10, 60 * 60 * 1000)) return json(res, 429, { error: 'محاولات كثيرة — جرّب لاحقاً' });
+    if (!db.prepare('SELECT id FROM products WHERE id = ? AND store_id = ?').get(b.product_id, store.id)) return json(res, 400, { error: 'منتج غير موجود' });
     const rating = Math.min(5, Math.max(1, b.rating | 0 || 5));
     db.prepare('INSERT INTO reviews (store_id, product_id, customer_name, rating, text) VALUES (?, ?, ?, ?, ?)').run(store.id, b.product_id, String(b.customer_name).trim(), rating, String(b.text || '').slice(0, 1000));
     json(res, 201, { ok: true });
@@ -863,7 +884,7 @@ const api = {
   'PUT /api/store/settings': async (req, res, user) => {
     const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
     const store = getStoreForUser(user);
-    const allowed = ['policies', 'head_code', 'seo', 'social', 'custom_domain', 'max_items', 'notify_email', 'notifications', 'digital_delivery', 'checkout_fields', 'thanks', 'ui_blocks', 'design_assets', 'notifications_read', 'webhook_url', 'webhook_secret'];
+    const allowed = ['policies', 'head_code', 'seo', 'social', 'custom_domain', 'max_items', 'notify_email', 'notifications', 'digital_delivery', 'checkout_fields', 'thanks', 'ui_blocks', 'design_assets', 'design_assets_enabled', 'notifications_read', 'webhook_url', 'webhook_secret'];
     const up = db.prepare('INSERT INTO store_settings (store_id, key, value, updated_at) VALUES (?, ?, ?, datetime(\'now\')) ON CONFLICT(store_id, key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at');
     for (const k of allowed) {
       if (!(k in b)) continue;
@@ -887,7 +908,9 @@ const api = {
   },
   'GET /api/v1/:slug/orders': (req, res, user, p, url) => {
     const store = db.prepare('SELECT * FROM stores WHERE slug = ?').get(p.slug);
-    if (!store || !store.api_key || url.searchParams.get('key') !== store.api_key) return json(res, 401, { error: 'invalid api key' });
+    const k = String(url.searchParams.get('key') || '');
+    const ek = Buffer.from(k), ee = Buffer.from(String(store && store.api_key || ''));
+    if (!store || !store.api_key || ek.length !== ee.length || !crypto.timingSafeEqual(ek, ee)) return json(res, 401, { error: 'invalid api key' });
     const orders = db.prepare('SELECT number, customer_name, customer_phone, governorate, total, status, payment_status, created_at FROM orders WHERE store_id = ? ORDER BY id DESC LIMIT 100').all(store.id);
     json(res, 200, { orders });
   },
@@ -1121,9 +1144,9 @@ const api = {
   'POST /api/public/:slug/orders/:number/downsell': async (req, res, user, p) => {
     const b = await readJSON(req); if (!b || !b.product_id) return json(res, 400, { error: 'بيانات غير صالحة' });
     const store = db.prepare('SELECT * FROM stores WHERE slug = ?').get(p.slug);
-    if (!store) return json(res, 404, { error: 'المتجر غير موجود' });
+    if (!store || !store.is_published) return json(res, 404, { error: 'المتجر غير موجود' });
     const orig = db.prepare('SELECT * FROM orders WHERE store_id = ? AND number = ?').get(store.id, p.number);
-    if (!orig) return json(res, 404, { error: 'الطلب غير موجود' });
+    if (!orig || !b.token || b.token !== orig.track_token) return json(res, 404, { error: 'الطلب غير موجود' });
     const s = Object.fromEntries(db.prepare('SELECT key, value FROM store_settings WHERE store_id = ?').all(store.id).map(r => [r.key, r.value]));
     const ds = s.downsell ? JSON.parse(s.downsell) : null;
     if (!ds || ds.product_id !== b.product_id) return json(res, 400, { error: 'العرض غير متاح' });
@@ -1132,12 +1155,13 @@ const api = {
     const price = Math.max(1, Math.round(prod.price * (100 - (ds.discount_pct || 0)) / 100));
     const count = db.prepare('SELECT COUNT(*) c FROM orders WHERE store_id = ?').get(store.id).c;
     const number = `${store.slug.slice(0, 2).toUpperCase()}-${1021 + count}`;
-    const r = db.prepare(`INSERT INTO orders (store_id, number, customer_name, customer_phone, customer_address, governorate, notes, subtotal, shipping, discount, total, coupon_code, payment_method)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, 'cod')`)
-      .run(store.id, number, orig.customer_name, orig.customer_phone, orig.customer_address, orig.governorate, 'عرض ما بعد الشراء', price, price, 'DOWNSELL');
+    const dsToken = crypto.randomBytes(16).toString('hex');
+    const r = db.prepare(`INSERT INTO orders (store_id, number, customer_name, customer_phone, customer_address, governorate, notes, subtotal, shipping, discount, total, coupon_code, payment_method, track_token)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, 'cod', ?)`)
+      .run(store.id, number, orig.customer_name, orig.customer_phone, orig.customer_address, orig.governorate, 'عرض ما بعد الشراء', price, price, 'DOWNSELL', dsToken);
     db.prepare('INSERT INTO order_items (order_id, product_id, name, price, qty) VALUES (?, ?, ?, ?, 1)').run(r.lastInsertRowid, prod.id, prod.name, price);
     db.prepare('UPDATE products SET stock = stock - 1 WHERE id = ?').run(prod.id);
-    json(res, 201, { number });
+    json(res, 201, { number, token: dsToken });
   },
 
   // merchant manual order (dashboard "أنشاء طلب")
@@ -1176,9 +1200,9 @@ const api = {
     const total = Math.max(0, subtotal + shipping);
     const count = db.prepare('SELECT COUNT(*) c FROM orders WHERE store_id = ?').get(store.id).c;
     const number = `${store.slug.slice(0, 2).toUpperCase()}-${1021 + count}`;
-    const r = db.prepare(`INSERT INTO orders (store_id, number, customer_name, customer_phone, customer_phone_alt, customer_address, governorate, notes, subtotal, shipping, discount, total, source)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 'dashboard')`)
-      .run(store.id, number, b.name.trim(), phone, phoneAlt, (b.address || '').trim(), b.governorate || '', (b.notes || '').trim(), subtotal, shipping, total);
+    const r = db.prepare(`INSERT INTO orders (store_id, number, customer_name, customer_phone, customer_phone_alt, customer_address, governorate, notes, subtotal, shipping, discount, total, source, track_token)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 'dashboard', ?)`)
+      .run(store.id, number, b.name.trim(), phone, phoneAlt, (b.address || '').trim(), b.governorate || '', (b.notes || '').trim(), subtotal, shipping, total, crypto.randomBytes(16).toString('hex'));
     const oid = r.lastInsertRowid;
     const itemStmt = db.prepare('INSERT INTO order_items (order_id, product_id, name, price, qty, image) VALUES (?, ?, ?, ?, ?, ?)');
     for (const li of lineItems) {
@@ -1316,7 +1340,14 @@ const api = {
     return json(res, 403, { error: 'verification failed' });
   },
   'POST /api/webhooks/whatsapp': async (req, res) => {
-    const b = await readJSON(req);
+    const raw = await readBody(req);
+    const secret = process.env.WHATSAPP_APP_SECRET || integ.getSetting('WHATSAPP_APP_SECRET');
+    if (!secret) return json(res, 200, { ok: true, skipped: 'no app secret configured' }); // never trust unsigned payloads
+    const sig = String(req.headers['x-hub-signature-256'] || '');
+    const expect = 'sha256=' + crypto.createHmac('sha256', secret).update(raw).digest('hex');
+    const sb = Buffer.from(sig), eb = Buffer.from(expect);
+    if (sb.length !== eb.length || !crypto.timingSafeEqual(sb, eb)) return json(res, 403, { error: 'bad signature' });
+    let b = null; try { b = JSON.parse(raw); } catch { b = null; }
     try {
       for (const entry of (b && b.entry) || []) {
         for (const change of entry.changes || []) {
@@ -1434,12 +1465,10 @@ const api = {
   'GET /api/public/:slug/store': (req, res, user, p) => {
     const store = db.prepare('SELECT * FROM stores WHERE slug = ?').get(p.slug);
     if (!store) return json(res, 404, { error: 'المتجر غير موجود' });
-    const theme = db.prepare('SELECT * FROM themes WHERE id = ?').get(store.theme_id);
     const zones = db.prepare('SELECT name, governorates, price, per_item, free_over FROM shipping_zones WHERE store_id = ?').all(store.id);
+    // display fields only — theme_settings is never passed through (it holds payment/pixel secrets)
     json(res, 200, {
       store: { name: store.name, slug: store.slug, description: store.description, announcement: store.announcement, whatsapp: store.whatsapp, free_shipping_over: store.free_shipping_over, is_published: !!store.is_published, published_until: store.published_until },
-      theme: theme ? { id: theme.id, name_ar: theme.name_ar, config: JSON.parse(theme.config) } : null,
-      theme_settings: JSON.parse(store.theme_settings || '{}'),
       payments: (JSON.parse(store.theme_settings || '{}').payments) || { cod: true, online: false },
       zones
     });
@@ -1460,6 +1489,8 @@ const api = {
   },
   'POST /api/public/:slug/cart': async (req, res, user, p) => {
     const b = await readJSON(req); if (!b || !b.session_id) return json(res, 400, {});
+    const st = db.prepare('SELECT is_published FROM stores WHERE slug = ?').get(p.slug);
+    if (!st || !st.is_published) return json(res, 403, {});
     const store = db.prepare('SELECT id FROM stores WHERE slug = ?').get(p.slug);
     if (!store) return json(res, 404, {});
     db.prepare(`INSERT INTO carts (store_id, session_id, customer_phone, items, updated_at) VALUES (?, ?, ?, ?, datetime('now'))
@@ -1468,6 +1499,7 @@ const api = {
     json(res, 200, { ok: true });
   },
   'POST /api/public/:slug/validate-coupon': async (req, res, user, p) => {
+    { const st = db.prepare('SELECT is_published FROM stores WHERE slug = ?').get(p.slug); if (!st || !st.is_published) return json(res, 403, { error: 'المتجر غير متاح حالياً' }); }
     const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
     const store = db.prepare('SELECT id FROM stores WHERE slug = ?').get(p.slug);
     if (!store) return json(res, 404, { error: 'المتجر غير موجود' });
@@ -1483,6 +1515,8 @@ const api = {
     const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
     const store = db.prepare('SELECT * FROM stores WHERE slug = ?').get(p.slug);
     if (!store) return json(res, 404, { error: 'المتجر غير موجود' });
+    if (!store.is_published) return json(res, 403, { error: 'المتجر غير متاح حالياً' });
+    if (tooManyHits(pubHits, 'ord|' + clientIp(req) + '|' + p.slug, 15, 60 * 60 * 1000)) return json(res, 429, { error: 'محاولات كثيرة — جرّب لاحقاً' });
     const phone = normalizePhone(b.phone);
     let cfCfg = null; try { cfCfg = JSON.parse((db.prepare("SELECT value FROM store_settings WHERE store_id = ? AND key = 'checkout_fields'").get(store.id) || {}).value || 'null'); } catch (e) {}
     const cfOn = k => !cfCfg || !cfCfg[k] || cfCfg[k].enabled !== false;
@@ -1544,10 +1578,11 @@ const api = {
 
     const refCode = String(b.ref_code || '').trim().toLowerCase();
     const isDemo = isDemoStore(store.id) ? 1 : 0;
-    const r = db.prepare(`INSERT INTO orders (store_id, number, customer_name, customer_phone, customer_address, governorate, notes, subtotal, shipping, discount, total, coupon_code, payment_method, utm_source, utm_medium, utm_campaign, ref_code, demo)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    const trackToken = crypto.randomBytes(16).toString('hex');
+    const r = db.prepare(`INSERT INTO orders (store_id, number, customer_name, customer_phone, customer_address, governorate, notes, subtotal, shipping, discount, total, coupon_code, payment_method, utm_source, utm_medium, utm_campaign, ref_code, demo, track_token)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
       .run(store.id, number, b.name.trim(), phone, (b.address || '').trim(), b.governorate || '', (b.notes || '').trim(), subtotal, shipping, discount, total, couponCode, payMethod,
-        String(b.utm_source || '').slice(0, 100), String(b.utm_medium || '').slice(0, 100), String(b.utm_campaign || '').slice(0, 100), refCode, isDemo);
+        String(b.utm_source || '').slice(0, 100), String(b.utm_medium || '').slice(0, 100), String(b.utm_campaign || '').slice(0, 100), refCode, isDemo, trackToken);
     // funnel attribution
     if (b.funnel_id) db.prepare('UPDATE funnels SET orders = orders + 1 WHERE id = ? AND store_id = ?').run(b.funnel_id | 0, store.id);
     // referral attribution
@@ -1615,7 +1650,7 @@ const api = {
     } else {
       db.prepare(`UPDATE orders SET payment_status = 'cod' WHERE id = ?`).run(oid);
     }
-    json(res, 201, { ok: true, number, total, shipping, discount, payment_url: payment && payment.payment_url ? payment.payment_url : null });
+    json(res, 201, { ok: true, number, token: trackToken, total, shipping, discount, payment_url: payment && payment.payment_url ? payment.payment_url : null });
   }
 };
 
@@ -1740,6 +1775,7 @@ const server = http.createServer(async (req, res) => {
       const owner = user && user.id === store.user_id;
       if (!store.is_published && !owner && !sub) return html(res, 200, views.comingSoon(store));
       if (sub && sub.startsWith('/p/')) {
+        if (!store.is_published && !owner) return html(res, 200, views.comingSoon(store));
         const product = db.prepare(`SELECT * FROM products WHERE id = ? AND store_id = ? AND status = 'active'`).get(productId, store.id);
         if (!product) return html(res, 404, views.notFound('المنتج غير موجود', 'ربما تم حذفه أو إيقافه.'));
         return html(res, 200, views.productPage(store, product, themeConfig, owner));
@@ -1770,10 +1806,13 @@ const server = http.createServer(async (req, res) => {
         const stats = db.prepare(`SELECT COUNT(*) c, COALESCE(SUM(total),0) t FROM orders WHERE store_id = ? AND status NOT IN ('cancelled','returned')`).get(store.id);
         return html(res, 200, views.verifiedPage(store, stats, themeConfig));
       }
-      if (sub === '/checkout') return html(res, 200, views.checkoutPage(store, themeConfig, owner));
+      if (sub === '/checkout') {
+        if (!store.is_published && !owner) return html(res, 200, views.comingSoon(store));
+        return html(res, 200, views.checkoutPage(store, themeConfig, owner));
+      }
       if (sub && sub.startsWith('/order/')) {
         const order = db.prepare('SELECT * FROM orders WHERE store_id = ? AND number = ?').get(store.id, orderNumber);
-        if (!order) return html(res, 404, views.notFound('الطلب غير موجود', 'تأكد من رقم الطلب.'));
+        if (!order || url.searchParams.get('t') !== order.track_token) return html(res, 404, views.notFound('الطلب غير موجود', 'تأكد من رقم الطلب.'));
         return html(res, 200, views.orderPage(store, order, themeConfig));
       }
       return html(res, 200, views.storefront(store, themeConfig, owner));

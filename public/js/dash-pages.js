@@ -158,12 +158,15 @@ async function uibSave() {
 registerView('upload-assets', async () => {
   const { settings } = await api('/api/store/settings');
   let assets = []; try { assets = JSON.parse(settings.design_assets || '[]'); } catch (_) {}
+  const daOn = settings.design_assets_enabled === '1';
   return `
   <div class="d-page">
     ${topBar('رفع ملفات التصاميم', 'ارفع ملفات CSS وJavascript الخاصة بتصاميمك لتظهر على متجرك', '')}
     <div class="d-card note">
       <p class="muted">يمكنك انشاء ثيم خاص بك او حق عمل قالب خاصة بك للظهور بشكل مميز — الملفات المفعّلة تُحمّل مع صفحات متجرك تلقائياً.</p>
+      <p class="muted"><b>تنبيه أمان:</b> ملفات JavaScript المرفوعة تعمل بصلاحيات كاملة على نطاق متجرك. فعّل الحقن فقط لملفات تثق بها تماماً.</p>
     </div>
+    <div class="d-card"><div class="tg-row"><label class="tg"><input type="checkbox" ${daOn ? 'checked' : ''} onchange="daMaster(this.checked)"><i></i></label><span>تفعيل حقن ملفات التصميم على المتجر</span></div></div>
     <div class="d-card">
       <input type="file" id="daFile" accept=".css,.js,text/css,text/javascript" hidden onchange="daUpload(this)">
       <button class="btn primary" onclick="document.getElementById('daFile').click()">${I('download')} رفع الملفات</button>
@@ -190,6 +193,7 @@ function daUpload(input) {
   };
   rd.readAsArrayBuffer(f);
 }
+async function daMaster(on) { await api('/api/store/settings', { method: 'PUT', body: { design_assets_enabled: on ? '1' : '' } }); toast(on ? 'تم تفعيل الحقن' : 'تم إيقاف الحقن'); rerender(); }
 async function daToggle(url, on) { const a = await daRead(); const it = a.find(x => x.url === url); if (it) it.enabled = on; await daWrite(a); toast(on ? 'تم التفعيل' : 'تم الإيقاف'); }
 async function daDel(url) { if (!confirm('حذف هذا الملف؟')) return; await api('/api/design-assets', { method: 'DELETE', body: { url } }); toast('تم الحذف'); rerender(); }
 
