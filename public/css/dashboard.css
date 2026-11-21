@@ -572,3 +572,10 @@ body.dash[data-theme="dark"] .act-banner.live .bn-ic svg { color: #4ade80; }
 .set-tab.on{background:var(--green-soft);color:var(--green);font-weight:600}
 .set-body{flex:1;min-width:0}
 @media(max-width:820px){.set-wrap{flex-direction:column}.set-nav{position:static;flex-direction:row;overflow-x:auto;min-width:0}}
+
+/* F6: language toggle */
+.d-lang{font-weight:700;font-size:12px;letter-spacing:.02em}
+[dir=ltr] .d-link{text-align:left}
+[dir=ltr] .hello{text-align:left}
+[dir=ltr] .d-group-label{text-align:left}
+[dir=ltr] .set-tab{text-align:left}
