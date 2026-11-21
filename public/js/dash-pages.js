@@ -66,23 +66,23 @@ registerView('checkout-fields', async () => {
     .sort((a, b) => (a.order || 0) - (b.order || 0));
   return `
   <div class="d-page">
-    ${topBar('تعديل البيانات الخاصة باتمام الطلب', 'قلّل الحقول المطلوبة من العميل لإتمام الشراء — كل ما قل عدد الحقول زادت المبيعات. ننصح بالاكتفاء بالاسم ورقم الهاتف والعنوان عند الحاجة فقط', '')}
-    <div class="d-card">
-      ${fields.map(f => `
-      <div class="cf-row" data-key="${f.key}">
-        <div class="cf-head"><span class="muted small mono ltr">key: ${f.key}</span><b>${esc(CF_DEFAULTS[f.key].label)}</b>${f.hint ? `<span class="chip">${f.hint}</span>` : ''}</div>
-        <div class="form-grid">
-          <div><label class="d-label">اسم الحقل الذي سيظهر للعميل</label><input class="d-input cf-label" value="${esc(f.label)}" ${f.fixed ? '' : ''}></div>
-          <div><label class="d-label">النص المساعد</label><input class="d-input cf-helper" value="${esc(f.helper)}" placeholder="نص يظهر داخل الحقل لتوضيح المطلوب"></div>
-          <div><label class="d-label">الترتيب</label><input class="d-input ltr cf-order" type="number" min="0" value="${f.order || 0}"></div>
-        </div>
-        <div class="cf-toggles">
-          <label class="tg"><input type="checkbox" class="cf-enabled" ${f.fixed || f.enabled !== false ? 'checked' : ''} ${f.fixed ? 'disabled' : ''}><i></i><span>تفعيل</span></label>
-          <label class="tg"><input type="checkbox" class="cf-required" ${(f.fixed || f.required !== false) ? 'checked' : ''} ${f.fixed ? 'disabled' : ''}><i></i><span>هل الحقل إلزامي يجب ملئه</span></label>
-        </div>
-      </div>`).join('')}
-      <button class="btn primary" style="margin-top:16px" onclick="cfSave()">حفظ</button>
-    </div>
+    ${topBar('تعديل البيانات الخاصة باتمام الطلب', 'يمكنك تعديل الحقول المطلوبة من العميل لاتمام عملية الشراء — كلما قل عدد الحقول زادت المبيعات', '')}
+    <p class="muted" style="max-width:760px;line-height:1.9;margin:4px 0 6px">ننصح بالاكتفاء بالاسم ورقم الهاتف والعنوان عند الاستلام، وعدم إزعاج العميل بحقول كثيرة إلا عند الحاجة.</p>
+    ${fields.map(f => `
+    <section class="cf-sec" data-key="${f.key}">
+      <div class="muted small mono" style="text-align:end;direction:ltr">key: ${f.key}</div>
+      <h3 class="cf-title">${esc(f.label)}</h3>
+      <div class="cf-in">
+        <div><label class="d-label">اسم الحقل الذي سيظهر للعميل</label><input class="d-input cf-label" value="${esc(f.label)}"></div>
+        <div><label class="d-label">النص المساعد</label><input class="d-input cf-helper" value="${esc(f.helper)}" placeholder="نص توضيحي يظهر داخل الحقل — مثال: برجاء كتابة البيانات كاملة"></div>
+        <div><label class="d-label">الترتيب</label><input class="d-input ltr cf-order" type="number" min="0" value="${f.order || 0}"></div>
+      </div>
+      <div class="cf-toggles">
+        <label class="tg rev"><input type="checkbox" class="cf-enabled" ${f.fixed || f.enabled !== false ? 'checked' : ''} ${f.fixed ? 'disabled' : ''}><i></i><span>تفعيل</span></label>
+        <label class="tg rev"><input type="checkbox" class="cf-required" ${(f.fixed || f.required !== false) ? 'checked' : ''} ${f.fixed ? 'disabled' : ''}><i></i><span>هل الحقل إلزامي يجب ملئه</span></label>
+      </div>
+    </section>`).join('')}
+    <div class="save-float"><button class="save-pill" onclick="cfSave()">${I('check')} حفظ</button></div>
   </div>`;
 });
 async function cfSave() {
@@ -105,20 +105,18 @@ async function cfSave() {
 registerView('thanks-edit', async () => {
   const { settings } = await api('/api/store/settings');
   let t = {}; try { t = JSON.parse(settings.thanks || '{}'); } catch (_) {}
-  return `
+  return { html: `
   <div class="d-page">
-    ${topBar('تعديل صفحة الشكر', 'عدّل صفحة الشكر التي تظهر بعد اتمام الطلب', '')}
-    <div class="d-card">
-      <label class="tg" style="margin-bottom:14px"><input type="checkbox" id="thOn" ${t.enabled ? 'checked' : ''}><i></i><span>تفعيل</span></label>
-      <label class="d-label">المحتوى (HTML مسموح)</label>
-      <textarea id="thHtml" class="d-input" rows="10" placeholder="مثال: <h2>شكراً لطلبك!</h2><p>سنتواصل معك خلال 24 ساعة لتأكيد الشحن.</p>">${esc(t.html || '')}</textarea>
-      <label class="tg" style="margin-top:14px"><input type="checkbox" id="thHome" ${t.home_btn !== false ? 'checked' : ''}><i></i><span>زر العودة للرئيسية</span></label>
-      <button class="btn primary" style="margin-top:16px" onclick="thSave()">حفظ</button>
-    </div>
-  </div>`;
+    ${topBar('تعديل صفحة الشكر', 'يمكنك تعديل صفحة الشكر التي تظهر بعد اتمام الطلب', '')}
+    <div class="tg-row"><label class="tg rev"><input type="checkbox" id="thOn" ${t.enabled ? 'checked' : ''}><i></i><span>تفعيل</span></label></div>
+    <label class="d-label" style="margin:18px 0 8px;display:block">المحتوى</label>
+    ${richEditorHTML('thanks')}
+    <div class="tg-row" style="margin-top:16px"><label class="tg rev"><input type="checkbox" id="thHome" ${t.home_btn !== false ? 'checked' : ''}><i></i><span>زر العودة للرئيسية</span></label></div>
+    <div class="save-float"><button class="save-pill" onclick="thSave()">${I('check')} حفظ</button></div>
+  </div>`, after: () => richInit('thanks', t.html || '') };
 });
 async function thSave() {
-  const r = await api('/api/store/settings', { method: 'PUT', body: { thanks: { enabled: $('#thOn').checked, html: $('#thHtml').value, home_btn: $('#thHome').checked } } });
+  const r = await api('/api/store/settings', { method: 'PUT', body: { thanks: { enabled: $('#thOn').checked, html: richValue('thanks'), home_btn: $('#thHome').checked } } });
   if (r.error) return toast(r.error, 'err');
   toast('تم حفظ صفحة الشكر');
 }
@@ -127,25 +125,31 @@ async function thSave() {
 registerView('ui-blocks', async () => {
   const { settings } = await api('/api/store/settings');
   let u = {}; try { u = JSON.parse(settings.ui_blocks || '{}'); } catch (_) {}
-  return `
+  return { html: `
   <div class="d-page">
-    ${topBar('UI Blocks', 'استخدم UI Blocks لتعديل شكل المتجر وإضافة أجزاء مخصصة', '')}
-    <div class="d-card">
-      <label class="tg" style="margin-bottom:16px"><input type="checkbox" id="uibOn" ${u.enabled ? 'checked' : ''}><i></i><span>تفعيل</span></label>
-      <div class="uib-block">
-        <div class="uib-head"><b>اعلي ال header</b><label class="tg"><input type="checkbox" id="uibTopOn" ${u.top_on ? 'checked' : ''}><i></i><span>تفعيل محرر html</span></label></div>
-        <textarea id="uibTop" class="d-input mono ltr" rows="7" placeholder="<div>…</div>">${esc(u.top_html || '')}</textarea>
-      </div>
-      <div class="uib-block" style="margin-top:18px">
-        <div class="uib-head"><b>اسفل ال header</b><label class="tg"><input type="checkbox" id="uibBottomOn" ${u.bottom_on ? 'checked' : ''}><i></i><span>تفعيل محرر html</span></label></div>
-        <textarea id="uibBottom" class="d-input mono ltr" rows="7" placeholder="<div>…</div>">${esc(u.bottom_html || '')}</textarea>
-      </div>
-      <button class="btn primary" style="margin-top:16px" onclick="uibSave()">حفظ</button>
-    </div>
-  </div>`;
+    ${topBar('UI Blocks', 'يمكنك استخدام ال UI Blocks لتعديل شكل المتجر واضافة اجزاء مخصصة', '')}
+    <div class="tg-row"><label class="tg rev"><input type="checkbox" id="uibOn" ${u.enabled ? 'checked' : ''}><i></i><span>تفعيل</span></label></div>
+    <section class="uib-sec">
+      <h3 class="cf-title">اعلي ال header</h3>
+      <div class="tg-row"><label class="tg rev"><input type="checkbox" id="uibTopHtml" ${u.top_on ? 'checked' : ''} onchange="uibHtmlMode('uibTop', this.checked)"><i></i><span>تفعيل محرر html</span></label></div>
+      <div style="margin-top:10px">${richEditorHTML('uibTop')}</div>
+    </section>
+    <section class="uib-sec">
+      <h3 class="cf-title">اسفل ال header</h3>
+      <div class="tg-row"><label class="tg rev"><input type="checkbox" id="uibBottomHtml" ${u.bottom_on ? 'checked' : ''} onchange="uibHtmlMode('uibBottom', this.checked)"><i></i><span>تفعيل محرر html</span></label></div>
+      <div style="margin-top:10px">${richEditorHTML('uibBottom')}</div>
+    </section>
+    <div class="save-float"><button class="save-pill" onclick="uibSave()">${I('check')} حفظ</button></div>
+  </div>`, after: () => {
+    richInit('uibTop', u.top_html || '');
+    richInit('uibBottom', u.bottom_html || '');
+    if (u.top_on) rtToggleCode('uibTop', 'code');
+    if (u.bottom_on) rtToggleCode('uibBottom', 'code');
+  } };
 });
+function uibHtmlMode(id, on) { rtToggleCode(id, on ? 'code' : 'visual'); }
 async function uibSave() {
-  const r = await api('/api/store/settings', { method: 'PUT', body: { ui_blocks: { enabled: $('#uibOn').checked, top_on: $('#uibTopOn').checked, top_html: $('#uibTop').value, bottom_on: $('#uibBottomOn').checked, bottom_html: $('#uibBottom').value } } });
+  const r = await api('/api/store/settings', { method: 'PUT', body: { ui_blocks: { enabled: $('#uibOn').checked, top_on: $('#uibTopHtml').checked, top_html: richValue('uibTop'), bottom_on: $('#uibBottomHtml').checked, bottom_html: richValue('uibBottom') } } });
   if (r.error) return toast(r.error, 'err');
   toast('تم حفظ UI Blocks');
 }
@@ -190,19 +194,62 @@ async function daToggle(url, on) { const a = await daRead(); const it = a.find(x
 async function daDel(url) { if (!confirm('حذف هذا الملف؟')) return; await api('/api/design-assets', { method: 'DELETE', body: { url } }); toast('تم الحذف'); rerender(); }
 
 // ---------- الإشعارات ----------
+let NTF = { items: [], page: 1, per: 25 };
 registerView('notifications', async () => {
-  const { notifications } = await api('/api/notifications');
-  return `
+  const [{ notifications }, { settings }] = await Promise.all([api('/api/notifications'), api('/api/store/settings')]);
+  let readIds = []; try { readIds = JSON.parse(settings.notifications_read || '[]'); } catch (_) {}
+  NTF.items = notifications.map(n => ({ ...n, unread: n.fresh && !readIds.includes(n.id) }));
+  NTF.page = 1;
+  return { html: `
   <div class="d-page">
     ${topBar('الاشعارات', 'هنا تظهر الاشعارات والتنبيهات التي تساعدك في تطوير تجارتك', '')}
-    ${notifications.length ? `<div class="d-card ntf-list">
-      ${notifications.map(n => `<button class="ntf-row" onclick="location.hash='${n.link}'">
-        <span class="n-ic">${I(n.kind === 'order' ? 'bell' : 'cash')}</span>
-        <span class="n-body"><b>${esc(n.text)}</b><span class="muted small">${fmtDate(n.date)}</span></span>
-        ${n.fresh ? '<span class="chip st-new">جديد</span>' : ''}
-      </button>`).join('')}
-    </div>
-    <div class="tbl-foot muted small">الصفوف ${notifications.length} من ${notifications.length}</div>`
-    : `<div class="d-card empty"><div class="empty-ic">${I('bell')}</div><h3>لا اشعارات حتى الآن</h3><p class="muted">ستظهر هنا الطلبات الجديدة وتحديثات التفعيل.</p></div>`}
-  </div>`;
+    <div class="ntf-wrap" id="ntfWrap"></div>
+  </div>`, after: () => ntfRender() };
 });
+function ntfRender() {
+  const wrap = document.getElementById('ntfWrap'); if (!wrap) return;
+  const total = NTF.items.length;
+  if (!total) {
+    wrap.innerHTML = `<div class="d-card empty"><div class="empty-ic">${I('bell')}</div><h3>لا اشعارات حتى الآن</h3><p class="muted">ستظهر هنا الطلبات الجديدة وتحديثات التفعيل.</p></div>`;
+    return;
+  }
+  const pages = Math.max(1, Math.ceil(total / NTF.per));
+  if (NTF.page > pages) NTF.page = pages;
+  const from = (NTF.page - 1) * NTF.per, to = Math.min(total, from + NTF.per);
+  wrap.innerHTML = `<div class="d-card ntf-list">
+    ${NTF.items.slice(from, to).map((n, k) => `
+    <div class="ntf-row2">
+      <span class="n-ic">${I('bell')}${n.unread ? '<i class="n-dot"></i>' : ''}</span>
+      <div class="n-body">
+        <b class="n-text clamp">${esc(n.text)}</b>
+        <div class="n-meta">
+          <button class="n-exp" onclick="ntfExpand(this)">اظهار الكل</button>
+          ${n.unread ? '<span class="chip st-delivered">جديد</span>' : ''}
+          <span class="muted small ltr">${fmtDateNum(n.date)}</span>
+        </div>
+      </div>
+      <button class="btn sm n-view" onclick="ntfView(${from + k})">${I('eye')} مشاهدة</button>
+    </div>`).join('')}
+  </div>
+  <div class="tbl-foot muted small">
+    <span>الصفوف لكل صفحة: <select class="d-input" style="display:inline-block;width:auto;height:28px;padding:0 6px" onchange="NTF.per=+this.value;NTF.page=1;ntfRender()">${[10, 25, 50].map(v => `<option ${v === NTF.per ? 'selected' : ''}>${v}</option>`).join('')}</select></span>
+    <span class="ntf-pg">
+      <button class="btn sm" ${NTF.page <= 1 ? 'disabled' : ''} onclick="NTF.page--;ntfRender()">‹</button>
+      <button class="btn sm" ${NTF.page >= pages ? 'disabled' : ''} onclick="NTF.page++;ntfRender()">›</button>
+    </span>
+    <span class="ltr">${from + 1}-${to} من ${total}</span>
+  </div>`;
+}
+function ntfExpand(btn) { const t = btn.closest('.n-body').querySelector('.n-text'); t.classList.remove('clamp'); btn.remove(); }
+async function ntfView(i) {
+  const n = NTF.items[i]; if (!n) return;
+  openModal('الاشعار', `<p style="line-height:2">${esc(n.text)}</p><p class="muted small ltr" style="margin-top:6px">${fmtDateNum(n.date)}</p>
+    <button class="btn primary" style="margin-top:12px" onclick="closeModal();location.hash='${n.link}'">فتح الصفحة المرتبطة</button>`, () => {});
+  if (n.unread) { n.unread = false; ntfMarkRead(n.id); ntfRender(); }
+}
+async function ntfMarkRead(id) {
+  const { settings } = await api('/api/store/settings');
+  let ids = []; try { ids = JSON.parse(settings.notifications_read || '[]'); } catch (_) {}
+  if (!ids.includes(id)) ids.push(id);
+  await api('/api/store/settings', { method: 'PUT', body: { notifications_read: ids.slice(-200) } });
+}

@@ -612,9 +612,9 @@ const api = {
   'GET /api/notifications': (req, res, user) => {
     const store = getStoreForUser(user);
     const orders = db.prepare("SELECT number, customer_name, total, status, created_at FROM orders WHERE store_id = ? AND demo = 0 ORDER BY id DESC LIMIT 50").all(store.id)
-      .map(o => ({ kind: 'order', text: `طلب جديد ${o.number} بقيمة ${o.total} ج.م من ${o.customer_name}`, date: o.created_at, fresh: o.status === 'new', link: '#/orders' }));
-    const acts = db.prepare("SELECT status, created_at, reviewed_at FROM activation_requests WHERE store_id = ? ORDER BY id DESC LIMIT 10").all(store.id)
-      .map(a => ({ kind: 'activation', text: a.status === 'approved' ? 'تمت الموافقة على طلب تفعيل متجرك' : a.status === 'rejected' ? 'تم رفض طلب التفعيل — راجع الملاحظات وأعد المحاولة' : 'طلب التفعيل قيد المراجعة', date: a.reviewed_at || a.created_at, fresh: false, link: '#/top-up' }));
+      .map(o => ({ id: 'order-' + o.number, kind: 'order', text: `طلب جديد ${o.number} بقيمة ${o.total} ج.م من ${o.customer_name}`, date: o.created_at, fresh: o.status === 'new', link: '#/orders' }));
+    const acts = db.prepare("SELECT id, status, created_at, reviewed_at FROM activation_requests WHERE store_id = ? ORDER BY id DESC LIMIT 10").all(store.id)
+      .map(a => ({ id: 'act-' + a.id, kind: 'activation', text: a.status === 'approved' ? 'تمت الموافقة على طلب تفعيل متجرك' : a.status === 'rejected' ? 'تم رفض طلب التفعيل — راجع الملاحظات وأعد المحاولة' : 'طلب التفعيل قيد المراجعة', date: a.reviewed_at || a.created_at, fresh: false, link: '#/top-up' }));
     const items = [...orders, ...acts].sort((a, b) => String(b.date).localeCompare(String(a.date))).slice(0, 50);
     json(res, 200, { notifications: items });
   },
@@ -650,7 +650,7 @@ const api = {
   'PUT /api/store/settings': async (req, res, user) => {
     const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
     const store = getStoreForUser(user);
-    const allowed = ['policies', 'head_code', 'seo', 'social', 'custom_domain', 'max_items', 'notify_email', 'notifications', 'digital_delivery', 'checkout_fields', 'thanks', 'ui_blocks', 'design_assets'];
+    const allowed = ['policies', 'head_code', 'seo', 'social', 'custom_domain', 'max_items', 'notify_email', 'notifications', 'digital_delivery', 'checkout_fields', 'thanks', 'ui_blocks', 'design_assets', 'notifications_read'];
     const up = db.prepare('INSERT INTO store_settings (store_id, key, value, updated_at) VALUES (?, ?, ?, datetime(\'now\')) ON CONFLICT(store_id, key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at');
     for (const k of allowed) if (k in b) up.run(store.id, k, typeof b[k] === 'string' ? b[k] : JSON.stringify(b[k]));
     if ('phone' in b) db.prepare('UPDATE stores SET phone = ? WHERE id = ?').run(String(b.phone).trim(), store.id);
