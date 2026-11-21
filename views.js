@@ -43,10 +43,10 @@ ${extraHead}</head><body class="bg-background text-foreground font-arabic antial
 
 const logo = `<a class="flex items-center gap-2 shrink-0" href="/"><span class="grid place-items-center"><svg viewBox="0 0 32 32" width="30" height="30"><rect width="32" height="32" rx="8" fill="#141924"/><path d="M9 20l7-11 7 11" stroke="#27cd27" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="text-[17px] font-bold tracking-tight">اكتف <b class="text-brand">اوردر</b></span></a>`;
 
-// ---------- landing ----------
-function landing() {
-  const storesCount = db.prepare('SELECT COUNT(*) c FROM stores').get().c;
-  return base('اكتف اوردر | أنشئ متجرك الإلكتروني في دقائق', `
+
+// ---------- site chrome ----------
+function siteHeader(mode) {
+  const dark = `
 <header class="fixed top-0 inset-x-0 z-50 bg-night/80 backdrop-blur-xl border-b border-night-border">
   <div class="relative mx-auto flex h-16 items-center justify-between gap-2 px-4 sm:px-8 max-w-6xl">
     ${logo}
@@ -57,7 +57,8 @@ function landing() {
       <a class="rounded-full px-3.5 py-2 text-[14px] font-medium transition-colors duration-150 hover:bg-white/[0.06] hover:text-white" href="/blog">المدونة</a>
       <a class="rounded-full px-3.5 py-2 text-[14px] font-medium transition-colors duration-150 hover:bg-white/[0.06] hover:text-white" href="/themes">القوالب</a>
     </nav>
-    <div class="hidden items-center gap-2 lg:flex">
+    <div class="hidden items-center gap-1 lg:flex">
+      <details class="relative group"><summary class="list-none flex items-center gap-1.5 rounded-full px-3 py-2 text-[13.5px] font-medium cursor-pointer transition-colors text-night-foreground/85 hover:text-white"><svg width="18" height="13" viewBox="0 0 18 13" class="rounded-[3px] shadow-sm"><rect width="18" height="13" fill="#fff"/><rect width="18" height="4.33" fill="#ce1126"/><rect y="8.67" width="18" height="4.33" fill="#000"/></svg><span>مصر · AR</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary><div class="absolute left-0 top-11 w-44 rounded-2xl border border-night-border bg-night/95 backdrop-blur-xl p-2 shadow-elevated"><span class="flex items-center gap-2 rounded-xl px-3 py-2 text-[13.5px] font-medium text-night-foreground/85 hover:bg-white/[0.06]"><svg width="18" height="13" viewBox="0 0 18 13" class="rounded-[3px] shadow-sm"><rect width="18" height="13" fill="#fff"/><rect width="18" height="4.33" fill="#ce1126"/><rect y="8.67" width="18" height="4.33" fill="#000"/></svg> مصر — العربية</span></div></details>
       <a class="rounded-full px-3.5 py-2 text-[14px] font-medium text-night-foreground/85 transition-colors hover:text-white" href="/login">تسجيل دخول</a>
       <a class="rounded-full bg-white px-4 py-2 text-[14px] font-semibold text-night transition-all duration-200 hover:bg-brand hover:text-night hover:shadow-[0_0_28px_-6px_var(--color-brand)]" href="/register">ابدأ متجرك مجاناً</a>
     </div>
@@ -75,7 +76,57 @@ function landing() {
       </div>
     </details>
   </div>
-</header>
+</header>`;
+  const light = `
+<header class="fixed top-0 inset-x-0 z-50 bg-background/85 backdrop-blur-xl border-b border-border">
+  <div class="relative mx-auto flex h-16 items-center justify-between gap-2 px-4 sm:px-8 max-w-6xl">
+    ${logo}
+    <nav class="hidden items-center gap-0.5 lg:flex text-foreground/80">
+      <a class="rounded-full px-3.5 py-2 text-[14px] font-medium transition-colors duration-150 hover:bg-foreground/[0.06] hover:text-foreground" href="/">الرئيسية</a>
+      <a class="rounded-full px-3.5 py-2 text-[14px] font-medium transition-colors duration-150 hover:bg-foreground/[0.06] hover:text-foreground" href="/blog">الكورسات</a>
+      <a class="rounded-full px-3.5 py-2 text-[14px] font-medium transition-colors duration-150 hover:bg-foreground/[0.06] hover:text-foreground" href="/pricing">الأسعار</a>
+      <a class="rounded-full px-3.5 py-2 text-[14px] font-medium transition-colors duration-150 hover:bg-foreground/[0.06] hover:text-foreground" href="/blog">المدونة</a>
+      <a class="rounded-full px-3.5 py-2 text-[14px] font-medium transition-colors duration-150 hover:bg-foreground/[0.06] hover:text-foreground" href="/themes">القوالب</a>
+    </nav>
+    <div class="hidden items-center gap-1 lg:flex">
+      <details class="relative group"><summary class="list-none flex items-center gap-1.5 rounded-full px-3 py-2 text-[13.5px] font-medium cursor-pointer transition-colors text-foreground/80 hover:text-foreground"><svg width="18" height="13" viewBox="0 0 18 13" class="rounded-[3px] shadow-sm"><rect width="18" height="13" fill="#fff"/><rect width="18" height="4.33" fill="#ce1126"/><rect y="8.67" width="18" height="4.33" fill="#000"/></svg><span>مصر · AR</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary><div class="absolute left-0 top-11 w-44 rounded-2xl border border-border bg-background/95 backdrop-blur-xl p-2 shadow-elevated"><span class="flex items-center gap-2 rounded-xl px-3 py-2 text-[13.5px] font-medium text-foreground/80 hover:bg-foreground/[0.06]"><svg width="18" height="13" viewBox="0 0 18 13" class="rounded-[3px] shadow-sm"><rect width="18" height="13" fill="#fff"/><rect width="18" height="4.33" fill="#ce1126"/><rect y="8.67" width="18" height="4.33" fill="#000"/></svg> مصر — العربية</span></div></details>
+      <a class="rounded-full px-3.5 py-2 text-[14px] font-medium text-foreground/80 transition-colors hover:text-foreground" href="/login">تسجيل دخول</a>
+      <a class="rounded-full bg-night px-4 py-2 text-[14px] font-semibold text-white transition-all duration-200 hover:bg-brand hover:text-night hover:shadow-[0_0_28px_-6px_var(--color-brand)]" href="/register">ابدأ متجرك مجاناً</a>
+    </div>
+    <details class="lg:hidden relative" id="mnav">
+      <summary class="list-none grid place-items-center w-10 h-10 rounded-full text-foreground/80 hover:bg-foreground/[0.06] cursor-pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
+      <div class="absolute left-0 top-12 w-56 rounded-2xl border border-border bg-background/95 backdrop-blur-xl p-2 shadow-elevated">
+        <a class="block rounded-xl px-4 py-2.5 text-[14px] font-medium text-foreground/80 hover:bg-foreground/[0.06]" href="/">الرئيسية</a>
+        <a class="block rounded-xl px-4 py-2.5 text-[14px] font-medium text-foreground/80 hover:bg-foreground/[0.06]" href="/blog">الكورسات</a>
+        <a class="block rounded-xl px-4 py-2.5 text-[14px] font-medium text-foreground/80 hover:bg-foreground/[0.06]" href="/pricing">الأسعار</a>
+        <a class="block rounded-xl px-4 py-2.5 text-[14px] font-medium text-foreground/80 hover:bg-foreground/[0.06]" href="/blog">المدونة</a>
+        <a class="block rounded-xl px-4 py-2.5 text-[14px] font-medium text-foreground/80 hover:bg-foreground/[0.06]" href="/themes">القوالب</a>
+        <div class="my-1 border-t border-night-border"></div>
+        <a class="block rounded-xl px-4 py-2.5 text-[14px] font-medium text-foreground/80 hover:bg-foreground/[0.06]" href="/login">تسجيل دخول</a>
+        <a class="block rounded-xl bg-night px-4 py-2.5 text-[14px] font-semibold text-white text-center" href="/register">ابدأ متجرك مجاناً</a>
+      </div>
+    </details>
+  </div>
+</header>`;
+  return mode === 'light' ? light : dark;
+}
+const siteFooter = `
+<footer class="bg-night text-night-foreground border-t border-night-border"><div class="mx-auto max-w-6xl px-4 sm:px-8 py-14">
+  <div class="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+    <div>${logo}<p class="mt-4 text-[13.5px] leading-6 text-night-muted">منصة عربية متكاملة لإنشاء المتاجر الإلكترونية، مبنية خصيصاً لتجار الدفع عند الاستلام في مصر والوطن العربي.</p></div>
+    <div><h4 class="text-[14px] font-bold mb-4">المنصة</h4><div class="flex flex-col gap-2.5 text-[13.5px] text-night-muted"><a class="hover:text-brand-bright transition-colors" href="/">الرئيسية</a><a class="hover:text-brand-bright transition-colors" href="/pricing">الأسعار</a><a class="hover:text-brand-bright transition-colors" href="/themes">القوالب</a><a class="hover:text-brand-bright transition-colors" href="/blog">الكورسات</a><a class="hover:text-brand-bright transition-colors" href="/s/noura" target="_blank">متجر تجريبي</a></div></div>
+    <div><h4 class="text-[14px] font-bold mb-4">الشركة</h4><div class="flex flex-col gap-2.5 text-[13.5px] text-night-muted"><a class="hover:text-brand-bright transition-colors" href="/blog/about-us/">من نحن</a><a class="hover:text-brand-bright transition-colors" href="/blog">المدونة</a><a class="hover:text-brand-bright transition-colors" href="/blog/contact-us/">اتصل بنا</a><a class="hover:text-brand-bright transition-colors" href="/blog/contact-us/">طلب تطويرات</a></div></div>
+    <div><h4 class="text-[14px] font-bold mb-4">قانوني</h4><div class="flex flex-col gap-2.5 text-[13.5px] text-night-muted"><a class="hover:text-brand-bright transition-colors" href="/blog/conditions/">سياسة الاستخدام</a><a class="hover:text-brand-bright transition-colors" href="/blog/privacy-policy/">سياسة الخصوصية</a></div></div>
+  </div>
+  <div class="mt-12 pt-6 border-t border-night-border flex flex-wrap items-center justify-between gap-3 text-[12.5px] text-night-muted"><span>اكتف اوردر © 2026 — جميع الحقوق محفوظة</span><span>صُنعت في القاهرة</span></div>
+</div></footer>
+<a href="https://wa.me/201011206670" target="_blank" rel="noopener" aria-label="تواصل معنا واتساب" class="fixed bottom-6 right-6 z-50 grid place-items-center w-14 h-14 rounded-full bg-brand text-night shadow-[0_8px_30px_-6px_var(--color-brand)] transition-transform duration-200 hover:scale-110 animate__animated animate__fadeInUp"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.5 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.4-.7-2.9-1.2-4.7-4.1-4.9-4.3-.1-.2-1.1-1.5-1.1-2.9s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .6l-.4.6c-.2.2-.4.4-.2.8.2.4 1 1.7 2.2 2.7 1.5 1.3 2.7 1.7 3.1 1.9.4.2.6.1.8-.1l1-1.2c.2-.3.4-.2.7-.1l2 1c.3.1.5.2.6.4 0 .1 0 .7-.3 1.1z"/></svg></a>`;
+
+// ---------- landing ----------
+function landing() {
+  const storesCount = db.prepare('SELECT COUNT(*) c FROM stores').get().c;
+  return base('اكتف اوردر | أنشئ متجرك الإلكتروني في دقائق', `
+${siteHeader('dark')}
 
 <section class="relative overflow-hidden bg-night text-night-foreground pt-32 pb-10">
   <div class="hero-grid absolute inset-0"></div>
@@ -327,14 +378,14 @@ ${activeConfirmSection()}
     <h2 class="mt-2 text-[32px] sm:text-[38px] font-bold tracking-tight">إنشاء متجرك الإلكتروني أسهل مما تتوقع</h2>
   </div>
   <div class="mt-12 grid md:grid-cols-2 gap-5 max-w-4xl mx-auto">
-    <div class="rounded-3xl bg-brand p-8 text-night shadow-float relative overflow-hidden" data-reveal="pop">
+    <div class="rounded-3xl bg-brand p-8 text-white shadow-float relative overflow-hidden" data-reveal="pop">
       <span class="inline-block rounded-full bg-night/90 px-4 py-1.5 text-[12.5px] font-bold text-white">أقل سعر (مجاني)</span>
       <h3 class="mt-5 text-[26px] font-bold">الباقة العادية</h3>
       <p class="mt-2 text-[14px] leading-6 opacity-90">جهّز متجرك بالكامل مجاناً، وادفع فقط عندما تقرر النشر.</p>
       <div class="mt-5 text-[46px] font-bold leading-none">0 <span class="text-[15px] font-semibold opacity-80">ج.م / للتجهيز</span></div>
-      <div class="my-6 border-t border-night/15"></div>
+      <div class="my-6 border-t border-white/25"></div>
       <ul class="space-y-3 text-[14px]">
-        ${['عدد غير محدود من المنتجات','عدد غير محدود من الطلبات','زيارات غير محدودة','متجرك يظل محفوظاً حتى لو لم تشترك','دعم سريع على مدار الساعة'].map(x=>`<li class="flex items-center gap-2.5"><span class="grid place-items-center w-5 h-5 rounded-full bg-night/90 text-white">${IC.check}</span>${x}</li>`).join('')}
+        ${['عدد غير محدود من المنتجات','عدد غير محدود من الطلبات','زيارات غير محدودة','متجرك يظل محفوظاً حتى لو لم تشترك','دعم سريع على مدار الساعة'].map(x=>`<li class="flex items-center gap-2.5"><span class="grid place-items-center w-5 h-5 rounded-full bg-white text-brand-foreground">${IC.check}</span>${x}</li>`).join('')}
       </ul>
       <a class="mt-8 block text-center rounded-full bg-night px-7 py-3.5 text-[15px] font-bold text-white transition-all duration-200 hover:opacity-90" href="/register">اشترك الآن</a>
     </div>
@@ -426,16 +477,7 @@ ${activeConfirmSection()}
   </div>
 </section>
 
-<footer class="bg-night text-night-foreground border-t border-night-border"><div class="mx-auto max-w-6xl px-4 sm:px-8 py-14">
-  <div class="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
-    <div>${logo}<p class="mt-4 text-[13.5px] leading-6 text-night-muted">منصة عربية متكاملة لإنشاء المتاجر الإلكترونية، مبنية خصيصاً لتجار الدفع عند الاستلام في مصر والوطن العربي.</p></div>
-    <div><h4 class="text-[14px] font-bold mb-4">المنصة</h4><div class="flex flex-col gap-2.5 text-[13.5px] text-night-muted"><a class="hover:text-brand-bright transition-colors" href="/">الرئيسية</a><a class="hover:text-brand-bright transition-colors" href="/pricing">الأسعار</a><a class="hover:text-brand-bright transition-colors" href="/themes">القوالب</a><a class="hover:text-brand-bright transition-colors" href="/blog">الكورسات</a><a class="hover:text-brand-bright transition-colors" href="/s/noura" target="_blank">متجر تجريبي</a></div></div>
-    <div><h4 class="text-[14px] font-bold mb-4">الشركة</h4><div class="flex flex-col gap-2.5 text-[13.5px] text-night-muted"><a class="hover:text-brand-bright transition-colors" href="/blog/about-us/">من نحن</a><a class="hover:text-brand-bright transition-colors" href="/blog">المدونة</a><a class="hover:text-brand-bright transition-colors" href="/blog/contact-us/">اتصل بنا</a><a class="hover:text-brand-bright transition-colors" href="/blog/contact-us/">طلب تطويرات</a></div></div>
-    <div><h4 class="text-[14px] font-bold mb-4">قانوني</h4><div class="flex flex-col gap-2.5 text-[13.5px] text-night-muted"><a class="hover:text-brand-bright transition-colors" href="/blog/conditions/">سياسة الاستخدام</a><a class="hover:text-brand-bright transition-colors" href="/blog/privacy-policy/">سياسة الخصوصية</a></div></div>
-  </div>
-  <div class="mt-12 pt-6 border-t border-night-border flex flex-wrap items-center justify-between gap-3 text-[12.5px] text-night-muted"><span>اكتف اوردر © 2026 — جميع الحقوق محفوظة</span><span>صُنعت في القاهرة</span></div>
-</div></footer>
-<a href="https://wa.me/201011206670" target="_blank" rel="noopener" aria-label="تواصل معنا واتساب" class="fixed bottom-6 right-6 z-50 grid place-items-center w-14 h-14 rounded-full bg-brand text-night shadow-[0_8px_30px_-6px_var(--color-brand)] transition-transform duration-200 hover:scale-110 animate__animated animate__fadeInUp"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.5 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.4-.7-2.9-1.2-4.7-4.1-4.9-4.3-.1-.2-1.1-1.5-1.1-2.9s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .6l-.4.6c-.2.2-.4.4-.2.8.2.4 1 1.7 2.2 2.7 1.5 1.3 2.7 1.7 3.1 1.9.4.2.6.1.8-.1l1-1.2c.2-.3.4-.2.7-.1l2 1c.3.1.5.2.6.4 0 .1 0 .7-.3 1.1z"/></svg></a>
+${siteFooter}
 `);
 }
 
@@ -776,4 +818,100 @@ function cartDrawer(store) {
 </div></aside>`;
 }
 
-module.exports = { landing, login: () => authCard('login'), register: () => authCard('register'), appShell, adminShell, storefront, productPage, checkoutPage, orderPage, comingSoon, notFound, onboarding, egp, esc };
+// ---------- standalone pages (EO clone) ----------
+function faqBlock(items) {
+  return `<div class="mt-12 space-y-3">${items.map(q=>`
+    <details class="group rounded-2xl border border-border bg-card px-6 shadow-soft" data-reveal="fade-up">
+      <summary class="flex items-center justify-between gap-4 py-5 cursor-pointer list-none text-[15px] font-semibold">${q[0]}<span class="grid place-items-center w-7 h-7 rounded-full bg-muted text-muted-foreground transition-transform duration-200 group-open:rotate-45">${IC.plus || '+'}</span></summary>
+      <p class="pb-5 text-[14px] leading-7 text-muted-foreground">${q[1]}</p>
+    </details>`).join('')}</div>`;
+}
+
+function pricingPage() {
+  return base('الأسعار | اكتف اوردر', `
+${siteHeader('light')}
+<section class="pt-32 pb-24 bg-background"><div class="mx-auto max-w-6xl px-4 sm:px-8">
+  <div class="text-center max-w-2xl mx-auto" data-reveal="fade-up">
+    <span class="inline-flex items-center gap-2 rounded-full bg-muted px-4 py-1.5 text-[13px] font-semibold text-muted-foreground">الأسعار</span>
+    <h1 class="mt-4 text-[36px] sm:text-[44px] font-bold tracking-tight leading-snug">إنشاء متجرك الإلكتروني <span class="text-brand-foreground">أسهل مما تتوقع</span></h1>
+    <p class="mt-4 text-[16px] leading-8 text-muted-foreground">بدون خبرة برمجية وبدون الاستعانة بمطوّر: أنشئ متجرك بنفسك في أقل من 10 دقائق، بدون أكواد أو خطوات معقدة.</p>
+  </div>
+  <div class="mt-14 grid md:grid-cols-2 gap-5 max-w-4xl mx-auto">
+    <div class="rounded-3xl bg-brand p-8 text-white shadow-float" data-reveal="pop">
+      <span class="inline-block rounded-full bg-night/90 px-4 py-1.5 text-[12.5px] font-bold text-white">أقل سعر (مجاني)</span>
+      <h2 class="mt-5 text-[26px] font-bold">الباقة العادية</h2>
+      <p class="mt-2 text-[14px] leading-6 opacity-90">جهّز متجرك بالكامل مجاناً، وادفع فقط عندما تقرر النشر.</p>
+      <div class="mt-5 text-[46px] font-bold leading-none">0 <span class="text-[15px] font-semibold opacity-80">ج.م / للتجهيز</span></div>
+      <div class="my-6 border-t border-white/25"></div>
+      <ul class="space-y-3 text-[14px]">${['عدد غير محدود من المنتجات','عدد غير محدود من الطلبات','زيارات غير محدودة','متجرك يظل محفوظاً حتى لو لم تشترك','دعم سريع على مدار الساعة'].map(x=>`<li class="flex items-center gap-2.5"><span class="grid place-items-center w-5 h-5 rounded-full bg-white text-brand-foreground">${IC.check}</span>${x}</li>`).join('')}</ul>
+      <a class="mt-8 block text-center rounded-full bg-night px-7 py-3.5 text-[15px] font-bold text-white transition-all duration-200 hover:opacity-90" href="/register">اشترك الآن</a>
+    </div>
+    <div class="rounded-3xl border border-border bg-card p-8 shadow-soft" data-reveal="pop" style="--rv-delay:.1s">
+      <span class="inline-block rounded-full bg-night px-4 py-1.5 text-[12.5px] font-bold text-white">للمتاجر المنشورة</span>
+      <h2 class="mt-5 text-[26px] font-bold">الباقة الاحترافية</h2>
+      <p class="mt-2 text-[14px] leading-6 text-muted-foreground">انشر متجرك بكل المميزات باشتراك بسيط، وبدون أي عمولة على الطلبات.</p>
+      <div class="mt-5 text-[46px] font-bold leading-none">50 <span class="text-[15px] font-semibold text-muted-foreground">ج.م / كل 30 يوم</span></div>
+      <div class="my-6 border-t border-border"></div>
+      <ul class="space-y-3 text-[14px]">${['نشر المتجر برابطك الخاص','0% عمولة على مبيعاتك','كل القوالب والتحليلات والبيكسلات','تأكيد واتساب والسلات المتروكة','ربط دومين خاص وفريق وصلاحيات','دفع عبر InstaPay أو Vodafone Cash'].map(x=>`<li class="flex items-center gap-2.5"><span class="grid place-items-center w-5 h-5 rounded-full bg-brand-soft text-brand-foreground">${IC.check}</span>${x}</li>`).join('')}</ul>
+      <a class="btn-sheen mt-8 block text-center rounded-full bg-brand px-7 py-3.5 text-[15px] font-bold text-night transition-all duration-200 hover:bg-brand-bright" href="/register">اشترك الآن</a>
+    </div>
+  </div>
+  <div class="mt-20 max-w-3xl mx-auto">
+    <h2 class="text-center text-[28px] font-bold tracking-tight" data-reveal="fade-up">هل لا زلت متردّداً؟</h2>
+    ${faqBlock([['ما وسائل الدفع التي تدعمونها؟','ندعم الدفع عند الاستلام بالكامل، ومع باقة النشر يمكنك ربط Paymob لقبول البطاقات والمحافظ الإلكترونية.'],['ماذا يحدث عند تأخير الدفع؟','يبقى متجرك وبياناتك محفوظة كاملة، ويتوقف النشر مؤقتاً حتى التجديد — تستعيد كل شيء بمجرد السداد.'],['هل هناك مصاريف خفية؟','لا، التكلفة معلنة بالكامل: الاشتراك فقط، بدون عمولة على الطلبات وبدون رسوم إضافية.'],['هل أحتاج دومين؟','متجرك يعمل برابط جاهز فوراً، ويمكنك ربط دومين خاص بك في أي وقت من الإعدادات.'],['هل يوجد دعم بالعربية؟','نعم، فريق الدعم متاح بالعربية على مدار الساعة عبر واتساب.']])}
+    <div class="mt-10 rounded-3xl border border-border bg-card p-8 text-center shadow-soft" data-reveal="fade-up">
+      <h3 class="text-[20px] font-bold">وإن لم تجد سؤالك هنا؟</h3>
+      <p class="mt-2 text-[14px] text-muted-foreground">فريق الدعم في انتظارك… 24/7</p>
+      <a class="mt-5 inline-flex items-center gap-2 rounded-full bg-brand px-7 py-3 text-[14px] font-bold text-night transition-all duration-200 hover:bg-brand-bright" href="https://wa.me/201011206670" target="_blank" rel="noopener">تحدّث مع فريق الدعم</a>
+    </div>
+  </div>
+</div></section>
+${siteFooter}`);
+}
+
+function themesPage() {
+  return base('القوالب | اكتف اوردر', `
+${siteHeader('light')}
+<section class="pt-32 pb-16 bg-background"><div class="mx-auto max-w-6xl px-4 sm:px-8">
+  <div class="text-center max-w-2xl mx-auto" data-reveal="fade-up">
+    <h1 class="text-[34px] sm:text-[42px] font-bold tracking-tight leading-snug">قوالب جديدة بتصميمات عصرية تساعدك على بدء البيع في دقائق</h1>
+    <div class="mt-8 flex flex-wrap justify-center gap-8">
+      ${[['+4','قوالب عصرية'],['0 ج.م','تكلفة التجربة'],['+10 دقائق','لإطلاق متجرك']].map(x=>`<div class="text-center"><div class="text-[30px] font-bold text-brand-foreground">${x[0]}</div><div class="text-[13px] text-muted-foreground mt-1">${x[1]}</div></div>`).join('')}
+    </div>
+  </div>
+</div></section>
+<section class="py-16 bg-subtle"><div class="mx-auto max-w-6xl px-4 sm:px-8">
+  <h2 class="text-[26px] font-bold tracking-tight" data-reveal="fade-up">كل ما تحتاجه لنمو متجرك في قالب واحد</h2>
+  <div class="mt-8 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    ${[['تصميم يبرز علامتك التجارية','ألوان وخطوط عربية قابلة للتخصيص بالكامل.'],['سرعة الوصول للمنتجات','تصنيفات وفلاتر تقلّص خطوات الشراء.'],['تجربة متكاملة على جميع الأجهزة','موبايل أولاً، حيث يشتري عملاؤك فعلاً.'],['تصميمات جاهزة للانطلاق','أقسام وبنرات مرتبة — أضف منتجاتك فقط.']].map((f,i)=>`
+    <div class="rounded-2xl border border-border bg-card p-6 shadow-soft" data-reveal="fade-up" style="--rv-delay:${i*0.08}s"><h3 class="text-[15.5px] font-bold">${f[0]}</h3><p class="mt-1.5 text-[13.5px] leading-6 text-muted-foreground">${f[1]}</p></div>`).join('')}
+  </div>
+</div></section>
+<section class="py-16 bg-background"><div class="mx-auto max-w-6xl px-4 sm:px-8">
+  <h2 class="text-[26px] font-bold tracking-tight" data-reveal="fade-up">ابدأ متجرك بسهولة مع قوالب جاهزة وقابلة للتعديل</h2>
+  <div class="mt-10 grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+    ${[['#141924','#27cd27','عصري','أزياء وموضة'],['#0B1526','#3B82F6','تقني','إلكترونيات'],['#4A2C3D','#D98E9A','بوتيك','مستحضرات تجميل'],['#14532D','#F59E0B','طازج','عروض وسوبرماركت'],['#1F2937','#F97316','دافئ','مأكولات وحلويات'],['#312E81','#A5B4FC','ليلي','ساعات وإكسسوارات'],['#3F3F1E','#EAB308','ذهبي','عطور وهدايا'],['#083344','#22D3EE','بحري','رياضة ولياقة']].map((t,i)=>`
+    <div class="group rounded-2xl border border-border bg-card overflow-hidden shadow-soft transition-all duration-300 hover:shadow-float hover:-translate-y-1" data-reveal="fade-up" style="--rv-delay:${i*0.08}s">
+      <div class="relative h-44 grid place-items-center transition-transform duration-500 group-hover:scale-[1.03]" style="background:linear-gradient(135deg,${t[0]},color-mix(in oklab,${t[0]} 70%,${t[1]}))">
+        <span class="absolute top-3 start-3 rounded-full bg-brand-soft px-3 py-1 text-[11.5px] font-bold text-brand-foreground">مجاني</span>
+        <span class="rounded-full px-5 py-2 text-[15px] font-bold" style="background:${t[1]};color:#0a0f14">${t[2]}</span>
+      </div>
+      <div class="p-5"><h3 class="text-[15px] font-bold">قالب ${t[2]}</h3><p class="mt-1 text-[13px] text-muted-foreground">تصميم سريع وبسيط لزيادة المبيعات</p><div class="mt-3"><span class="rounded-full border border-border px-3 py-1 text-[11.5px] text-muted-foreground">${t[3]}</span></div></div>
+    </div>`).join('')}
+  </div>
+</div></section>
+<section class="relative overflow-hidden bg-night text-night-foreground py-20">
+  <div class="hero-grid absolute inset-0 opacity-60"></div>
+  <div class="relative mx-auto max-w-3xl px-4 text-center" data-reveal="fade-up">
+    <h2 class="text-[30px] sm:text-[38px] font-bold tracking-tight">مستعد لزيادة مبيعات متجرك؟</h2>
+    <a class="btn-sheen mt-8 inline-block rounded-full bg-brand px-9 py-4 text-[16px] font-bold text-night transition-all duration-200 hover:bg-brand-bright glow-brand" href="/register">ابدأ متجرك مجاناً</a>
+  </div>
+</section>
+<section class="py-20 bg-background"><div class="mx-auto max-w-3xl px-4 sm:px-8">
+  <h2 class="text-center text-[28px] font-bold tracking-tight" data-reveal="fade-up">إجابات لأكثر الأسئلة شيوعاً حول القوالب</h2>
+  ${faqBlock([['هل يمكنني تغيير القالب بعد الإطلاق؟','نعم، بدّل القالب في أي وقت من لوحة التحكم ومحتوى متجرك ينتقل كما هو.'],['هل أحتاج مصمماً لتعديل القالب؟','لا، الألوان والخطوط والأقسام تتعدل من لوحة تخصيص مرئية بدون كود.'],['هل القوالب متوافقة مع الموبايل؟','كل القوالب مصممة موبايل أولاً ومتجاوبة مع جميع الشاشات.'],['هل القوالب مجانية؟','نعم، كل القوالب مشمولة في كل الباقات بدون تكلفة إضافية.']])}
+</div></section>
+${siteFooter}`);
+}
+
+module.exports = { landing, login: () => authCard('login'), register: () => authCard('register'), appShell, adminShell, storefront, productPage, checkoutPage, orderPage, comingSoon, notFound, onboarding, egp, esc, pricingPage, themesPage };
