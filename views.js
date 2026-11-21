@@ -839,11 +839,16 @@ function eoHero(store, products) {
 }
 const storeScripts = store => `<script>window.STORE_SLUG=${JSON.stringify(store.slug)};</script><script src="/public/js/store.js"></script>`;
 
-function productCardHTML(store, lay, p) {
+function productCardHTML(store, lay, p, t) {
+  t = t || {};
   const imgs = JSON.parse(p.images || '[]');
   const off = p.compare_at_price && p.compare_at_price > p.price ? Math.round(100 - p.price * 100 / p.compare_at_price) : 0;
-  const badge = off ? (lay === 'fasty' || lay === 'luxify' ? `<span class="p-off">تخفيضات</span>` : `<span class="p-off">-${off}%</span>`) : '';
-  return `<a class="p-card" data-cat="${esc(p.category)}" data-name="${esc(p.name)}" href="/s/${esc(store.slug)}/p/${p.id}">
+  const badgeStyle = (t.sale_badge_bg_color || t.sale_badge_text_color) ? ` style="background:${esc(t.sale_badge_bg_color || '')};color:${esc(t.sale_badge_text_color || '')}"` : '';
+  const badge = off && t.show_sale_badge === false ? ''
+    : off ? (t.custom_badge_title ? `<span class="p-off"${badgeStyle}>${esc(t.custom_badge_title)}</span>`
+    : (lay === 'fasty' || lay === 'luxify' ? `<span class="p-off"${badgeStyle}>تخفيضات</span>` : `<span class="p-off"${badgeStyle}>-${off}%</span>`)) : '';
+  const cardBg = t.card_background_product ? ` style="background:${esc(t.card_background_product)};color:${esc(t.card_background_product_color || 'inherit')}"` : '';
+  return `<a class="p-card" data-cat="${esc(p.category)}" data-name="${esc(p.name)}" href="/s/${esc(store.slug)}/p/${p.id}"${cardBg}>
     ${badge}
     ${p.stock <= 0 ? `<span class="p-out">نفدت الكمية</span>` : ''}
     <div class="p-img"><img src="${esc(imgs[0] || ph(p.name))}" alt="${esc(p.name)}" loading="lazy"></div>
@@ -868,7 +873,7 @@ ${owner ? `<div class="s-ownerbar">وضع المعاينة — <a href="/app">ا
 ${storeHeader(store, t, allCats)}
 <main class="cat-page">
 <div class="cat-head"><h1>${esc(cat)}</h1>${sortSel}</div>
-${products.length ? `<div class="s-grid">${products.map(p => productCardHTML(store, lay, p)).join('')}</div>` : `<div class="s-empty">لا توجد منتجات في هذا القسم حالياً — <a href="/s/${esc(store.slug)}">تصفح كل المنتجات</a></div>`}
+${products.length ? `<div class="s-grid">${products.map(p => productCardHTML(store, lay, p, t)).join('')}</div>` : `<div class="s-empty">لا توجد منتجات في هذا القسم حالياً — <a href="/s/${esc(store.slug)}">تصفح كل المنتجات</a></div>`}
 </main>
 <footer class="s-footer">${socialLinks(store)}<p>يعمل بواسطة <a href="/">اكتف اوردر</a> — الدفع عند الاستلام متاح</p></footer>
 ${cartDrawer(store)}
@@ -938,16 +943,16 @@ ${store.whatsapp ? `<a class="s-btn ghost" href="https://wa.me/${escAttr(store.w
     case 'product_grid': {
       let list = products; if (st.sort === 'price_asc') list = [...products].sort((a, b) => a.price - b.price); if (st.sort === 'price_desc') list = [...products].sort((a, b) => b.price - a.price);
       list = list.slice(0, st.limit || 24);
-      return `${st.title ? `<h2 class="s-sec-t">${esc(st.title)}</h2>` : ''}<main class="s-grid">${list.map(p => productCardHTML(store, lay, p)).join('') || `<div class="s-empty">لا توجد منتجات بعد</div>`}</main>`;
+      return `${st.title ? `<h2 class="s-sec-t">${esc(st.title)}</h2>` : ''}<main class="s-grid">${list.map(p => productCardHTML(store, lay, p, ctx.t)).join('') || `<div class="s-empty">لا توجد منتجات بعد</div>`}</main>`;
     }
     case 'product_list': {
       const list = products.slice(0, st.limit || 10);
-      return `<section class="s-plist">${st.title ? `<div class="s-plist-h"><h2>${esc(st.title)}</h2><a href="#products">عرض الكل</a></div>` : ''}<div class="s-plist-row">${list.map(p => productCardHTML(store, lay, p)).join('')}</div></section>`;
+      return `<section class="s-plist">${st.title ? `<div class="s-plist-h"><h2>${esc(st.title)}</h2><a href="#products">عرض الكل</a></div>` : ''}<div class="s-plist-row">${list.map(p => productCardHTML(store, lay, p, ctx.t)).join('')}</div></section>`;
     }
     case 'featured_products': {
       const list = products.filter(p => p.compare_at_price && p.compare_at_price > p.price).slice(0, st.limit || 8);
       if (!list.length) return '';
-      return `<section class="s-plist"><div class="s-plist-h"><h2>${esc(st.title || 'الأكثر مبيعاً')}</h2></div><div class="s-plist-row">${list.map(p => productCardHTML(store, lay, p)).join('')}</div></section>`;
+      return `<section class="s-plist"><div class="s-plist-h"><h2>${esc(st.title || 'الأكثر مبيعاً')}</h2></div><div class="s-plist-row">${list.map(p => productCardHTML(store, lay, p, ctx.t)).join('')}</div></section>`;
     }
     case 'promo_banner': return st.text ? `<a class="s-promo" href="${escAttr(st.link || '#')}" style="background:${escAttr(st.bg)};color:${escAttr(st.color)}">${esc(st.text)}</a>` : '';
     case 'image': return st.img ? `<a class="s-image" href="${escAttr(st.link || '#')}"><img src="${escAttr(st.img)}" alt="${escAttr(st.alt || '')}" loading="lazy"></a>` : '';
@@ -984,7 +989,7 @@ function storefront(store, t, owner) {
   const lay = eoLayout(store);
   const products = db.prepare(`SELECT id, name, price, compare_at_price, stock, category, images FROM products WHERE store_id = ? AND status = 'active' AND COALESCE(json_extract(settings,'$.hidden_product'),0) = 0 ORDER BY created_at DESC`).all(store.id);
   const cats = [...new Set(products.map(p => p.category).filter(Boolean))];
-  const cards = products.map(p => productCardHTML(store, lay, p)).join('');
+  const cards = products.map(p => productCardHTML(store, lay, p, t)).join('');
   const hero = lay ? eoHero(store, products)
     : `<section class="s-hero"><h1>${esc(store.name)}</h1><p>${esc(store.description)}</p>
 <div class="s-hero-cta"><a class="s-btn" href="#products">تسوّق الآن</a>
@@ -1086,7 +1091,7 @@ ${reviews.length ? reviews.map(r => `<div class="pd-review"><div class="pd-revie
 <label>تقييمك<select name="rating"><option value="5">5 — ممتاز</option><option value="4">4 — جيد جداً</option><option value="3">3 — جيد</option><option value="2">2 — مقبول</option><option value="1">1 — ضعيف</option></select></label>
 <label>تعليقك (اختياري)<textarea name="text" maxlength="1000"></textarea></label>
 <button type="submit" class="s-btn">إرسال التقييم</button><div id="rvMsg"></div></form></section>` : ''}
-${similar.length ? `<section class="pd-similar wrap"><h2>منتجات مشابهة</h2><div class="s-grid">${similar.map(sp => productCardHTML(store, lay, sp)).join('')}</div></section>` : ''}
+${similar.length ? `<section class="pd-similar wrap"><h2>منتجات مشابهة</h2><div class="s-grid">${similar.map(sp => productCardHTML(store, lay, sp, t)).join('')}</div></section>` : ''}
 ${renderZone(store, 'product', 'content', ctx)}
 ${renderZone(store, 'product', 'above_footer', ctx)}
 <footer class="s-footer">${socialLinks(store)}${t.footer_text ? `<p>${esc(t.footer_text)}</p>` : ''}<p>يعمل بواسطة <a href="/">اكتف اوردر</a></p></footer>

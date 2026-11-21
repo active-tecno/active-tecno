@@ -34,7 +34,41 @@ const THEMES = [
   { id: 'eo-luxify', name_ar: 'لوكسيفاي', category: 'متاجر فاخرة', is_premium: 0, price: 0,
     config: { primary: '#141924', accent: '#111111', bg: '#FFFFFF', surface: '#F5F4F2', radius: 8, header: 'eo', card: 'flat', font: 'IBM Plex Sans Arabic', announce_bg: '#F3E8FF', announce_color: '#141924' } },
   { id: 'eo-nue', name_ar: 'نيو', category: 'عام', is_premium: 0, price: 0,
-    config: { primary: '#141924', accent: '#C8F31D', bg: '#F7F3E8', surface: '#FFFFFF', radius: 0, header: 'eo', card: 'flat', font: 'IBM Plex Sans Arabic', announce_bg: '#F3E8FF', announce_color: '#141924' } }
+    config: { primary: '#141924', accent: '#C8F31D', bg: '#F7F3E8', surface: '#FFFFFF', radius: 0, header: 'eo', card: 'flat', font: 'IBM Plex Sans Arabic', announce_bg: '#F3E8FF', announce_color: '#141924' } },
+  // H3: EO free catalog equivalents (independent configs from observed demo palettes)
+  { id: 'eo-void', name_ar: 'فويد — تجميل', category: 'تجميل وعناية', is_premium: 0, price: 0,
+    config: { primary: '#141924', accent: '#CE7D7F', bg: '#FFFFFF', surface: '#FAF4F4', radius: 14, header: 'eo', card: 'flat', font: 'IBM Plex Sans Arabic', announce_bg: '#CE7D7F', announce_color: '#FFFFFF' } },
+  { id: 'eo-nature', name_ar: 'ناتشر — نظارات', category: 'نظارات وإكسسوارات', is_premium: 0, price: 0,
+    config: { primary: '#141924', accent: '#4FA355', bg: '#FFFFFF', surface: '#EBE8DF', radius: 10, header: 'eo', card: 'flat', font: 'IBM Plex Sans Arabic', announce_bg: '#EBE8DF', announce_color: '#141924' } },
+  { id: 'eo-blast', name_ar: 'بلاست — أطفال', category: 'أطفال', is_premium: 0, price: 0,
+    config: { primary: '#141924', accent: '#FF3B30', bg: '#FFFFFF', surface: '#FFF6E5', radius: 20, header: 'eo', card: 'soft', font: 'Rubik', announce_bg: '#FF3B30', announce_color: '#FFFFFF' } },
+  { id: 'eo-hype', name_ar: 'هايب — إلكترونيات', category: 'إلكترونيات', is_premium: 0, price: 0,
+    config: { primary: '#212A2F', accent: '#F54E05', bg: '#FFFFFF', surface: '#F4F6F8', radius: 4, header: 'eo', card: 'flat', font: 'Inter', announce_bg: '#212A2F', announce_color: '#F06736' } },
+  { id: 'eo-vantage-el', name_ar: 'فانتاج — إلكترونيات', category: 'إلكترونيات', is_premium: 0, price: 0,
+    config: { primary: '#00003C', accent: '#00003C', bg: '#FFFFFF', surface: '#F2F3F8', radius: 8, header: 'eo', card: 'flat', font: 'Inter', announce_bg: '#00003C', announce_color: '#FFFFFF' } },
+  { id: 'eo-vantage-cos', name_ar: 'فانتاج — تجميل', category: 'تجميل وعناية', is_premium: 0, price: 0,
+    config: { primary: '#141924', accent: '#AF6570', bg: '#FFFFFF', surface: '#FAF3F4', radius: 14, header: 'eo', card: 'flat', font: 'IBM Plex Sans Arabic', announce_bg: '#AF6570', announce_color: '#FFFFFF' } },
+  { id: 'eo-trendy', name_ar: 'تريندي', category: 'عام', is_premium: 0, price: 0,
+    config: { primary: '#141924', accent: '#141924', bg: '#FFFFFF', surface: '#F5F5F5', radius: 16, header: 'eo', card: 'flat', font: 'Inter', announce_bg: '#141924', announce_color: '#FFFFFF' } },
+  { id: 'eo-elegance', name_ar: 'إليجانس — أزياء', category: 'أزياء', is_premium: 0, price: 0,
+    config: { primary: '#141924', accent: '#FABCCA', bg: '#FFFFFF', surface: '#FDF5F7', radius: 18, header: 'eo', card: 'soft', font: 'IBM Plex Sans Arabic', announce_bg: '#FABCCA', announce_color: '#141924' } },
+  { id: 'eo-phoenix', name_ar: 'فوينكس', category: 'عام', is_premium: 0, price: 0,
+    config: { primary: '#212A2F', accent: '#212A2F', bg: '#FFFFFF', surface: '#F5F4F1', radius: 12, header: 'eo', card: 'flat', font: 'IBM Plex Sans Arabic', announce_bg: '#E1DBD1', announce_color: '#212A2F',
+      schema: [
+        { key: 'show_sale_badge', label: 'إظهار شارة الخصم على المنتجات', kind: 'check' },
+        { key: 'sale_badge_bg_color', label: 'لون خلفية شارة الخصم', kind: 'color' },
+        { key: 'sale_badge_text_color', label: 'لون نص شارة الخصم', kind: 'color' },
+        { key: 'custom_badge_title', label: 'نص شارة مخصص بدل نسبة الخصم (اختياري)', kind: 'text' },
+        { key: 'card_background_product', label: 'لون خلفية كرت المنتج', kind: 'color' },
+        { key: 'card_background_product_color', label: 'لون نص كرت المنتج', kind: 'color' },
+        { key: 'header_cta_text', label: 'نص زر الهيدر (اختياري)', kind: 'text' },
+        { key: 'header_cta_link', label: 'رابط زر الهيدر', kind: 'text' },
+        { key: 'trust_line', label: 'سطر الثقة أعلى الفوتر', kind: 'text' },
+      ] } },
+  { id: 'eo-shine', name_ar: 'شاين', category: 'عام', is_premium: 0, price: 0,
+    config: { primary: '#141924', accent: '#5334EB', bg: '#FFFFFF', surface: '#F5F4FE', radius: 14, header: 'eo', card: 'flat', font: 'Inter', announce_bg: '#5334EB', announce_color: '#FFFFFF' } },
+  { id: 'eo-clear', name_ar: 'كلير', category: 'عام', is_premium: 0, price: 0,
+    config: { primary: '#141924', accent: '#141924', bg: '#FFFFFF', surface: '#FAFAFA', radius: 8, header: 'eo', card: 'flat', font: 'Inter', announce_bg: '#F5F5F5', announce_color: '#141924' } }
 ];
 
 function productImage(name, hue) {
