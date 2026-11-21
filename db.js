@@ -4,8 +4,14 @@ const { DatabaseSync } = require('node:sqlite');
 const path = require('path');
 const fs = require('fs');
 
-const DB_PATH = process.env.ACTIVE_TECNO_DB || path.join(__dirname, 'data', 'active-tecno.db');
+// Runtime DB is separate from the immutable seed snapshot (data/seed.db, tracked).
+// On boot, if the runtime DB does not exist, it is initialized from the seed.
+const SEED_PATH = path.join(__dirname, 'data', 'seed.db');
+const DB_PATH = process.env.ACTIVE_TECNO_DB || path.join(__dirname, 'data', 'runtime.db');
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+if (!fs.existsSync(DB_PATH) && fs.existsSync(SEED_PATH) && DB_PATH !== SEED_PATH) {
+  fs.copyFileSync(SEED_PATH, DB_PATH);
+}
 
 const db = new DatabaseSync(DB_PATH);
 db.exec('PRAGMA journal_mode = WAL;');
