@@ -121,8 +121,10 @@ function toggleOrderFilter(key, on) {
 function renderOrderFilterRow(f) {
   return `<div class="ord-filter-row2" data-key="${f.key}">
     <span class="ord-filter-label">${f.label}</span>
-    <input type="${f.type}" value="${esc(orderFilters[f.key] || '')}" oninput="setOrderFilter('${f.key}', this.value)">
-    <button class="ord-filter-x" onclick="toggleOrderFilter('${f.key}', false)" title="إزالة">${I('x') || '×'}</button>
+    <span class="ord-filter-field">
+      <input type="${f.type}" value="${esc(orderFilters[f.key] || '')}" oninput="setOrderFilter('${f.key}', this.value)">
+      <button class="ord-filter-x" onclick="toggleOrderFilter('${f.key}', false)" title="إزالة">×</button>
+    </span>
   </div>`;
 }
 let orderFilterTimer = null;

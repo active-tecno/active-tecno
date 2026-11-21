@@ -958,10 +958,11 @@ textarea.mono{font-family:ui-monospace,monospace;font-size:12.5px;direction:ltr;
 .ord-filter-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; font-size: 13px; cursor: pointer; color: var(--ink); }
 .ord-filter-item:hover { background: var(--bg); }
 .ord-filter-item input { accent-color: var(--green-500, #27cd27); }
-.ord-filters { display: flex; flex-direction: column; gap: 10px; margin: 10px 0 4px; }
-.ord-filter-row2 { display: flex; align-items: center; gap: 10px; }
-.ord-filter-row2 .ord-filter-label { font-size: 12.5px; font-weight: 600; color: var(--mut); min-width: 110px; }
-.ord-filter-row2 input { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 9px 14px; font-size: 13px; width: 280px; color: var(--ink); font-family: inherit; }
-.ord-filter-row2 input:focus { outline: 2px solid var(--green-500, #27cd27); outline-offset: -1px; border-color: transparent; }
-.ord-filter-x { border: none; background: none; color: var(--mut); font-size: 16px; cursor: pointer; padding: 4px 6px; border-radius: 6px; }
+.ord-filters { display: flex; flex-direction: column; gap: 12px; margin: 10px 0 4px; }
+.ord-filter-row2 { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.ord-filter-row2 .ord-filter-label { font-size: 12.5px; font-weight: 600; color: var(--ink); }
+.ord-filter-field { display: flex; align-items: center; gap: 8px; }
+.ord-filter-field input { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 9px 14px; font-size: 13px; width: 280px; color: var(--ink); font-family: inherit; }
+.ord-filter-field input:focus { outline: 2px solid var(--green-500, #27cd27); outline-offset: -1px; border-color: transparent; }
+.ord-filter-x { border: none; background: none; color: var(--mut); font-size: 18px; line-height: 1; cursor: pointer; padding: 4px 6px; border-radius: 6px; }
 .ord-filter-x:hover { color: var(--ink); background: var(--bg); }
