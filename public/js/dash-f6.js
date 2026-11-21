@@ -6,6 +6,7 @@ const SETTINGS_TABS = [
   ['settings/head', 'إضافة كود للهيد'],
   ['settings/seo', 'إعدادات SEO'],
   ['payments', 'بوابات الدفع'],
+  ['settings/digital', 'إعدادات تسليم المنتجات الرقمية', true],
   ['settings/notifications', 'إشعارات الطلبات'],
   ['shipping', 'إعدادات الشحن'],
   ['settings/social', 'روابط التواصل الاجتماعي'],
@@ -15,8 +16,8 @@ const SETTINGS_TABS = [
   ['settings/phone', 'رقم الهاتف'],
 ];
 function settingsShell(active, title, sub, inner) {
-  const nav = SETTINGS_TABS.map(([k, label]) =>
-    `<button class="set-tab ${k === active ? 'on' : ''}" onclick="go('${k}')">${label}</button>`).join('');
+  const nav = SETTINGS_TABS.map(([k, label, isNew]) =>
+    `<button class="set-tab ${k === active ? 'on' : ''}" onclick="go('${k}')">${label}${isNew ? ' <span class="new-badge">جديد</span>' : ''}</button>`).join('');
   return shell(topBar(title, sub) +
     `<div class="set-wrap"><nav class="set-nav">${nav}</nav><div class="set-body">${inner}</div></div>`);
 }
@@ -28,9 +29,19 @@ async function loadStoreSettings() {
 // ---- main store settings ----
 registerView('settings', async () => {
   const { settings: s } = await loadStoreSettings();
+  let ts = {}; try { ts = JSON.parse(STORE.theme_settings || '{}'); } catch (_) {}
+  const lang = localStorage.getItem('dLang') || 'ar';
   return settingsShell('settings', 'إعدادات المتجر', 'البيانات الأساسية وحماية الطلبات', `
+    <div class="card"><h3>إعدادات المتجر</h3>
+      <p class="muted small">يمكنك تغيير لون واسم المتجر بسهولة وربط دومينك الخاص وتغيير العملة</p>
+      <div class="f-grid" style="margin-top:12px">
+      <div class="f-field"><label>لغة لوحة التحكم</label><select id="stLang"><option value="ar" ${lang === 'ar' ? 'selected' : ''}>العربية</option><option value="en" ${lang === 'en' ? 'selected' : ''}>English</option></select></div>
+      <div class="f-field"><label>عنوان الموقع الرئيسي</label><input id="stName" value="${esc(STORE.name)}"></div>
+      <div class="f-field full"><label>الجزء الإعلاني من الهيدر</label><input id="stAnnounce" value="${esc(STORE.announcement || '')}" placeholder="محتوى الجزء العلوي من الهيدر"></div>
+      <div class="f-field"><label>لون الموقع</label><div style="display:flex;align-items:center;gap:8px"><input id="stPrimary" dir="ltr" value="${esc(ts.primary || '#141924')}"><input type="color" value="${esc(ts.primary || '#141924')}" oninput="$('#stPrimary').value=this.value" style="width:42px;height:38px;padding:2px"></div></div>
+      <div class="f-field"><label>لوجو الموقع</label><div style="display:flex;align-items:center;gap:10px"><span class="o-avatar" style="width:52px;height:52px;border-radius:12px;font-size:22px" id="stLogoPrev">${esc((STORE.logo_text || STORE.name).trim().charAt(0))}</span><input id="stLogo" value="${esc(STORE.logo_text || '')}" placeholder="حرف اللوجو" oninput="$('#stLogoPrev').textContent=(this.value.trim()||'${esc(STORE.name.trim().charAt(0))}').charAt(0)"></div></div>
+    </div><div class="m-actions"><button class="btn btn-teal" onclick="saveGeneral()">حفظ</button></div></div>
     <div class="card"><h3>البيانات الأساسية</h3><div class="f-grid">
-      <div class="f-field"><label>اسم المتجر</label><input id="stName" value="${esc(STORE.name)}"></div>
       <div class="f-field"><label>رابط المتجر</label><div style="display:flex;align-items:center;gap:6px"><span class="muted mono small">/s/</span><input id="stSlug" dir="ltr" value="${esc(STORE.slug)}"></div></div>
       <div class="f-field full"><label>وصف المتجر</label><textarea id="stDesc" rows="2">${esc(STORE.description || '')}</textarea></div>
       <div class="f-field"><label>هاتف المتجر</label><input id="stPhone" dir="ltr" value="${esc(STORE.phone || '')}"></div>
@@ -41,6 +52,31 @@ registerView('settings', async () => {
       <div class="frow" style="margin-top:10px"><input id="stMaxItems" type="number" min="0" dir="ltr" style="max-width:140px" value="${esc(s.max_items || '0')}"><button class="btn btn-soft" onclick="saveStoreSetting('max_items', $('#stMaxItems').value)">حفظ</button></div>
     </div>`);
 });
+async function saveGeneral() {
+  const lang = $('#stLang').value;
+  let ts = {}; try { ts = JSON.parse(STORE.theme_settings || '{}'); } catch (_) {}
+  ts.primary = $('#stPrimary').value.trim() || '#141924';
+  const d = await api('/api/store', { method: 'PUT', body: { name: $('#stName').value.trim(), announcement: $('#stAnnounce').value.trim(), logo_text: $('#stLogo').value.trim(), theme_settings: ts } });
+  STORE = d.store;
+  if (lang !== (localStorage.getItem('dLang') || 'ar')) { localStorage.setItem('dLang', lang); location.reload(); return; }
+  toast('تم الحفظ'); route();
+}
+// ---- digital product delivery ----
+registerView('settings/digital', async () => {
+  const { settings: s } = await loadStoreSettings();
+  let dg = { enabled: false, note: '' };
+  try { dg = { ...dg, ...JSON.parse(s.digital_delivery || '{}') }; } catch (_) {}
+  return settingsShell('settings/digital', 'إعدادات تسليم المنتجات الرقمية', 'رسالة التسليم التي تظهر للعميل بعد شراء منتج رقمي', `
+    <div class="card"><h3>تسليم المنتجات الرقمية</h3>
+      <label class="notif-row"><span class="nr-txt"><b>تفعيل التسليم الرقمي</b><small class="muted">يعرض نص التسليم للعميل في صفحة تأكيد الطلب عند شراء منتج رقمي</small></span><input type="checkbox" id="dgOn" ${dg.enabled ? 'checked' : ''}></label>
+      <div class="f-field full" style="margin-top:12px"><label>نص التسليم</label><textarea id="dgNote" rows="3" placeholder="مثال: يصلك رابط التحميل على واتساب خلال دقائق من تأكيد الطلب">${esc(dg.note)}</textarea></div>
+      <div class="m-actions"><button class="btn btn-teal" onclick="saveDigital()">حفظ</button></div>
+    </div>`);
+});
+async function saveDigital() {
+  await api('/api/store/settings', { method: 'PUT', body: { digital_delivery: JSON.stringify({ enabled: $('#dgOn').checked, note: $('#dgNote').value.trim() }) } });
+  toast('تم الحفظ');
+}
 async function saveStoreSetting(key, value) {
   const b = {}; b[key] = value;
   await api('/api/store/settings', { method: 'PUT', body: b });

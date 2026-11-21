@@ -1,19 +1,55 @@
 // dash-legacy.js — pre-Stage-F views (products, coupons, customize, settings, payments...) registered into the Stage-F shell
-let ordersCache = [], ordersView = 'board';
+let ordersCache = [], ordersView = 'list', ordersStatusFilter = '';
+// EO date style: m/d/yyyy + h:mm AM/PM (two lines)
+const fmtDateUS = d => {
+  const t = new Date(d.replace(' ', 'T') + (d.includes('Z') || d.includes('+') ? '' : 'Z'));
+  const date = `${t.getMonth() + 1}/${t.getDate()}/${t.getFullYear()}`;
+  let h = t.getHours(); const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
+  return `<div class="o-date"><div>${date}</div><div class="muted">${ap} ${String(h).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}</div></div>`;
+};
+// EO customer risk indicator, derived from this store's real order history
+function orderRisk(o, all) {
+  const mine = all.filter(x => x.customer_phone === o.customer_phone);
+  const cancelled = mine.filter(x => x.status === 'cancelled').length;
+  const delivered = mine.filter(x => x.status === 'delivered').length;
+  if (cancelled >= 2) return { label: 'مرتفعة', cls: 'risk-high' };
+  if (cancelled >= 1 || mine.length <= 1) return { label: 'متوسطة', cls: 'risk-mid' };
+  if (delivered >= 1) return { label: 'منخفضة', cls: 'risk-low' };
+  return { label: 'متوسطة', cls: 'risk-mid' };
+}
 async function viewOrders() {
   const d = await api('/api/orders');
   ordersCache = d.orders;
   return shell(topBar('الطلبات', `${d.orders.length} طلب`,
-    `<a class="btn btn-soft btn-sm" href="/api/orders-export.csv?status=confirmed" download>تصدير شركات الشحن (CSV)</a>
-     <div class="pill-tabs"><button class="${ordersView === 'board' ? 'on' : ''}" onclick="ordersView='board';route()">لوحة</button><button class="${ordersView === 'list' ? 'on' : ''}" onclick="ordersView='list';route()">قائمة</button></div>`) +
-    `<div class="frow"><input type="search" id="ordQ" placeholder="ابحث برقم الطلب، الاسم أو الهاتف…" oninput="filterOrders(this.value)"></div>
+    `<a class="btn btn-soft btn-sm" href="/api/orders-export.csv${ordersStatusFilter ? '?status=' + ordersStatusFilter : ''}" download>${I('download')} تصدير</a>
+     <div class="pill-tabs"><button class="${ordersView === 'list' ? 'on' : ''}" onclick="ordersView='list';route()">قائمة</button><button class="${ordersView === 'board' ? 'on' : ''}" onclick="ordersView='board';route()">لوحة</button></div>`) +
+    `<div class="ord-tabs" id="ordTabs">${renderOrderTabs(d.orders)}</div>
+     <div class="frow"><input type="search" id="ordQ" placeholder="ابحث برقم الطلب، الاسم أو الهاتف…" oninput="filterOrders(this.value)"></div>
      <div id="ordersWrap">${renderOrders(d.orders)}</div>`);
 }
-function renderOrders(orders) {
+function renderOrderTabs(all) {
+  const counts = {}; all.forEach(o => counts[o.status] = (counts[o.status] || 0) + 1);
+  const tab = (key, label, n) => `<button class="ord-tab ${ordersStatusFilter === key ? 'on' : ''}" onclick="ordersStatusFilter='${key}';route()">${label}${n != null ? ` <span class="n">${n}</span>` : ''}</button>`;
+  return tab('', 'كل الطلبات', all.length) + Object.keys(STATUS).map(s => tab(s, STATUS[s].ar, counts[s] || 0)).join('');
+}
+function renderOrders(orders, all) {
+  all = all || orders;
+  if (ordersStatusFilter) orders = orders.filter(o => o.status === ordersStatusFilter);
   if (!orders.length) return `<div class="card"><div class="empty"><div class="big">${ICONS.orders}</div><b>لا توجد طلبات بعد</b><p>شارك رابط متجرك وستظهر الطلبات هنا فوراً</p><a class="btn btn-teal" href="/s/${esc(STORE.slug)}" target="_blank">افتح متجرك</a></div></div>`;
   if (ordersView === 'list') {
-    return `<div class="card tbl-wrap"><table class="tbl"><thead><tr><th>الطلب</th><th>العميل</th><th>الهاتف</th><th>الإجمالي</th><th>الحالة</th><th>التاريخ</th><th></th></tr></thead><tbody>
-      ${orders.map(o => `<tr><td class="mono">${esc(o.number)}${o.demo ? ' <span class="chip-demo">تجريبي</span>' : ''}</td><td><b>${esc(o.customer_name)}</b></td><td class="mono">${esc(o.customer_phone)}</td><td><b>${egp(o.total)}</b></td><td>${stChip(o.status)}</td><td class="muted small">${fmtDate(o.created_at)}</td><td><button class="btn btn-soft btn-sm" onclick="openOrder(${o.id})">التفاصيل</button></td></tr>`).join('')}</tbody></table></div>`;
+    return `<div class="card tbl-wrap"><table class="tbl ord-tbl"><thead><tr><th><input type="checkbox" disabled></th><th>المعرّف</th><th>العميل</th><th>العنوان</th><th>المبلغ الاجمالي</th><th>حالة الطلب</th><th>الدولة</th><th>تاريخ الطلب</th></tr></thead><tbody>
+      ${orders.map(o => {
+        const r = orderRisk(o, all);
+        return `<tr onclick="openOrder(${o.id})" style="cursor:pointer">
+        <td onclick="event.stopPropagation()"><input type="checkbox"></td>
+        <td><b class="mono" dir="ltr">${esc(o.number)}</b>${o.demo ? ' <span class="chip-demo">تجريبي</span>' : ''}${o.status !== 'new' ? '<div class="muted small">تمت المراجعة</div>' : ''}</td>
+        <td><div class="o-cust"><span class="o-avatar">${esc((o.customer_name || '؟').trim().charAt(0))}</span><div><b>${esc(o.customer_name)}</b><div class="mono muted small">${esc(o.customer_phone)}</div><div class="o-risk ${r.cls}"><span class="bar"></span>${r.label}</div></div></div></td>
+        <td class="muted small o-addr">${esc((o.customer_address || '') + (o.governorate ? '، ' + o.governorate : '')).slice(0, 45)}</td>
+        <td><b>${Math.round(o.total)} ج.م</b></td>
+        <td>${stChip(o.status)}</td>
+        <td class="muted">EG</td>
+        <td class="small">${fmtDateUS(o.created_at)}</td></tr>`;
+      }).join('')}</tbody></table></div>`;
   }
   const cols = ['new', 'confirmed', 'shipped', 'delivered', 'cancelled'];
   return `<div class="kb">${cols.map(s => {
@@ -38,7 +74,7 @@ async function moveOrder(id, status) {
 async function filterOrders(q) {
   const d = await api('/api/orders' + (q ? `?q=${encodeURIComponent(q)}` : ''));
   ordersCache = d.orders;
-  $('#ordersWrap').innerHTML = renderOrders(d.orders);
+  $('#ordersWrap').innerHTML = renderOrders(d.orders, ordersCache);
 }
 async function openOrder(id) {
   const o = ordersCache.find(x => x.id === id) || (await api('/api/orders')).orders.find(x => x.id === id);

@@ -163,7 +163,7 @@ const api = {
   'PUT /api/store': async (req, res, user) => {
     const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
     const store = getStoreForUser(user);
-    const fields = ['name', 'description', 'phone', 'whatsapp', 'announcement', 'free_shipping_over', 'theme_id', 'governorate'];
+    const fields = ['name', 'description', 'phone', 'whatsapp', 'announcement', 'free_shipping_over', 'theme_id', 'governorate', 'logo_text'];
     const sets = [], vals = [];
     for (const f of fields) if (f in b) { sets.push(`${f} = ?`); vals.push(b[f]); }
     if (b.theme_settings) { sets.push('theme_settings = ?'); vals.push(JSON.stringify(b.theme_settings)); }
@@ -565,7 +565,7 @@ const api = {
   'PUT /api/store/settings': async (req, res, user) => {
     const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
     const store = getStoreForUser(user);
-    const allowed = ['policies', 'head_code', 'seo', 'social', 'custom_domain', 'max_items', 'notify_email', 'notifications'];
+    const allowed = ['policies', 'head_code', 'seo', 'social', 'custom_domain', 'max_items', 'notify_email', 'notifications', 'digital_delivery'];
     const up = db.prepare('INSERT INTO store_settings (store_id, key, value, updated_at) VALUES (?, ?, ?, datetime(\'now\')) ON CONFLICT(store_id, key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at');
     for (const k of allowed) if (k in b) up.run(store.id, k, typeof b[k] === 'string' ? b[k] : JSON.stringify(b[k]));
     if ('phone' in b) db.prepare('UPDATE stores SET phone = ? WHERE id = ?').run(String(b.phone).trim(), store.id);
