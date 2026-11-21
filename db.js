@@ -439,6 +439,20 @@ const migrations = [
     CREATE INDEX idx_support_messages_ticket ON support_messages(ticket_id);`
   },
   {
+    id: '016_webhook_deliveries',
+    sql: `
+    CREATE TABLE IF NOT EXISTS webhook_deliveries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      store_id INTEGER NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+      order_id INTEGER,
+      url TEXT NOT NULL,
+      status_code INTEGER NOT NULL DEFAULT 0,
+      ok INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_store ON webhook_deliveries(store_id);`
+  },
+  {
     id: '013_store_sections',
     sql: `
     CREATE TABLE IF NOT EXISTS store_sections (

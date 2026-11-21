@@ -17,32 +17,59 @@ function orderRisk(o, all) {
   if (delivered >= 1) return { label: 'منخفضة', cls: 'risk-low' };
   return { label: 'متوسطة', cls: 'risk-mid' };
 }
+let ordersPage = 1, ordersPages = 1, ordersTotal = 0, ordersRiskFilter = '';
+let selectedOrders = new Set();
+function ordersQuery() {
+  const ps = new URLSearchParams();
+  if (ordersStatusFilter) ps.set('status', ordersStatusFilter);
+  if (ordersRiskFilter) ps.set('f_risk', ordersRiskFilter);
+  Object.entries(orderFilters).forEach(([k, v]) => { if (String(v || '').trim()) ps.set(k, String(v).trim()); });
+  return ps;
+}
+async function fetchOrdersPage() {
+  if (ordersView === 'board') {
+    const d = await api('/api/orders'); // board groups every status; needs the full window
+    ordersCache = d.orders; ordersTotal = d.orders.length; ordersPages = 1;
+    return;
+  }
+  const ps = ordersQuery();
+  ps.set('page', ordersPage); ps.set('per_page', '20');
+  const d = await api('/api/orders?' + ps);
+  ordersCache = d.orders; ordersTotal = d.total; ordersPages = d.pages; ordersPage = d.page;
+}
 async function viewOrders() {
-  const d = await api('/api/orders');
-  ordersCache = d.orders;
-  return shell(topBar('الطلبات', `${d.orders.length} طلب`,
+  await fetchOrdersPage();
+  return shell(topBar('الطلبات', `${ordersTotal} طلب`,
     `<a class="btn btn-soft btn-sm" href="/api/orders-export.csv${ordersStatusFilter ? '?status=' + ordersStatusFilter : ''}" download>${I('download')} تصدير</a>
      <div class="pill-tabs"><button class="${ordersView === 'list' ? 'on' : ''}" onclick="ordersView='list';route()">قائمة</button><button class="${ordersView === 'board' ? 'on' : ''}" onclick="ordersView='board';route()">لوحة</button></div>`) +
-    `<div class="ord-tabs" id="ordTabs">${renderOrderTabs(d.orders)}</div>
+    `<div class="ord-tabs" id="ordTabs">${renderOrderTabs()}</div>
      <div class="ord-filters" id="ordFilters">${ORDER_FILTER_FIELDS.filter(f => orderFilters[f.key] != null).map(renderOrderFilterRow).join('')}</div>
-     <div id="ordersWrap">${renderOrders(d.orders)}</div>`);
+     <div class="ord-bulkbar" id="ordBulkBar" style="display:none"></div>
+     <div id="ordersWrap">${renderOrders(ordersCache)}</div>`);
 }
-function renderOrderTabs(all) {
-  const counts = {}; all.forEach(o => counts[o.status] = (counts[o.status] || 0) + 1);
-  const tab = (key, label, n) => `<button class="ord-tab ${ordersStatusFilter === key ? 'on' : ''}" onclick="ordersStatusFilter='${key}';route()">${label}${n != null ? ` <span class="n">${n}</span>` : ''}</button>`;
+function renderOrderTabs() {
+  const counts = {};
+  if (!ordersRiskFilter && Object.keys(orderFilters).every(k => !String(orderFilters[k] || '').trim())) {
+    // counts are per-current-page approximation only when filtering; show plain labels otherwise
+  }
+  const tab = (key, label) => `<button class="ord-tab ${ordersStatusFilter === key && !ordersRiskFilter ? 'on' : ''}" onclick="ordersStatusFilter='${key}';ordersRiskFilter='';ordersPage=1;route()">${label}</button>`;
+  const riskTab = (key, label) => `<button class="ord-tab ${ordersRiskFilter === key ? 'on' : ''}" onclick="ordersRiskFilter='${key}';ordersStatusFilter='';ordersPage=1;route()">${label}</button>`;
   return `<span class="ord-filter-anchor"><button class="ord-tab ord-filter-btn" onclick="toggleFilterMenu(event)">${I('filter') || ''} إضافة فلتر</button></span>`
-    + tab('', 'كل الطلبات', all.length) + Object.keys(STATUS).map(s => tab(s, STATUS[s].ar, counts[s] || 0)).join('');
+    + tab('', 'كل الطلبات') + Object.keys(STATUS).map(s => tab(s, STATUS[s].ar)).join('')
+    + riskTab('high', 'مخاطرة مرتفعة') + riskTab('mid', 'مخاطرة متوسطة');
 }
+const RISK_LABEL = { high: { label: 'مرتفعة', cls: 'risk-high' }, mid: { label: 'متوسطة', cls: 'risk-mid' }, low: { label: 'منخفضة', cls: 'risk-low' } };
+function riskOfOrder(o, all) { return o.risk ? RISK_LABEL[o.risk] : orderRisk(o, all || ordersCache); }
 function renderOrders(orders, all) {
   all = all || orders;
-  if (ordersStatusFilter) orders = orders.filter(o => o.status === ordersStatusFilter);
   if (!orders.length) return `<div class="card"><div class="empty"><div class="big">${ICONS.orders}</div><b>لا توجد طلبات بعد</b><p>شارك رابط متجرك وستظهر الطلبات هنا فوراً</p><a class="btn btn-teal" href="/s/${esc(STORE.slug)}" target="_blank">افتح متجرك</a></div></div>`;
   if (ordersView === 'list') {
-    return `<div class="ord-table-wrap"><table class="tbl ord-tbl"><thead><tr><th><input type="checkbox" disabled></th><th>المعرّف</th><th>العميل</th><th>العنوان</th><th>المبلغ الاجمالي</th><th>حالة الطلب</th><th>مستوى الخطورة</th><th>الدولة</th><th>تاريخ الطلب</th></tr></thead><tbody>
+    const allChecked = orders.length > 0 && orders.every(o => selectedOrders.has(o.id));
+    return `<div class="ord-table-wrap"><table class="tbl ord-tbl"><thead><tr><th><input type="checkbox" ${allChecked ? 'checked' : ''} onchange="toggleSelectAllOrders(this.checked)" title="اختيار الكل"></th><th>المعرّف</th><th>العميل</th><th>العنوان</th><th>المبلغ الاجمالي</th><th>حالة الطلب</th><th>مستوى الخطورة</th><th>الدولة</th><th>تاريخ الطلب</th></tr></thead><tbody>
       ${orders.map(o => {
-        const r = orderRisk(o, all);
+        const r = riskOfOrder(o, all);
         return `<tr onclick="openOrder(${o.id})" style="cursor:pointer">
-        <td onclick="event.stopPropagation()"><input type="checkbox"></td>
+        <td onclick="event.stopPropagation()"><input type="checkbox" ${selectedOrders.has(o.id) ? 'checked' : ''} onchange="toggleSelectOrder(${o.id}, this.checked)"></td>
         <td><b class="mono" dir="ltr">${esc(o.number)}</b>${o.demo ? ' <span class="chip-demo">تجريبي</span>' : ''}${o.status !== 'new' ? '<div class="muted small">تمت المراجعة</div>' : ''}</td>
         <td><div class="o-cust"><span class="o-avatar">${esc((o.customer_name || '؟').trim().charAt(0))}</span><div><b>${esc(o.customer_name)}</b><div class="mono muted small">${esc(o.customer_phone)}</div><div class="o-risk ${r.cls}"><span class="bar"></span>${r.label}</div></div></div></td>
         <td class="muted small o-addr">${esc((o.customer_address || '') + (o.governorate ? '، ' + o.governorate : '')).slice(0, 45)}</td>
@@ -51,9 +78,9 @@ function renderOrders(orders, all) {
         <td><span class="o-gauge ${r.cls}" title="${r.label}"><i></i><i></i><i></i></span></td>
         <td class="muted">EG</td>
         <td class="small">${fmtDateUS(o.created_at)}</td></tr>`;
-      }).join('')}</tbody></table></div>`;
+      }).join('')}</tbody></table></div>${renderOrdersPagination()}`;
   }
-  const cols = ['new', 'confirmed', 'shipped', 'delivered', 'cancelled'];
+  const cols = ['new', 'confirmed', 'pending_payment', 'preparing', 'awaiting_shipping', 'shipped', 'delivered', 'cancelled', 'returned'];
   return `<div class="kb">${cols.map(s => {
     const list = orders.filter(o => o.status === s);
     return `<div class="kb-col"><div class="kb-col-head"><span>${STATUS[s].ar}</span><span class="n">${list.length}</span></div><div class="kb-cards">
@@ -65,19 +92,89 @@ function renderOrders(orders, all) {
       </div>`).join('') || '<div class="muted small" style="text-align:center;padding:14px">لا طلبات</div>'}</div></div>`;
   }).join('')}</div>`;
 }
+function renderOrdersPagination() {
+  if (ordersView !== 'list' || ordersPages <= 1) return '';
+  const pages = [];
+  const win = 2;
+  for (let p = 1; p <= ordersPages; p++) {
+    if (p === 1 || p === ordersPages || Math.abs(p - ordersPage) <= win) pages.push(p);
+    else if (pages[pages.length - 1] !== '…') pages.push('…');
+  }
+  return `<div class="ord-pagination">${pages.map(p => p === '…'
+    ? `<span class="ord-page-dots">…</span>`
+    : `<button class="ord-page ${p === ordersPage ? 'on' : ''}" onclick="ordersPage=${p};refreshOrders()">${p}</button>`).join('')}</div>`;
+}
+async function refreshOrders() {
+  selectedOrders = new Set();
+  await fetchOrdersPage();
+  const w = $('#ordersWrap'); if (w) w.innerHTML = renderOrders(ordersCache);
+  renderBulkBar();
+}
+function toggleSelectOrder(id, on) {
+  if (on) selectedOrders.add(id); else selectedOrders.delete(id);
+  renderBulkBar();
+  const head = document.querySelector('.ord-tbl thead input[type=checkbox]');
+  if (head) head.checked = ordersCache.length > 0 && ordersCache.every(o => selectedOrders.has(o.id));
+}
+function toggleSelectAllOrders(on) {
+  selectedOrders = on ? new Set(ordersCache.map(o => o.id)) : new Set();
+  document.querySelectorAll('.ord-tbl tbody input[type=checkbox]').forEach(cb => cb.checked = on);
+  renderBulkBar();
+}
+function renderBulkBar() {
+  const bar = $('#ordBulkBar'); if (!bar) return;
+  if (!selectedOrders.size) { bar.style.display = 'none'; bar.innerHTML = ''; return; }
+  bar.style.display = 'flex';
+  bar.innerHTML = `<span class="muted small">${selectedOrders.size} طلب محدد</span>
+    <button class="btn btn-soft btn-sm" onclick="bulkStatusModal()">تحديث حالة الطلب</button>
+    <button class="btn btn-soft btn-sm" onclick="bulkResendWebhook()">اعادة ارسال الطلبات للويب هوك</button>
+    <button class="btn btn-danger-soft btn-sm" onclick="bulkDeleteOrders()">حذف</button>`;
+}
+function bulkStatusModal() {
+  openModal('تحديث حالة الطلب', `
+    <p class="muted small">تغيير حالة ${selectedOrders.size} طلب إلى:</p>
+    <div style="display:grid;gap:6px;margin-top:12px">${Object.keys(STATUS).map(s => `<button class="btn btn-soft" onclick="applyBulkStatus('${s}')">${STATUS[s].ar}</button>`).join('')}</div>`);
+}
+async function applyBulkStatus(status) {
+  const r = await api('/api/orders/bulk/status', { method: 'PUT', body: { ids: [...selectedOrders], status } });
+  closeModal(); toast(`تم تحديث ${r.updated} طلب إلى "${STATUS[status].ar}"`);
+  refreshOrders();
+}
+async function bulkDeleteOrders() {
+  if (!confirm(`حذف ${selectedOrders.size} طلب نهائياً؟ لا يمكن التراجع.`)) return;
+  const r = await api('/api/orders/bulk/delete', { method: 'POST', body: { ids: [...selectedOrders] } });
+  toast(`تم حذف ${r.deleted} طلب`); refreshOrders();
+}
+async function bulkResendWebhook() {
+  const r = await api('/api/orders/bulk/resend-webhook', { method: 'POST', body: { ids: [...selectedOrders] } });
+  if (r.error) { toast(r.error); if (r.code === 'no_webhook') setTimeout(() => go('settings/api'), 900); return; }
+  const ok = (r.results || []).filter(x => x.ok).length;
+  toast(`تم ارسال ${ok} من ${r.results.length} طلب للويب هوك — راجع سجل التسليم في اعدادات API`);
+}
 function nextStatuses(s) {
-  return { new: ['confirmed', 'cancelled'], confirmed: ['shipped', 'cancelled'], shipped: ['delivered', 'returned'], delivered: ['returned'], cancelled: ['new'] }[s] || [];
+  return {
+    new: ['confirmed', 'pending_payment', 'cancelled'],
+    confirmed: ['preparing', 'cancelled'],
+    pending_payment: ['paid', 'payment_failed', 'cancelled'],
+    paid: ['confirmed', 'preparing'],
+    payment_failed: ['pending_payment', 'cancelled'],
+    preparing: ['awaiting_shipping', 'cancelled'],
+    awaiting_shipping: ['shipped', 'cancelled'],
+    shipped: ['delivered', 'returned_from_shipping'],
+    delivered: ['return_requested', 'returned'],
+    cancelled: ['new'],
+    returned_from_shipping: [],
+    return_requested: ['returning', 'delivered'],
+    returning: ['returned'],
+    returned: []
+  }[s] || [];
 }
 async function moveOrder(id, status) {
   await api(`/api/orders/${id}/status`, { method: 'PUT', body: { status } });
   toast(`تم نقل الطلب إلى "${STATUS[status].ar}"`);
   route();
 }
-async function filterOrders(q) {
-  const d = await api('/api/orders' + (q ? `?q=${encodeURIComponent(q)}` : ''));
-  ordersCache = d.orders;
-  $('#ordersWrap').innerHTML = renderOrders(d.orders, ordersCache);
-}
+
 
 // ---------- EO-style per-field order filters ----------
 const ORDER_FILTER_FIELDS = [
@@ -134,11 +231,9 @@ function setOrderFilter(key, val) {
   orderFilterTimer = setTimeout(applyOrderFilters, 350);
 }
 async function applyOrderFilters() {
-  const ps = new URLSearchParams();
-  Object.entries(orderFilters).forEach(([k, v]) => { if (String(v).trim()) ps.set(k, String(v).trim()); });
-  const d = await api('/api/orders' + (ps.toString() ? '?' + ps : ''));
-  ordersCache = d.orders;
-  const w = $('#ordersWrap'); if (w) w.innerHTML = renderOrders(d.orders, ordersCache);
+  ordersPage = 1;
+  await fetchOrdersPage();
+  const w = $('#ordersWrap'); if (w) w.innerHTML = renderOrders(ordersCache);
 }
 async function openOrder(id) {
   const o = ordersCache.find(x => x.id === id) || (await api('/api/orders')).orders.find(x => x.id === id);

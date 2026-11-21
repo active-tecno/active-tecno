@@ -18,11 +18,21 @@ async function viewHome() {
   const d = await api('/api/analytics?days=30');
   const prods = await api('/api/products');
   const hasProducts = prods.products.length > 0;
+  const guideDismissed = localStorage.getItem('at_setup_dismissed') === '1';
+  const ts = JSON.parse(STORE.theme_settings || '{}');
+  const ss = await api('/api/store/settings').catch(() => ({ settings: {} }));
+  const cats = await api('/api/categories').catch(() => ({ categories: [] }));
   const checklist = [
-    { done: hasProducts, label: 'أضف أول منتج لمتجرك', go: 'products' },
-    { done: Object.keys(JSON.parse(STORE.theme_settings || '{}')).length > 0, label: 'خصّص ألوان وقالب متجرك', go: 'customize' },
-    { done: !!STORE.phone, label: 'أكمل بيانات متجرك (هاتف، وصف)', go: 'settings' },
-    { done: !!STORE.is_published, label: 'فعّل النشر واستقبل الطلبات', go: null },
+    { done: !!ts.logo_img, label: 'إضافة لوجو للمتجر', sub: 'اعدادات متجرك الخاصه', go: 'settings', ic: 'image', bg: '#F0FDF4', fg: '#16a34a' },
+    { done: !!STORE.name, label: 'اضافة عنوان المتجر', sub: 'اعدادات متجرك الخاصه', go: 'settings', ic: 'pen', bg: '#EFF6FF', fg: '#2563eb' },
+    { done: Object.keys(ts).length > 0, label: 'إضافة لون مخصص', sub: 'اعدادات متجرك الخاصه', go: 'customize', ic: 'customize', bg: '#F5F3FF', fg: '#7c3aed' },
+    { done: !!(ss.settings && ss.settings.seo), label: 'إضافة بيانات SEO', sub: 'اعدادات متجرك الخاصه', go: 'settings/seo', ic: 'search', bg: '#FFF7ED', fg: '#c2410c' },
+    { done: !!(ss.settings && ss.settings.custom_domain), label: 'إضافة دومين مخصص', sub: 'اعدادات متجرك الخاصه', go: 'settings/domain', ic: 'link', bg: '#F0F9FF', fg: '#0369a1' },
+    { done: hasProducts, label: 'إضافة منتجات', sub: 'اعدادات متجرك الخاصه', go: 'products', ic: 'products', bg: '#ECFDF5', fg: '#059669' },
+    { done: cats.categories.length > 0, label: 'إضافة اقسام', sub: 'اعدادات متجرك الخاصه', go: 'categories', ic: 'categories', bg: '#FEF2F2', fg: '#dc2626' },
+    { done: Object.keys(ts).length > 0, label: 'تعديل الشاشة الرئيسية', sub: 'اعدادات متجر', go: 'builder', ic: 'store', bg: '#FFFBEB', fg: '#d97706' },
+    { done: !!STORE.phone, label: 'أكمل بيانات متجرك (هاتف، وصف)', sub: 'اعدادات متجرك الخاصه', go: 'settings', ic: 'settings', bg: '#F1F5F9', fg: '#475569' },
+    { done: !!STORE.is_published, label: 'فعّل النشر واستقبل الطلبات', sub: 'النشر والتفعيل', go: null, ic: 'spark', bg: '#ECFDF5', fg: '#16a34a' },
   ];
   const doneCount = checklist.filter(c => c.done).length;
   const allDone = doneCount === checklist.length;
@@ -30,9 +40,16 @@ async function viewHome() {
   const funnelSteps = [['page_view', 'زيارة المتجر'], ['product_view', 'مشاهدة منتج'], ['add_to_cart', 'إضافة للسلة'], ['begin_checkout', 'بدء الشراء'], ['purchase', 'طلب مكتمل']];
   const html = topBar('لوحة الإحصائيات', `أهلاً ${esc(ME.user.name)}`) +
     activationBanner() +
-    (allDone ? '' : `<div class="card" style="margin-bottom:16px"><h3>دليل الإعداد — خطوات إطلاق متجرك</h3>
-      <div class="setup-progress"><i style="width:${Math.round(100 * doneCount / checklist.length)}%"></i></div>
-      <div class="setup-list">${checklist.map(c => `<div class="setup-item ${c.done ? 'done' : ''}"><span class="chk">${I('check')}</span><span class="t">${c.label}</span>${!c.done && c.go ? `<button class="btn btn-soft btn-sm" onclick="go('${c.go}')">ابدأ</button>` : (!c.done ? `<button class="btn btn-teal btn-sm" onclick="openActivation()">فعّل الآن</button>` : '')}</div>`).join('')}</div></div>`) +
+    (allDone || guideDismissed ? '' : `<div class="card" style="margin-bottom:16px">
+      <div class="setup-head"><div><h3 style="margin:0">دليل اعداد المتجر</h3><p class="muted small" style="margin:4px 0 0">اتبع هذه الخطوات البسيطة لاعداد متجرك وبدء البيع</p></div>
+      <button class="ord-filter-x" onclick="localStorage.setItem('at_setup_dismissed','1');route()" title="إخفاء">×</button></div>
+      <div class="setup-meta"><span class="pct">${Math.round(100 * doneCount / checklist.length)}%</span><div class="setup-progress" style="flex:1"><i style="width:${Math.round(100 * doneCount / checklist.length)}%"></i></div><span class="muted small">${doneCount} من ${checklist.length} خطوات</span></div>
+      <div class="setup-grid">${checklist.map(c => `<div class="setup-card">
+        ${c.done ? `<span class="sc-done">${I('check')}</span>` : ''}
+        <span class="sc-ic" style="background:${c.bg};color:${c.fg}">${I(c.ic) || ''}</span>
+        <span class="sc-title">${c.label}</span><span class="sc-sub">${c.sub}</span>
+        <span class="sc-foot">${!c.done ? `<button class="sc-more" onclick="${c.go ? `go('${c.go}')` : 'openActivation()'}">المزيد ‹</button>` : '<span></span>'}</span>
+      </div>`).join('')}</div></div>`) +
     `<div class="grid4" style="margin-bottom:16px">
       <div class="stat"><span class="s-ic" style="background:var(--green-soft);color:var(--green-600)">${I('payments')}</span><div><div class="s-num">${egp(d.revenue)}</div><div class="s-lbl">الإيرادات (30 يوم)</div></div></div>
       <div class="stat"><span class="s-ic" style="background:#EFF6FF;color:var(--blue)">${I('orders')}</span><div><div class="s-num">${d.orders}</div><div class="s-lbl">الطلبات</div></div></div>

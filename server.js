@@ -11,6 +11,42 @@ const integ = require('./integrations');
 seed();
 
 const REFERRAL_PROGRAM_ENABLED = false; // referral accruals + payouts paused pending owner terms (reversible)
+const ORDER_STATUSES = ['new', 'confirmed', 'pending_payment', 'paid', 'payment_failed', 'preparing', 'awaiting_shipping', 'shipped', 'delivered', 'cancelled', 'returned_from_shipping', 'return_requested', 'returning', 'returned'];
+const https = require('https');
+const dns = require('dns').promises;
+const net = require('net');
+// Merchant webhook endpoint validation: https only, no loopback/private/link-local targets (SSRF guard)
+function isPrivateIP(ip) {
+  if (net.isIPv6(ip)) return /^f[cd]|^fe80|^::1$/i.test(ip);
+  const p = ip.split('.').map(Number);
+  return p[0] === 10 || p[0] === 127 || (p[0] === 172 && p[1] >= 16 && p[1] <= 31) || (p[0] === 192 && p[1] === 168) || (p[0] === 169 && p[1] === 254) || p[0] === 0;
+}
+async function validateWebhookUrl(raw) {
+  let u; try { u = new URL(raw); } catch { return { ok: false, error: 'رابط غير صالح' }; }
+  if (u.protocol !== 'https:') return { ok: false, error: 'الرابط يجب أن يبدأ بـ https://' };
+  let ips;
+  try { ips = (await dns.lookup(u.hostname, { all: true })).map(a => a.address); }
+  catch { return { ok: false, error: 'تعذر الوصول لخادم الرابط' }; }
+  if (!ips.length || ips.some(isPrivateIP)) return { ok: false, error: 'الرابط يشير إلى عنوان داخلي غير مسموح' };
+  return { ok: true, url: u.toString() };
+}
+function postWebhook(urlStr, payload, secret) {
+  return new Promise((resolve) => {
+    try {
+      const u = new URL(urlStr);
+      const body = JSON.stringify(payload);
+      const headers = { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), 'User-Agent': 'ActiveOrder-Webhook/1.0' };
+      if (secret) headers['X-Webhook-Signature'] = 'sha256=' + crypto.createHmac('sha256', secret).update(body).digest('hex');
+      const req = https.request({ method: 'POST', hostname: u.hostname, port: u.port || 443, path: u.pathname + u.search, headers, timeout: 10000, rejectUnauthorized: true }, (r) => {
+        r.resume();
+        resolve({ ok: r.statusCode >= 200 && r.statusCode < 300, status: r.statusCode });
+      });
+      req.on('timeout', () => { req.destroy(); resolve({ ok: false, status: 0, error: 'timeout' }); });
+      req.on('error', (e) => resolve({ ok: false, status: 0, error: String(e.code || e.message).slice(0, 60) }));
+      req.write(body); req.end();
+    } catch (e) { resolve({ ok: false, status: 0, error: 'invalid' }); }
+  });
+}
 const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const UPLOAD_DIR = path.join(__dirname, 'data', 'uploads');
@@ -293,15 +329,90 @@ const api = {
     if (/^\d{4}-\d{2}-\d{2}$/.test(to)) { sql += ` AND created_at <= ?`; vals.push(to + ' 23:59:59'); }
     const prod = (url.searchParams.get('f_product') || '').trim();
     if (prod) { sql += ' AND EXISTS (SELECT 1 FROM order_items oi WHERE oi.order_id = orders.id AND oi.name LIKE ?)'; vals.push(`%${prod}%`); }
+    // EO customer risk levels, derived from this store's real per-phone order history
+    const phoneStats = {};
+    for (const r of db.prepare(`SELECT customer_phone, COUNT(*) n, SUM(status='cancelled') c, SUM(status='delivered') d FROM orders WHERE store_id = ? GROUP BY customer_phone`).all(store.id))
+      phoneStats[r.customer_phone] = r;
+    const riskOf = (o) => { const s = phoneStats[o.customer_phone] || { n: 0, c: 0, d: 0 }; if (s.c >= 2) return 'high'; if (s.c >= 1 || s.n <= 1) return 'mid'; if (s.d >= 1) return 'low'; return 'mid'; };
+    const fRisk = (url.searchParams.get('f_risk') || '').trim();
+    const pageParam = parseInt(url.searchParams.get('page') || '0', 10);
+    const itemsStmt = db.prepare('SELECT * FROM order_items WHERE order_id = ?');
+    const annotate = (orders) => orders.map(o => ({ ...o, items: itemsStmt.all(o.id), risk: riskOf(o) }));
+    if (fRisk) {
+      // risk is derived, so filter after the SQL pass (bounded by the 500-row window)
+      const all = db.prepare(sql + ' ORDER BY created_at DESC LIMIT 500').all(...vals).filter(o => riskOf(o) === fRisk);
+      if (pageParam > 0) {
+        const perPage = Math.min(Math.max(parseInt(url.searchParams.get('per_page') || '20', 10) || 20, 5), 100);
+        const pages = Math.max(1, Math.ceil(all.length / perPage));
+        const page = Math.min(pageParam, pages);
+        return json(res, 200, { orders: annotate(all.slice((page - 1) * perPage, page * perPage)), total: all.length, page, pages, per_page: perPage });
+      }
+      return json(res, 200, { orders: annotate(all) });
+    }
+    if (pageParam > 0) {
+      const perPage = Math.min(Math.max(parseInt(url.searchParams.get('per_page') || '20', 10) || 20, 5), 100);
+      const total = db.prepare(`SELECT COUNT(*) c FROM (${sql})`).get(...vals).c;
+      const pages = Math.max(1, Math.ceil(total / perPage));
+      const page = Math.min(pageParam, pages);
+      const orders = db.prepare(sql + ' ORDER BY created_at DESC LIMIT ? OFFSET ?').all(...vals, perPage, (page - 1) * perPage);
+      return json(res, 200, { orders: annotate(orders), total, page, pages, per_page: perPage });
+    }
     sql += ' ORDER BY created_at DESC LIMIT 500';
     const orders = db.prepare(sql).all(...vals);
+    json(res, 200, { orders: annotate(orders) });
+  },
+  'PUT /api/orders/bulk/status': async (req, res, user) => {
+    const b = await readJSON(req);
+    if (!b || !Array.isArray(b.ids) || !b.ids.length || !ORDER_STATUSES.includes(b.status)) return json(res, 400, { error: 'بيانات غير صالحة' });
+    const store = getStoreForUser(user);
+    const ids = b.ids.map(Number).filter(Number.isInteger).slice(0, 200);
+    const find = db.prepare('SELECT id FROM orders WHERE id = ? AND store_id = ?');
+    const upd = db.prepare('UPDATE orders SET status = ? WHERE id = ?');
+    const hist = db.prepare('INSERT INTO order_status_history (order_id, status, note) VALUES (?, ?, ?)');
+    let n = 0;
+    for (const id of ids) { if (find.get(id, store.id)) { upd.run(b.status, id); hist.run(id, b.status, 'تحديث جماعي'); n++; } }
+    json(res, 200, { ok: true, updated: n });
+  },
+  'POST /api/orders/bulk/delete': async (req, res, user) => {
+    const b = await readJSON(req);
+    if (!b || !Array.isArray(b.ids) || !b.ids.length) return json(res, 400, { error: 'بيانات غير صالحة' });
+    const store = getStoreForUser(user);
+    const ids = b.ids.map(Number).filter(Number.isInteger).slice(0, 200);
+    const del = db.prepare('DELETE FROM orders WHERE id = ? AND store_id = ?');
+    let n = 0;
+    for (const id of ids) { n += del.run(id, store.id).changes; }
+    json(res, 200, { ok: true, deleted: n });
+  },
+  'POST /api/orders/bulk/resend-webhook': async (req, res, user) => {
+    const b = await readJSON(req);
+    if (!b || !Array.isArray(b.ids) || !b.ids.length) return json(res, 400, { error: 'بيانات غير صالحة' });
+    const store = getStoreForUser(user);
+    const s = Object.fromEntries(db.prepare('SELECT key, value FROM store_settings WHERE store_id = ?').all(store.id).map(r => [r.key, r.value]));
+    const hookUrl = (s.webhook_url || '').trim();
+    if (!hookUrl) return json(res, 400, { error: 'لم يتم ضبط رابط الويب هوك بعد — أضفه من إعدادات API أولاً', code: 'no_webhook' });
+    const v = await validateWebhookUrl(hookUrl);
+    if (!v.ok) return json(res, 400, { error: `رابط الويب هوك غير صالح: ${v.error}` });
+    const ids = b.ids.map(Number).filter(Number.isInteger).slice(0, 50);
     const itemsStmt = db.prepare('SELECT * FROM order_items WHERE order_id = ?');
-    json(res, 200, { orders: orders.map(o => ({ ...o, items: itemsStmt.all(o.id) })) });
+    const logStmt = db.prepare('INSERT INTO webhook_deliveries (store_id, order_id, url, status_code, ok) VALUES (?, ?, ?, ?, ?)');
+    const results = [];
+    for (const id of ids) {
+      const o = db.prepare('SELECT * FROM orders WHERE id = ? AND store_id = ?').get(id, store.id);
+      if (!o) { results.push({ id, ok: false, error: 'not_found' }); continue; }
+      const payload = { event: 'order.resync', store: store.slug, order: { ...o, items: itemsStmt.all(o.id) }, sent_at: new Date().toISOString() };
+      const r = await postWebhook(v.url, payload, s.webhook_secret || '');
+      logStmt.run(store.id, id, v.url, r.status || 0, r.ok ? 1 : 0);
+      results.push({ id, ok: r.ok, status: r.status, error: r.error });
+    }
+    json(res, 200, { ok: true, results });
+  },
+  'GET /api/settings/webhook-deliveries': (req, res, user) => {
+    const store = getStoreForUser(user);
+    json(res, 200, { deliveries: db.prepare('SELECT * FROM webhook_deliveries WHERE store_id = ? ORDER BY id DESC LIMIT 50').all(store.id) });
   },
   'PUT /api/orders/:id/status': async (req, res, user, p) => {
     const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
-    const ok = ['new', 'confirmed', 'shipped', 'delivered', 'cancelled', 'returned'];
-    if (!ok.includes(b.status)) return json(res, 400, { error: 'حالة غير صالحة' });
+    if (!ORDER_STATUSES.includes(b.status)) return json(res, 400, { error: 'حالة غير صالحة' });
     const store = getStoreForUser(user);
     const order = db.prepare('SELECT * FROM orders WHERE id = ? AND store_id = ?').get(p.id, store.id);
     if (!order) return json(res, 404, { error: 'الطلب غير موجود' });
@@ -666,7 +777,7 @@ const api = {
   'PUT /api/store/settings': async (req, res, user) => {
     const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
     const store = getStoreForUser(user);
-    const allowed = ['policies', 'head_code', 'seo', 'social', 'custom_domain', 'max_items', 'notify_email', 'notifications', 'digital_delivery', 'checkout_fields', 'thanks', 'ui_blocks', 'design_assets', 'notifications_read'];
+    const allowed = ['policies', 'head_code', 'seo', 'social', 'custom_domain', 'max_items', 'notify_email', 'notifications', 'digital_delivery', 'checkout_fields', 'thanks', 'ui_blocks', 'design_assets', 'notifications_read', 'webhook_url', 'webhook_secret'];
     const up = db.prepare('INSERT INTO store_settings (store_id, key, value, updated_at) VALUES (?, ?, ?, datetime(\'now\')) ON CONFLICT(store_id, key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at');
     for (const k of allowed) if (k in b) up.run(store.id, k, typeof b[k] === 'string' ? b[k] : JSON.stringify(b[k]));
     if ('phone' in b) db.prepare('UPDATE stores SET phone = ? WHERE id = ?').run(String(b.phone).trim(), store.id);
@@ -1025,7 +1136,7 @@ const api = {
       WHERE o.store_id = ? AND o.status NOT IN ('cancelled','returned') AND o.created_at >= ?
       GROUP BY oi.name ORDER BY revenue DESC LIMIT 5`).all(store.id, since);
     const statusCounts = {};
-    for (const s of ['new', 'confirmed', 'shipped', 'delivered', 'cancelled', 'returned'])
+    for (const s of ORDER_STATUSES)
       statusCounts[s] = db.prepare('SELECT COUNT(*) c FROM orders WHERE store_id = ? AND status = ? AND created_at >= ?').get(store.id, s, since).c;
     json(res, 200, {
       days, revenue: revenue.s, orders: revenue.c, views,

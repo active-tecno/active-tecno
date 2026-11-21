@@ -32,9 +32,20 @@ function openModal(title, bodyHTML, onMount, wide) {
 function closeModal() { $('#modalOv')?.remove(); }
 
 const STATUS = {
-  new: { ar: 'جديد', cls: 'st-new' }, confirmed: { ar: 'مؤكد', cls: 'st-confirmed' },
-  shipped: { ar: 'تم الشحن', cls: 'st-shipped' }, delivered: { ar: 'تم التسليم', cls: 'st-delivered' },
-  cancelled: { ar: 'ملغي', cls: 'st-cancelled' }, returned: { ar: 'مرتجع', cls: 'st-returned' }
+  new: { ar: 'تحت المراجعة', cls: 'st-new' },
+  confirmed: { ar: 'تم التأكيد', cls: 'st-confirmed' },
+  pending_payment: { ar: 'في انتظار الدفع', cls: 'st-pending' },
+  paid: { ar: 'تم الدفع', cls: 'st-paid' },
+  payment_failed: { ar: 'فشل الدفع', cls: 'st-failed' },
+  preparing: { ar: 'قيد التجهيز للشحن', cls: 'st-preparing' },
+  awaiting_shipping: { ar: 'بانتظار الشحن', cls: 'st-awaiting' },
+  shipped: { ar: 'قيد التوصيل', cls: 'st-shipped' },
+  delivered: { ar: 'تم التوصيل', cls: 'st-delivered' },
+  cancelled: { ar: 'تم الغاء الطلب', cls: 'st-cancelled' },
+  returned_from_shipping: { ar: 'مرتجع من الشحن', cls: 'st-returned' },
+  return_requested: { ar: 'العميل طلب الارجاع', cls: 'st-returned' },
+  returning: { ar: 'جاري الارجاع', cls: 'st-returning' },
+  returned: { ar: 'تم الارجاع', cls: 'st-returned' }
 };
 const stChip = s => `<span class="chip ${STATUS[s]?.cls || ''}">${STATUS[s]?.ar || s}</span>`;
 

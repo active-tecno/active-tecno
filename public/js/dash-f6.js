@@ -208,8 +208,21 @@ async function saveSocial() {
 
 // ---- public API ----
 registerView('settings/api', async () => {
-  const { api_key } = await loadStoreSettings();
+  const { api_key, settings: ss } = await loadStoreSettings();
+  const { deliveries } = await api('/api/settings/webhook-deliveries');
+  const delRows = deliveries.map(x => `<tr><td class="mono small" dir="ltr">#${x.order_id || '-'}</td><td class="mono small" dir="ltr">${esc(x.status_code || '-')}</td><td>${x.ok ? '<span class="chip st-delivered">نجح</span>' : '<span class="chip st-cancelled">فشل</span>'}</td><td class="muted small">${esc((x.created_at || '').replace('T', ' ').slice(0, 16))}</td></tr>`).join('');
   return settingsShell('settings/api', 'Public API', 'وصول برمجي لطلبات متجرك', `
+    <div class="card"><h3>ويب هوك الطلبات (صادر)</h3>
+      <p class="muted small">عند ضبط رابط، يمكنك إعادة إرسال أي طلب كنص JSON موقّع إلى نظامك الخارجي من صفحة الطلبات. الروابط الداخلية (localhost/شبكات خاصة) مرفوضة، والإرسال https فقط.</p>
+      <div class="f-grid" style="margin-top:10px">
+        <div class="f-field"><label>رابط الويب هوك (https)</label><input id="whUrl" dir="ltr" placeholder="https://example.com/hooks/orders" value="${esc(ss.webhook_url || '')}"></div>
+        <div class="f-field"><label>سر التوقيع (اختياري)</label><input id="whSecret" dir="ltr" placeholder="يُرسل التوقيع في ترويسة X-Webhook-Signature" value="${esc(ss.webhook_secret || '')}"></div>
+      </div>
+      <div class="m-actions"><button class="btn btn-teal" onclick="saveWebhookSettings()">حفظ</button></div>
+    </div>
+    ${deliveries.length ? `<div class="card"><h3>آخر عمليات التسليم</h3><div class="tbl-wrap" style="border:0;box-shadow:none"><table class="tbl"><thead><tr><th>الطلب</th><th>الاستجابة</th><th>النتيجة</th><th>الوقت</th></tr></thead><tbody>${delRows}</tbody></table></div></div>` : ''}`
+    + `
+
     <div class="card"><h3>مفتاح API</h3>
       ${api_key
         ? `<p class="muted small">مفتاحك الحالي — احتفظ به سراً، وأعد توليده إذا تسرب:</p>
@@ -222,6 +235,10 @@ registerView('settings/api', async () => {
       <pre class="mono small" dir="ltr" style="background:var(--soft);padding:12px;border-radius:10px;overflow:auto">GET /api/v1/${esc(STORE.slug)}/orders?key=${esc(api_key)}</pre>
       <p class="muted small">يرجع آخر 100 طلب بصيغة JSON: الرقم، العميل، المحافظة، الإجمالي، الحالة، التاريخ.</p></div>` : ''}`);
 });
+async function saveWebhookSettings() {
+  await api('/api/store/settings', { method: 'PUT', body: { webhook_url: $('#whUrl').value.trim(), webhook_secret: $('#whSecret').value.trim() } });
+  toast('تم حفظ إعدادات الويب هوك');
+}
 async function regenApiKey() {
   if (!confirm('توليد مفتاح جديد؟ أي تكامل يعمل بالمفتاح القديم سيتوقف.')) return;
   await api('/api/store/api-key', { method: 'POST' });

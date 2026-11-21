@@ -157,9 +157,15 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width
 .st-new { background: #EFF6FF; color: var(--blue); } .st-confirmed { background: #F5F3FF; color: var(--purple); }
 .st-shipped { background: #FFFBEB; color: var(--amber); } .st-delivered { background: #ECFDF5; color: var(--green); }
 .st-cancelled { background: #FEF2F2; color: var(--red); } .st-returned { background: #F1F5F9; color: var(--gray); }
+.st-pending { background: #FFF7ED; color: #C2410C; } .st-paid { background: #ECFDF5; color: var(--green); }
+.st-failed { background: #FEF2F2; color: var(--red); } .st-preparing { background: #F0F9FF; color: #0369A1; }
+.st-awaiting { background: #FFFBEB; color: var(--amber); } .st-returning { background: #F5F3FF; color: var(--purple); }
 body.dash[data-theme="dark"] .st-new { background: #101b2c; } body.dash[data-theme="dark"] .st-confirmed { background: #1c1533; }
 body.dash[data-theme="dark"] .st-shipped { background: #261f0e; } body.dash[data-theme="dark"] .st-delivered { background: #0e231a; }
 body.dash[data-theme="dark"] .st-cancelled { background: #2a1518; } body.dash[data-theme="dark"] .st-returned { background: #1a2233; }
+body.dash[data-theme="dark"] .st-pending { background: #2a1d0e; } body.dash[data-theme="dark"] .st-paid { background: #0e231a; }
+body.dash[data-theme="dark"] .st-failed { background: #2a1518; } body.dash[data-theme="dark"] .st-preparing { background: #0e1d2a; }
+body.dash[data-theme="dark"] .st-awaiting { background: #261f0e; } body.dash[data-theme="dark"] .st-returning { background: #1c1533; }
 .chip.on { background: var(--green-soft); color: var(--green-700); }
 .chip.off { background: var(--bg); color: var(--mut); }
 body.dash[data-theme="dark"] .chip.on { color: var(--green-400); }
@@ -966,3 +972,25 @@ textarea.mono{font-family:ui-monospace,monospace;font-size:12.5px;direction:ltr;
 .ord-filter-field input:focus { outline: 2px solid var(--green-500, #27cd27); outline-offset: -1px; border-color: transparent; }
 .ord-filter-x { border: none; background: none; color: var(--mut); font-size: 18px; line-height: 1; cursor: pointer; padding: 4px 6px; border-radius: 6px; }
 .ord-filter-x:hover { color: var(--ink); background: var(--bg); }
+
+/* Orders: EO bulk bar + numbered pagination */
+.ord-bulkbar { display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--line); border-radius: var(--r-md); padding: 10px 14px; margin: 8px 0; }
+.ord-pagination { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 14px 0 4px; }
+.ord-page { min-width: 34px; height: 34px; border: 1px solid var(--line); background: var(--card); border-radius: 9px; font-size: 13px; font-weight: 600; color: var(--mut); cursor: pointer; }
+.ord-page.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+.ord-page-dots { color: var(--mut); padding: 0 2px; }
+
+/* Setup guide: EO card grid */
+.setup-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-top: 12px; }
+.setup-card { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px; display: flex; flex-direction: column; gap: 6px; position: relative; }
+.setup-card .sc-ic { width: 38px; height: 38px; border-radius: 11px; display: flex; align-items: center; justify-content: center; margin-inline-start: auto; }
+.setup-card .sc-ic svg { width: 20px; height: 20px; }
+.setup-card .sc-title { font-weight: 700; font-size: 13.5px; }
+.setup-card .sc-sub { font-size: 11.5px; color: var(--mut); }
+.setup-card .sc-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
+.setup-card .sc-more { font-size: 12px; font-weight: 600; color: var(--green-600, #16a34a); cursor: pointer; background: none; border: 0; padding: 0; font-family: inherit; }
+.setup-card .sc-done { position: absolute; top: 10px; inset-inline-start: 10px; color: var(--green-500, #27cd27); }
+.setup-card .sc-done svg { width: 18px; height: 18px; }
+.setup-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.setup-meta { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+.setup-meta .pct { color: var(--green-600, #16a34a); font-weight: 700; font-size: 14px; }
