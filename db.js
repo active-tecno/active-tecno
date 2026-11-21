@@ -453,6 +453,10 @@ const migrations = [
     CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_store ON webhook_deliveries(store_id);`
   },
   {
+    id: '017_order_phone_alt',
+    sql: `ALTER TABLE orders ADD COLUMN customer_phone_alt TEXT NOT NULL DEFAULT '';`
+  },
+  {
     id: '013_store_sections',
     sql: `
     CREATE TABLE IF NOT EXISTS store_sections (

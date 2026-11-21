@@ -1069,6 +1069,8 @@ const api = {
     const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
     const store = getStoreForUser(user);
     const phone = normalizePhone(b.phone);
+    const phoneAlt = b.phone_alt ? normalizePhone(b.phone_alt) : '';
+    if (phoneAlt && !EG_PHONE.test(phoneAlt)) return json(res, 400, { error: 'رقم الهاتف البديل غير صحيح' });
     let cfCfg = null; try { cfCfg = JSON.parse((db.prepare("SELECT value FROM store_settings WHERE store_id = ? AND key = 'checkout_fields'").get(store.id) || {}).value || 'null'); } catch (e) {}
     const cfOn = k => !cfCfg || !cfCfg[k] || cfCfg[k].enabled !== false;
     const cfReq = k => !cfCfg || !cfCfg[k] || cfCfg[k].required !== false;
@@ -1090,12 +1092,17 @@ const api = {
     const zone = zones.find(z => (z.governorates || '').split(',').map(x => x.trim()).includes(b.governorate)) || zones[0];
     if (zone) shipping = (zone.free_over && subtotal >= zone.free_over) ? 0 : zone.price * (zone.per_item ? lineItems.reduce((s, li) => s + li.qty, 0) : 1);
     if (store.free_shipping_over && subtotal >= store.free_shipping_over) shipping = 0;
+    if (b.shipping !== undefined && b.shipping !== null && b.shipping !== '') {
+      const so = Number(b.shipping);
+      if (!Number.isFinite(so) || so < 0 || so > 10000) return json(res, 400, { error: 'رسوم التوصيل غير صالحة' });
+      shipping = Math.round(so * 100) / 100;
+    }
     const total = Math.max(0, subtotal + shipping);
     const count = db.prepare('SELECT COUNT(*) c FROM orders WHERE store_id = ?').get(store.id).c;
     const number = `${store.slug.slice(0, 2).toUpperCase()}-${1021 + count}`;
-    const r = db.prepare(`INSERT INTO orders (store_id, number, customer_name, customer_phone, customer_address, governorate, notes, subtotal, shipping, discount, total, source)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 'dashboard')`)
-      .run(store.id, number, b.name.trim(), phone, (b.address || '').trim(), b.governorate || '', (b.notes || '').trim(), subtotal, shipping, total);
+    const r = db.prepare(`INSERT INTO orders (store_id, number, customer_name, customer_phone, customer_phone_alt, customer_address, governorate, notes, subtotal, shipping, discount, total, source)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 'dashboard')`)
+      .run(store.id, number, b.name.trim(), phone, phoneAlt, (b.address || '').trim(), b.governorate || '', (b.notes || '').trim(), subtotal, shipping, total);
     const oid = r.lastInsertRowid;
     const itemStmt = db.prepare('INSERT INTO order_items (order_id, product_id, name, price, qty, image) VALUES (?, ?, ?, ?, ?, ?)');
     for (const li of lineItems) {

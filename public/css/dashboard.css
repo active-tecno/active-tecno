@@ -1003,3 +1003,7 @@ textarea.mono{font-family:ui-monospace,monospace;font-size:12.5px;direction:ltr;
 .d-main-wrap { overflow-x: clip; }
 .d-main > * { min-width: 0; }
 .setup-grid { overflow-wrap: anywhere; }
+
+/* أنشاء طلب full page (EO #/orders/create): two-column grid, stacks on narrow */
+.co-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; align-items: start; }
+@media (max-width: 900px) { .co-grid { grid-template-columns: 1fr; } }
