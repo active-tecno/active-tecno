@@ -344,6 +344,16 @@ const migrations = [
     ALTER TABLE users ADD COLUMN referral_code TEXT;
     CREATE INDEX idx_reviews_product ON reviews(product_id, status);
     `
+  },
+  {
+    id: '007_stage_f_products',
+    sql: `
+    ALTER TABLE products ADD COLUMN meta_description TEXT NOT NULL DEFAULT '';
+    ALTER TABLE products ADD COLUMN slug TEXT NOT NULL DEFAULT '';
+    ALTER TABLE products ADD COLUMN priority INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE products ADD COLUMN variants TEXT NOT NULL DEFAULT '[]';
+    CREATE INDEX idx_products_store_priority ON products(store_id, priority DESC);
+    `
   }
 ];
 

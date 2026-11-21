@@ -93,6 +93,19 @@ function serveStatic(res, filePath) {
 }
 
 // ---------- API ----------
+// Our own starter catalog (Easy Catalog) — generic products merchants can import. Original Arabic copy, no images.
+const EASY_CATALOG = [
+  { id: 'ec1', name: 'ساعة يد كلاسيك بسوار جلد', description: 'ساعة يد أنيقة بتصميم كلاسيكي، سوار جلد طبيعي مريح، مقاومة لرذاذ الماء، مناسبة للاستخدام اليومي والمناسبات.', price: 450, compare_at_price: 600, cost: 220, sku: 'EC-WATCH-01', stock: 40, category: 'إكسسوارات' },
+  { id: 'ec2', name: 'نظارة شمس بعدسات مستقطبة', description: 'نظارة شمسية بإطار خفيف وعدسات مستقطبة بحماية UV400، تأتي مع جراب صلب ومنديل تنظيف.', price: 320, compare_at_price: 450, cost: 140, sku: 'EC-SUN-01', stock: 60, category: 'إكسسوارات' },
+  { id: 'ec3', name: 'شنطة ظهر عملية بجيب لابتوب', description: 'شنطة ظهر بخامة مقاومة للماء، جيب مبطن للابتوب حتى 15.6 بوصة، جيوب منظمة متعددة وظهر مريح للاستخدام اليومي.', price: 550, compare_at_price: 750, cost: 280, sku: 'EC-BAG-01', stock: 35, category: 'شنط' },
+  { id: 'ec4', name: 'محفظة جلد طبيعي بحماية RFID', description: 'محفظة رجالية من الجلد الطبيعي بتصميم نحيف، تحتوي على طبقة حماية RFID لتأمين البطاقات، وتتسع لـ 8 بطاقات ونقود ورقية.', price: 280, compare_at_price: 380, cost: 120, sku: 'EC-WALLET-01', stock: 80, category: 'إكسسوارات' },
+  { id: 'ec5', name: 'سماعات بلوتوث لاسلكية بعزل ضوضاء', description: 'سماعات أذن لاسلكية ببلوتوث 5.3، عزل ضوضاء نشط، بطارية تدوم حتى 24 ساعة مع علبة الشحن، ومقاومة للعرق.', price: 750, compare_at_price: 999, cost: 380, sku: 'EC-AUDIO-01', stock: 50, category: 'إلكترونيات' },
+  { id: 'ec6', name: 'حامل موبايل مغناطيسي للسيارة', description: 'حامل موبايل مغناطيسي قوي يثبت على فتحة التكييف، دوران 360 درجة، متوافق مع جميع الموبايلات.', price: 150, compare_at_price: 220, cost: 55, sku: 'EC-CAR-01', stock: 120, category: 'إلكترونيات' },
+  { id: 'ec7', name: 'طقم أكواب سيراميك (6 قطع)', description: 'طقم 6 أكواب سيراميك بتصميم عصري، آمنة للميكروويف وغسالة الأطباق، سعة 250 مل للكوب.', price: 380, compare_at_price: 500, cost: 170, sku: 'EC-HOME-01', stock: 45, category: 'المنزل' },
+  { id: 'ec8', name: 'منظم مكتب خشبي متعدد الأدراج', description: 'منظم مكتب من الخشب الطبيعي بأدراج وأقسام متعددة لترتيب الأدوات المكتبية والموبايل والأوراق.', price: 260, compare_at_price: 350, cost: 110, sku: 'EC-HOME-02', stock: 30, category: 'المنزل' },
+  { id: 'ec9', name: 'تيشيرت قطن بيزك بقصّة مريحة', description: 'تيشيرت قطن 100% بخامة ثقيلة ناعمة، قصّة مريحة مناسبة للجنسين، متاح بمقاسات من S إلى XXL.', price: 220, compare_at_price: 300, cost: 90, sku: 'EC-FASH-01', stock: 100, category: 'ملابس' },
+  { id: 'ec10', name: 'كوب حراري ستانلس يحافظ على الحرارة', description: 'كوب حراري ستانلس ستيل بجدار مزدوج، يحافظ على المشروبات ساخنة 6 ساعات وباردة 12 ساعة، بغطاء محكم ضد التسريب.', price: 340, compare_at_price: 450, cost: 150, sku: 'EC-HOME-03', stock: 70, category: 'المنزل' }
+];
 const verifyCodes = new Map(); // email -> { code, userId, expires } — code is emailed when the email provider is configured; otherwise returned for the on-screen verifier
 const api = {
   // auth
@@ -190,9 +203,9 @@ const api = {
   'POST /api/products': async (req, res, user) => {
     const b = await readJSON(req); if (!b || !b.name || !(b.price > 0)) return json(res, 400, { error: 'الاسم والسعر مطلوبان' });
     const store = getStoreForUser(user);
-    const r = db.prepare(`INSERT INTO products (store_id, name, description, price, compare_at_price, cost, sku, stock, low_stock_threshold, category, status, images, upsell_product_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .run(store.id, b.name, b.description || '', b.price, b.compare_at_price || null, b.cost || 0, b.sku || '', b.stock ?? 0, b.low_stock_threshold ?? 3, b.category || '', b.status || 'active', JSON.stringify(b.images || []), b.upsell_product_id || null);
+    const r = db.prepare(`INSERT INTO products (store_id, name, description, price, compare_at_price, cost, sku, stock, low_stock_threshold, category, status, images, upsell_product_id, meta_description, slug, priority, variants)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run(store.id, b.name, b.description || '', b.price, b.compare_at_price || null, b.cost || 0, b.sku || '', b.stock ?? 0, b.low_stock_threshold ?? 3, b.category || '', b.status || 'active', JSON.stringify(b.images || []), b.upsell_product_id || null, b.meta_description || '', b.slug || '', b.priority || 0, JSON.stringify(b.variants || []));
     json(res, 201, { product: db.prepare('SELECT * FROM products WHERE id = ?').get(r.lastInsertRowid) });
   },
   'PUT /api/products/:id': async (req, res, user, p) => {
@@ -200,10 +213,11 @@ const api = {
     const store = getStoreForUser(user);
     const prod = db.prepare('SELECT * FROM products WHERE id = ? AND store_id = ?').get(p.id, store.id);
     if (!prod) return json(res, 404, { error: 'المنتج غير موجود' });
-    const fields = ['name', 'description', 'price', 'compare_at_price', 'cost', 'sku', 'stock', 'low_stock_threshold', 'category', 'status', 'upsell_product_id'];
+    const fields = ['name', 'description', 'price', 'compare_at_price', 'cost', 'sku', 'stock', 'low_stock_threshold', 'category', 'status', 'upsell_product_id', 'meta_description', 'slug', 'priority'];
     const sets = [], vals = [];
     for (const f of fields) if (f in b) { sets.push(`${f} = ?`); vals.push(b[f]); }
     if (b.images) { sets.push('images = ?'); vals.push(JSON.stringify(b.images)); }
+    if (b.variants) { sets.push('variants = ?'); vals.push(JSON.stringify(b.variants)); }
     if (sets.length) db.prepare(`UPDATE products SET ${sets.join(', ')} WHERE id = ?`).run(...vals, prod.id);
     json(res, 200, { product: db.prepare('SELECT * FROM products WHERE id = ?').get(prod.id) });
   },
@@ -335,6 +349,116 @@ const api = {
     if (!store) return json(res, 404, { error: 'المتجر غير موجود' });
     db.prepare('INSERT OR IGNORE INTO newsletter_subscribers (store_id, email) VALUES (?, ?)').run(store.id, email);
     json(res, 201, { ok: true });
+  },
+
+  // ---------- F2: products cluster ----------
+  'GET /api/categories': (req, res, user) => json(res, 200, { categories: db.prepare('SELECT * FROM categories WHERE store_id = ? ORDER BY priority DESC, name').all(getStoreForUser(user).id) }),
+  'POST /api/categories': async (req, res, user) => {
+    const b = await readJSON(req); if (!b || !String(b.name || '').trim()) return json(res, 400, { error: 'اسم القسم مطلوب' });
+    const store = getStoreForUser(user);
+    try {
+      const r = db.prepare('INSERT INTO categories (store_id, name, priority) VALUES (?, ?, ?)').run(store.id, String(b.name).trim(), b.priority || 0);
+      json(res, 201, { category: db.prepare('SELECT * FROM categories WHERE id = ?').get(r.lastInsertRowid) });
+    } catch (e) { json(res, 409, { error: 'هذا القسم موجود بالفعل' }); }
+  },
+  'PUT /api/categories/:id': async (req, res, user, p) => {
+    const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
+    const store = getStoreForUser(user);
+    const sets = [], vals = [];
+    if (b.name !== undefined) { sets.push('name = ?'); vals.push(String(b.name).trim()); }
+    if (b.priority !== undefined) { sets.push('priority = ?'); vals.push(b.priority | 0); }
+    if (sets.length) db.prepare(`UPDATE categories SET ${sets.join(', ')} WHERE id = ? AND store_id = ?`).run(...vals, p.id, store.id);
+    json(res, 200, { ok: true });
+  },
+  'DELETE /api/categories/:id': (req, res, user, p) => {
+    db.prepare('DELETE FROM categories WHERE id = ? AND store_id = ?').run(p.id, getStoreForUser(user).id);
+    json(res, 200, { ok: true });
+  },
+
+  'GET /api/reviews': (req, res, user) => json(res, 200, {
+    reviews: db.prepare(`SELECT r.*, p.name AS product_name FROM reviews r JOIN products p ON p.id = r.product_id WHERE r.store_id = ? ORDER BY r.id DESC`).all(getStoreForUser(user).id)
+  }),
+  'PUT /api/reviews/:id': async (req, res, user, p) => {
+    const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
+    if (b.status && ['pending', 'published', 'hidden'].includes(b.status)) db.prepare('UPDATE reviews SET status = ? WHERE id = ? AND store_id = ?').run(b.status, p.id, getStoreForUser(user).id);
+    json(res, 200, { ok: true });
+  },
+  'DELETE /api/reviews/:id': (req, res, user, p) => {
+    db.prepare('DELETE FROM reviews WHERE id = ? AND store_id = ?').run(p.id, getStoreForUser(user).id);
+    json(res, 200, { ok: true });
+  },
+  'POST /api/public/:slug/reviews': async (req, res, user, p) => {
+    const b = await readJSON(req); if (!b || !b.product_id || !String(b.customer_name || '').trim()) return json(res, 400, { error: 'بيانات غير صالحة' });
+    const store = db.prepare('SELECT * FROM stores WHERE slug = ?').get(p.slug);
+    if (!store) return json(res, 404, { error: 'المتجر غير موجود' });
+    const rating = Math.min(5, Math.max(1, b.rating | 0 || 5));
+    db.prepare('INSERT INTO reviews (store_id, product_id, customer_name, rating, text) VALUES (?, ?, ?, ?, ?)').run(store.id, b.product_id, String(b.customer_name).trim(), rating, String(b.text || '').slice(0, 1000));
+    json(res, 201, { ok: true });
+  },
+
+  'GET /api/ab-tests': (req, res, user) => json(res, 200, {
+    tests: db.prepare(`SELECT t.*, p.name AS product_name FROM ab_tests t LEFT JOIN products p ON p.id = t.product_id WHERE t.store_id = ? ORDER BY t.id DESC`).all(getStoreForUser(user).id)
+  }),
+  'POST /api/ab-tests': async (req, res, user) => {
+    const b = await readJSON(req); if (!b || !String(b.name || '').trim()) return json(res, 400, { error: 'اسم الاختبار مطلوب' });
+    const store = getStoreForUser(user);
+    const r = db.prepare('INSERT INTO ab_tests (store_id, name, product_id, variant_a, variant_b) VALUES (?, ?, ?, ?, ?)')
+      .run(store.id, String(b.name).trim(), b.product_id || null, JSON.stringify(b.variant_a || {}), JSON.stringify(b.variant_b || {}));
+    json(res, 201, { test: db.prepare('SELECT * FROM ab_tests WHERE id = ?').get(r.lastInsertRowid) });
+  },
+  'PUT /api/ab-tests/:id': async (req, res, user, p) => {
+    const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
+    const store = getStoreForUser(user);
+    if (b.name !== undefined) db.prepare('UPDATE ab_tests SET name = ? WHERE id = ? AND store_id = ?').run(String(b.name).trim(), p.id, store.id);
+    if (b.variant_a !== undefined) db.prepare('UPDATE ab_tests SET variant_a = ? WHERE id = ? AND store_id = ?').run(JSON.stringify(b.variant_a), p.id, store.id);
+    if (b.variant_b !== undefined) db.prepare('UPDATE ab_tests SET variant_b = ? WHERE id = ? AND store_id = ?').run(JSON.stringify(b.variant_b), p.id, store.id);
+    if (b.status && ['running', 'stopped'].includes(b.status)) db.prepare('UPDATE ab_tests SET status = ? WHERE id = ? AND store_id = ?').run(b.status, p.id, store.id);
+    json(res, 200, { ok: true });
+  },
+  'DELETE /api/ab-tests/:id': (req, res, user, p) => {
+    db.prepare('DELETE FROM ab_tests WHERE id = ? AND store_id = ?').run(p.id, getStoreForUser(user).id);
+    json(res, 200, { ok: true });
+  },
+  'POST /api/public/:slug/ab-event': async (req, res, user, p) => {
+    const b = await readJSON(req); if (!b || !b.test_id) return json(res, 400, { error: 'بيانات غير صالحة' });
+    const store = db.prepare('SELECT * FROM stores WHERE slug = ?').get(p.slug);
+    if (!store) return json(res, 404, { error: 'المتجر غير موجود' });
+    const col = (b.variant === 'b' ? (b.kind === 'order' ? 'orders_b' : 'views_b') : (b.kind === 'order' ? 'orders_a' : 'views_a'));
+    db.prepare(`UPDATE ab_tests SET ${col} = ${col} + 1 WHERE id = ? AND store_id = ?`).run(b.test_id, store.id);
+    json(res, 200, { ok: true });
+  },
+
+  // product feed (Meta/Google catalog CSV) — public, per store
+  'GET /api/public/:slug/feed.csv': (req, res, user, p) => {
+    const store = db.prepare('SELECT * FROM stores WHERE slug = ?').get(p.slug);
+    if (!store) return json(res, 404, { error: 'المتجر غير موجود' });
+    const prods = db.prepare(`SELECT * FROM products WHERE store_id = ? AND status = 'active' ORDER BY id`).all(store.id);
+    const esc = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+    const base = `https://${req.headers.host || 'active-order.onrender.com'}`;
+    const rows = ['id,title,description,availability,condition,price,link,image_link'];
+    for (const pr of prods) {
+      let img = ''; try { const imgs = JSON.parse(pr.images || '[]'); img = imgs[0] || ''; } catch (e) {}
+      if (img && img.startsWith('/')) img = base + img;
+      rows.push([pr.id, esc(pr.name), esc((pr.description || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()), (pr.stock > 0 ? 'in stock' : 'out of stock'), 'new', `${Number(pr.price).toFixed(2)} EGP`, `${base}/s/${store.slug}#p-${pr.id}`, esc(img)].join(','));
+    }
+    res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8' });
+    res.end(rows.join('\n'));
+  },
+
+  // easy catalog: our own starter product library merchants can import
+  'GET /api/easy-catalog': (req, res, user) => json(res, 200, { items: EASY_CATALOG }),
+  'POST /api/easy-catalog/import': async (req, res, user) => {
+    const b = await readJSON(req); if (!b || !Array.isArray(b.ids)) return json(res, 400, { error: 'بيانات غير صالحة' });
+    const store = getStoreForUser(user);
+    let added = 0;
+    const ins = db.prepare(`INSERT INTO products (store_id, name, description, price, compare_at_price, cost, sku, stock, low_stock_threshold, category, status, images) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', '[]')`);
+    for (const id of b.ids) {
+      const item = EASY_CATALOG.find(x => x.id === id);
+      if (!item) continue;
+      ins.run(store.id, item.name, item.description, item.price, item.compare_at_price || null, item.cost || 0, item.sku || '', item.stock ?? 20, 3, item.category || '');
+      added++;
+    }
+    json(res, 201, { added });
   },
 
   // merchant manual order (dashboard "أنشاء طلب")
