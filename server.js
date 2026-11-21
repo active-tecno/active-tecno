@@ -17,9 +17,20 @@ const dns = require('dns').promises;
 const net = require('net');
 // Merchant webhook endpoint validation: https only, no loopback/private/link-local targets (SSRF guard)
 function isPrivateIP(ip) {
-  if (net.isIPv6(ip)) return /^f[cd]|^fe80|^::1$/i.test(ip);
+  if (net.isIPv6(ip)) {
+    const v = ip.toLowerCase();
+    if (v.startsWith('::ffff:')) return isPrivateIP(v.slice(7)); // IPv4-mapped
+    return v === '::' || v === '::1' || /^f[cd]/i.test(v) || /^fe[89ab]/i.test(v) || v.startsWith('2001:db8');
+  }
   const p = ip.split('.').map(Number);
-  return p[0] === 10 || p[0] === 127 || (p[0] === 172 && p[1] >= 16 && p[1] <= 31) || (p[0] === 192 && p[1] === 168) || (p[0] === 169 && p[1] === 254) || p[0] === 0;
+  if (p.length !== 4 || p.some(n => !Number.isInteger(n) || n < 0 || n > 255)) return true;
+  return p[0] === 0 || p[0] === 10 || p[0] === 127 || p[0] >= 224
+    || (p[0] === 100 && p[1] >= 64 && p[1] <= 127)
+    || (p[0] === 169 && p[1] === 254)
+    || (p[0] === 172 && p[1] >= 16 && p[1] <= 31)
+    || (p[0] === 192 && (p[1] === 168 || (p[1] === 0 && p[2] === 0) || (p[1] === 0 && p[2] === 2)))
+    || (p[0] === 198 && (p[1] === 18 || p[1] === 19 || (p[1] === 51 && p[2] === 100)))
+    || (p[0] === 203 && p[1] === 0 && p[2] === 113);
 }
 async function validateWebhookUrl(raw) {
   let u; try { u = new URL(raw); } catch { return { ok: false, error: 'رابط غير صالح' }; }
@@ -28,16 +39,19 @@ async function validateWebhookUrl(raw) {
   try { ips = (await dns.lookup(u.hostname, { all: true })).map(a => a.address); }
   catch { return { ok: false, error: 'تعذر الوصول لخادم الرابط' }; }
   if (!ips.length || ips.some(isPrivateIP)) return { ok: false, error: 'الرابط يشير إلى عنوان داخلي غير مسموح' };
-  return { ok: true, url: u.toString() };
+  return { ok: true, url: u.toString(), ip: ips[0] };
 }
-function postWebhook(urlStr, payload, secret) {
+// pinnedIp comes from the same DNS answer that passed isPrivateIP, so the connection cannot
+// re-resolve to a different (internal) address (DNS-rebinding resistance). Redirects are never
+// followed: a 3xx is reported as a failed delivery instead of chasing an unvalidated target.
+function postWebhook(urlStr, payload, secret, pinnedIp) {
   return new Promise((resolve) => {
     try {
       const u = new URL(urlStr);
       const body = JSON.stringify(payload);
-      const headers = { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), 'User-Agent': 'ActiveOrder-Webhook/1.0' };
+      const headers = { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), 'User-Agent': 'ActiveOrder-Webhook/1.0', Host: u.host };
       if (secret) headers['X-Webhook-Signature'] = 'sha256=' + crypto.createHmac('sha256', secret).update(body).digest('hex');
-      const req = https.request({ method: 'POST', hostname: u.hostname, port: u.port || 443, path: u.pathname + u.search, headers, timeout: 10000, rejectUnauthorized: true }, (r) => {
+      const req = https.request({ method: 'POST', hostname: pinnedIp || u.hostname, servername: u.hostname, port: u.port || 443, path: u.pathname + u.search, headers, timeout: 10000, rejectUnauthorized: true }, (r) => {
         r.resume();
         resolve({ ok: r.statusCode >= 200 && r.statusCode < 300, status: r.statusCode });
       });
@@ -333,7 +347,10 @@ const api = {
     const phoneStats = {};
     for (const r of db.prepare(`SELECT customer_phone, COUNT(*) n, SUM(status='cancelled') c, SUM(status='delivered') d FROM orders WHERE store_id = ? GROUP BY customer_phone`).all(store.id))
       phoneStats[r.customer_phone] = r;
-    const riskOf = (o) => { const s = phoneStats[o.customer_phone] || { n: 0, c: 0, d: 0 }; if (s.c >= 2) return 'high'; if (s.c >= 1 || s.n <= 1) return 'mid'; if (s.d >= 1) return 'low'; return 'mid'; };
+    // Heuristic only: 2+ cancelled => high, 1 cancelled => mid, any delivered => low.
+      // A phone with too little history (e.g. first order ever) is 'unknown' - we do NOT
+      // imply established fraud risk from a single order.
+      const riskOf = (o) => { const s = phoneStats[o.customer_phone] || { n: 0, c: 0, d: 0 }; if (s.c >= 2) return 'high'; if (s.c >= 1) return 'mid'; if (s.d >= 1) return 'low'; return 'unknown'; };
     const fRisk = (url.searchParams.get('f_risk') || '').trim();
     const pageParam = parseInt(url.searchParams.get('page') || '0', 10);
     const itemsStmt = db.prepare('SELECT * FROM order_items WHERE order_id = ?');
@@ -400,7 +417,7 @@ const api = {
       const o = db.prepare('SELECT * FROM orders WHERE id = ? AND store_id = ?').get(id, store.id);
       if (!o) { results.push({ id, ok: false, error: 'not_found' }); continue; }
       const payload = { event: 'order.resync', store: store.slug, order: { ...o, items: itemsStmt.all(o.id) }, sent_at: new Date().toISOString() };
-      const r = await postWebhook(v.url, payload, s.webhook_secret || '');
+      const r = await postWebhook(v.url, payload, s.webhook_secret || '', v.ip);
       logStmt.run(store.id, id, v.url, r.status || 0, r.ok ? 1 : 0);
       results.push({ id, ok: r.ok, status: r.status, error: r.error });
     }

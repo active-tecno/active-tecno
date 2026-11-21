@@ -135,7 +135,7 @@ body.dash[data-theme="dark"] .act-banner .bn-ic { background: #3a3115; }
 .act-banner .bn-ic svg { width: 22px; height: 22px; }
 .act-banner .txt { flex: 1; min-width: 230px; }
 .act-banner .txt h3 { font-size: 15px; margin-bottom: 4px; color: var(--ink); }
-.act-banner .txt p { font-size: 13px; color: var(--mut); line-height: 1.9; }
+.act-banner .txt p { font-size: 13px; color: var(--mut); line-height: 1.9; overflow-wrap: anywhere; }
 .act-banner .perks { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 6px; }
 .act-banner .perks span { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--ink); font-weight: 600; }
 .act-banner .perks svg { width: 14px; height: 14px; color: var(--green-600); }
@@ -994,3 +994,12 @@ textarea.mono{font-family:ui-monospace,monospace;font-size:12.5px;direction:ltr;
 .setup-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .setup-meta { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
 .setup-meta .pct { color: var(--green-600, #16a34a); font-weight: 700; font-size: 14px; }
+
+/* risk: insufficient history - neutral, no implied fraud risk */
+.risk-unknown { color: var(--mut); }
+.risk-unknown .bar { background: var(--line-strong); }
+.risk-note { font-size: 12px; color: var(--mut); margin: 8px 2px 0; }
+/* prevent any page content from forcing a horizontal scrollbar */
+.d-main-wrap { overflow-x: clip; }
+.d-main > * { min-width: 0; }
+.setup-grid { overflow-wrap: anywhere; }

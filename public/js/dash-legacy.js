@@ -13,9 +13,9 @@ function orderRisk(o, all) {
   const cancelled = mine.filter(x => x.status === 'cancelled').length;
   const delivered = mine.filter(x => x.status === 'delivered').length;
   if (cancelled >= 2) return { label: 'مرتفعة', cls: 'risk-high' };
-  if (cancelled >= 1 || mine.length <= 1) return { label: 'متوسطة', cls: 'risk-mid' };
+  if (cancelled >= 1) return { label: 'متوسطة', cls: 'risk-mid' };
   if (delivered >= 1) return { label: 'منخفضة', cls: 'risk-low' };
-  return { label: 'متوسطة', cls: 'risk-mid' };
+  return { label: 'غير معروفة', cls: 'risk-unknown' };
 }
 let ordersPage = 1, ordersPages = 1, ordersTotal = 0, ordersRiskFilter = '';
 let selectedOrders = new Set();
@@ -58,7 +58,7 @@ function renderOrderTabs() {
     + tab('', 'كل الطلبات') + Object.keys(STATUS).map(s => tab(s, STATUS[s].ar)).join('')
     + riskTab('high', 'مخاطرة مرتفعة') + riskTab('mid', 'مخاطرة متوسطة');
 }
-const RISK_LABEL = { high: { label: 'مرتفعة', cls: 'risk-high' }, mid: { label: 'متوسطة', cls: 'risk-mid' }, low: { label: 'منخفضة', cls: 'risk-low' } };
+const RISK_LABEL = { high: { label: 'مرتفعة', cls: 'risk-high' }, mid: { label: 'متوسطة', cls: 'risk-mid' }, low: { label: 'منخفضة', cls: 'risk-low' }, unknown: { label: 'غير معروفة', cls: 'risk-unknown' } };
 function riskOfOrder(o, all) { return o.risk ? RISK_LABEL[o.risk] : orderRisk(o, all || ordersCache); }
 function renderOrders(orders, all) {
   all = all || orders;
@@ -78,7 +78,7 @@ function renderOrders(orders, all) {
         <td><span class="o-gauge ${r.cls}" title="${r.label}"><i></i><i></i><i></i></span></td>
         <td class="muted">EG</td>
         <td class="small">${fmtDateUS(o.created_at)}</td></tr>`;
-      }).join('')}</tbody></table></div>${renderOrdersPagination()}`;
+      }).join('')}</tbody></table></div>${renderOrdersPagination()}<p class="risk-note">مستوى الخطورة مؤشر آلي مبدئي يعتمد فقط على سجل هذا الرقم داخل متجرك (إلغاءان أو أكثر = مرتفعة، إلغاء واحد = متوسطة، تسليم سابق = منخفضة). «غير معروفة» تعني عدم توفر سجل كافٍ ولا تعني وجود مخاطرة مؤكدة.</p>`;
   }
   const cols = ['new', 'confirmed', 'pending_payment', 'preparing', 'awaiting_shipping', 'shipped', 'delivered', 'cancelled', 'returned'];
   return `<div class="kb">${cols.map(s => {
