@@ -529,3 +529,22 @@ body.dash[data-theme="dark"] .act-banner.live .bn-ic svg { color: #4ade80; }
 .ok-text { color: var(--green-600); font-size: 13px; margin-top: 10px; }
 
 .chip-demo { display: inline-block; background: #f59e0b; color: #1a1300; font-size: 10.5px; font-weight: 800; border-radius: 999px; padding: 1px 8px; margin-inline-start: 6px; vertical-align: middle; }
+
+/* F4 marketing cluster */
+.d-row-between { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.d-row-between h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; }
+.d-row-between h3 svg { width: 20px; height: 20px; color: var(--green); }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+.stat { display: flex; align-items: center; gap: 12px; }
+.stat-ic { width: 44px; height: 44px; border-radius: 12px; background: var(--green-soft, #eafbee); color: var(--green); display: grid; place-items: center; }
+.stat-ic svg { width: 22px; height: 22px; }
+.stat b { display: block; font-size: 20px; }
+.stat span { color: var(--muted); font-size: 12.5px; }
+.d-card.warn { border: 1.5px solid var(--amber); }
+.sp-preview { display: flex; align-items: center; gap: 10px; background: var(--card2, #f6f8fa); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; max-width: 340px; }
+.sp-dot { width: 34px; height: 34px; border-radius: 10px; background: var(--green); flex: none; }
+.sp-preview b { display: block; font-size: 13.5px; } .sp-preview span { color: var(--muted); font-size: 12px; }
+.copy-row .btn { white-space: nowrap; }
+
+.copy-row[hidden], [hidden].copy-row { display: none !important; }

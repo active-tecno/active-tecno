@@ -216,3 +216,24 @@ body.funnel { background: var(--s-bg, #f8f9fb); }
 .demo-bar { background: #f59e0b; color: #1a1300; text-align: center; font-weight: 700; font-size: 13.5px; padding: 9px 14px; position: sticky; top: 0; z-index: 70; }
 .demo-notice { background: #fff7e6; border: 1.5px solid #f59e0b; color: #92600a; border-radius: 10px; padding: 10px 14px; font-size: 13px; font-weight: 600; margin: 10px 0; }
 body.dark .demo-notice { background: #2b2110; color: #f3c96b; }
+
+/* F4 storefront marketing */
+.sales-pop { position: fixed; bottom: 18px; inset-inline-start: 18px; z-index: 90; display: flex; align-items: center; gap: 10px; background: var(--card, #fff); color: inherit; border: 1px solid #e5e9f0; border-radius: 14px; box-shadow: 0 12px 32px rgba(11,21,38,.16); padding: 11px 14px; max-width: 320px; opacity: 0; transform: translateY(14px); transition: all .35s cubic-bezier(.22,1,.36,1); }
+.sales-pop.show { opacity: 1; transform: none; }
+.sales-pop .sp-dot { width: 34px; height: 34px; border-radius: 10px; background: #27cd27; flex: none; }
+.sales-pop b { display: block; font-size: 13px; } .sales-pop span { color: #77809a; font-size: 12px; }
+.sales-pop .sp-x { background: none; border: 0; font-size: 17px; color: #9aa3b8; cursor: pointer; padding: 2px 6px; }
+body.dark .sales-pop { background: #131a2b; border-color: #232c44; }
+.xsell-box { border: 1.5px dashed #27cd27; border-radius: 14px; padding: 14px; margin-bottom: 16px; }
+.xsell-box h4 { margin: 0 0 10px; font-size: 14.5px; }
+.xsell-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
+.xsell-row + .xsell-row { border-top: 1px solid #edf0f6; }
+.xsell-row img { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; }
+.xsell-info { flex: 1; } .xsell-info b { display: block; font-size: 13.5px; } .xsell-info span { font-size: 13px; color: #27a027; font-weight: 700; } .xsell-info s { color: #9aa3b8; font-weight: 400; }
+.xsell-add { background: #0B1526; color: #fff; border: 0; border-radius: 999px; padding: 7px 16px; font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.xsell-add:disabled { background: #27cd27; }
+.dsell-card { max-width: 520px; margin: 18px auto 0; background: #fff; border: 1.5px solid #f59e0b; border-radius: 16px; padding: 18px; text-align: start; }
+.dsell-card h3 { margin: 0 0 12px; font-size: 15.5px; color: #92600a; }
+.dsell-body { display: flex; gap: 14px; } .dsell-body img { width: 84px; height: 84px; border-radius: 12px; object-fit: cover; }
+.dsell-body .s-btn { margin-top: 8px; }
+body.dark .dsell-card { background: #131a2b; border-color: #92600a; }

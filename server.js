@@ -519,6 +519,11 @@ const api = {
     json(res, 200, { ok: true });
   },
 
+  'GET /api/marketing/utm-stats': (req, res, user) => {
+    const store = getStoreForUser(user);
+    const rows = db.prepare(`SELECT utm_source, utm_medium, utm_campaign, COUNT(*) AS orders, COALESCE(SUM(total),0) AS revenue FROM orders WHERE store_id = ? AND utm_source <> '' GROUP BY 1, 2, 3 ORDER BY orders DESC LIMIT 50`).all(store.id);
+    json(res, 200, { stats: rows });
+  },
   'GET /api/referral-links': (req, res, user) => json(res, 200, {
     links: db.prepare('SELECT * FROM referral_links WHERE store_id = ? ORDER BY id DESC').all(getStoreForUser(user).id)
   }),
@@ -551,8 +556,8 @@ const api = {
   'GET /api/public/:slug/recent-orders': (req, res, user, p) => {
     const store = db.prepare('SELECT * FROM stores WHERE slug = ?').get(p.slug);
     if (!store) return json(res, 404, { error: 'المتجر غير موجود' });
-    const rows = db.prepare(`SELECT customer_name, governorate, created_at FROM orders WHERE store_id = ? ORDER BY id DESC LIMIT 10`).all(store.id);
-    json(res, 200, { orders: rows.map(r => ({ name: (r.customer_name || '').split(' ')[0], governorate: r.governorate, at: r.created_at })) });
+    const rows = db.prepare(`SELECT o.customer_name, o.governorate, o.created_at, (SELECT name FROM order_items WHERE order_id = o.id LIMIT 1) AS product FROM orders o WHERE o.store_id = ? ORDER BY o.id DESC LIMIT 10`).all(store.id);
+    json(res, 200, { orders: rows.map(r => ({ name: (r.customer_name || '').split(' ')[0], governorate: r.governorate, product: r.product || '', at: r.created_at })) });
   },
   // one-click downsell from the thank-you page: repeats customer data from the original order
   'POST /api/public/:slug/orders/:number/downsell': async (req, res, user, p) => {
@@ -940,6 +945,17 @@ const api = {
     if (b.funnel_id) db.prepare('UPDATE funnels SET orders = orders + 1 WHERE id = ? AND store_id = ?').run(b.funnel_id | 0, store.id);
     // referral attribution
     if (refCode) db.prepare('UPDATE referral_links SET orders = orders + 1 WHERE store_id = ? AND code = ?').run(store.id, refCode);
+    // WhatsApp order confirmation (F4): auto-send when the merchant enabled it — never for demo stores
+    if (!isDemo) {
+      try {
+        const waOn = (db.prepare("SELECT value FROM store_settings WHERE store_id = ? AND key = 'wa_order_confirm'").get(store.id) || {}).value === '1';
+        if (waOn && integ.configured('whatsapp')) {
+          integ.waSendTemplate({ to: phone, storeName: store.name, orderNumber: number, totalText: `${total} ج.م` })
+            .then(s => { if (!s.simulated && !s.error) db.prepare('UPDATE orders SET whatsapp_confirmed = 1 WHERE id = ?').run(r.lastInsertRowid); })
+            .catch(() => {});
+        }
+      } catch (e) { /* confirmation must never break checkout */ }
+    }
     // Meta Conversion API (server-to-server), fire-and-forget
     try {
       const pxs = (JSON.parse(store.theme_settings || '{}').pixels) || {};
@@ -986,6 +1002,25 @@ const api = {
 function isDemoStore(storeId) {
   try { return (db.prepare("SELECT value FROM store_settings WHERE store_id = ? AND key = 'demo_mode'").get(storeId) || {}).value === '1'; } catch (e) { return false; }
 }
+
+// F4: abandoned-cart recovery via WhatsApp — every 10 minutes, carts idle 60+ minutes
+// with a phone number and items, one message per cart, never for demo stores.
+function runCartRecovery() {
+  try {
+    if (!integ.configured('whatsapp')) return;
+    const carts = db.prepare(`SELECT c.id, c.customer_phone, c.store_id, s.name AS store_name, s.slug FROM carts c JOIN stores s ON s.id = c.store_id
+      WHERE c.customer_phone IS NOT NULL AND c.customer_phone <> '' AND c.items <> '[]' AND c.recovered_at IS NULL
+        AND c.updated_at < datetime('now', '-60 minutes')`).all();
+    for (const c of carts) {
+      if (isDemoStore(c.store_id)) continue;
+      const on = (db.prepare("SELECT value FROM store_settings WHERE store_id = ? AND key = 'wa_cart_recovery'").get(c.store_id) || {}).value === '1';
+      if (!on) continue;
+      db.prepare("UPDATE carts SET recovered_at = datetime('now') WHERE id = ?").run(c.id);
+      integ.waSendCartRecovery({ to: c.customer_phone, storeName: c.store_name, storeUrl: `https://active-order.onrender.com/s/${c.slug}` }).catch(() => {});
+    }
+  } catch (e) { /* recovery pass must never crash the server */ }
+}
+setInterval(runCartRecovery, 10 * 60 * 1000).unref();
 
 // ---------- router ----------
 const server = http.createServer(async (req, res) => {

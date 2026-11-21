@@ -378,6 +378,12 @@ const migrations = [
     sql: `
     ALTER TABLE orders ADD COLUMN demo INTEGER NOT NULL DEFAULT 0;
     `
+  },
+  {
+    id: '010_cart_recovery',
+    sql: `
+    ALTER TABLE carts ADD COLUMN recovered_at TEXT;
+    `
   }
 ];
 

@@ -155,4 +155,28 @@ function status() {
   }));
 }
 
-module.exports = { PROVIDERS, getSetting, setSetting, configured, paymobCreatePayment, waSendTemplate, sendVerificationEmail, status };
+async function waSendCartRecovery({ to, storeName, storeUrl }) {
+  const W = PROVIDERS.whatsapp;
+  const phone = String(to || '').replace(/\D/g, '').replace(/^0/, '20');
+  if (!configured('whatsapp')) {
+    logEvent('whatsapp', 'cart_recovery', { to: phone, storeName }, 'simulated', true, 'no credentials — message not sent');
+    return { simulated: true };
+  }
+  try {
+    const body = {
+      messaging_product: 'whatsapp', to: phone, type: 'template',
+      template: { name: 'cart_recovery', language: { code: 'ar' }, components: [
+        { type: 'body', parameters: [{ type: 'text', text: storeName }, { type: 'text', text: storeUrl }] },
+      ] },
+    };
+    const r = await postJSON(`${W.base}/${cred('WHATSAPP_PHONE_NUMBER_ID')}/messages`, body, { Authorization: `Bearer ${cred('WHATSAPP_TOKEN')}` });
+    if (!r.ok) throw new Error(`send failed (${r.status}): ${JSON.stringify(r.data).slice(0, 300)}`);
+    logEvent('whatsapp', 'cart_recovery', { to: phone, storeName, messageId: r.data.messages?.[0]?.id }, 'ok', false);
+    return { ok: true };
+  } catch (e) {
+    logEvent('whatsapp', 'cart_recovery', { to: phone, storeName }, 'error', false, e.message);
+    return { error: e.message };
+  }
+}
+
+module.exports = { PROVIDERS, getSetting, setSetting, configured, paymobCreatePayment, waSendTemplate, waSendCartRecovery, sendVerificationEmail, status };

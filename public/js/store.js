@@ -39,7 +39,7 @@ function attribution() {
 async function initMarketing() {
   try {
     const m = await (await fetch('/api/public/' + SLUG + '/marketing')).json();
-    if (m.sales_popup && m.sales_popup.enabled) {
+    if (m.sales_popup === true) {
       const ro = await (await fetch('/api/public/' + SLUG + '/recent-orders')).json();
       const orders = ro.orders || [];
       if (orders.length) {
@@ -49,7 +49,7 @@ async function initMarketing() {
           const o = orders[i++ % orders.length];
           const el = document.createElement('div');
           el.id = 'salesPop'; el.className = 'sales-pop';
-          el.innerHTML = '<div class="sp-dot"></div><div><b>' + esc(o.name) + (o.governorate ? ' — ' + esc(o.governorate) : '') + '</b><span>اشترى ' + esc(o.product) + '</span></div><button class="sp-x" aria-label="إغلاق">×</button>';
+          el.innerHTML = '<div class="sp-dot"></div><div><b>' + esc(o.name) + (o.governorate ? ' — ' + esc(o.governorate) : '') + '</b><span>' + (o.product ? 'اشترى ' + esc(o.product) : 'أتم طلباً جديداً') + '</span></div><button class="sp-x" aria-label="إغلاق">×</button>';
           el.querySelector('.sp-x').onclick = () => el.remove();
           document.body.appendChild(el);
           setTimeout(() => el.classList.add('show'), 50);
@@ -63,15 +63,15 @@ async function initMarketing() {
     const summary = document.querySelector('.co-summary') || document.getElementById('coForm');
     if (summary && m.cross_sells && m.cross_sells.length) {
       const inCart = new Set(getCart().map(i => i.id));
-      const offers = m.cross_sells.filter(c => !inCart.has(c.offer_product_id));
+      const offers = m.cross_sells.filter(c => !inCart.has(c.rel_id));
       if (offers.length) {
         const box = document.createElement('div');
         box.className = 'xsell-box';
-        box.innerHTML = '<h4>أضف لطلبك بخصم خاص</h4>' + offers.map(c => {
-          const dp = Math.max(1, Math.round(c.price * (100 - (c.discount_pct || 0)) / 100));
-          return '<div class="xsell-row" data-id="' + c.offer_product_id + '" data-name="' + esc(c.name) + '" data-price="' + dp + '">' +
-            '<img src="' + esc(c.image || '') + '" alt="" onerror="this.style.display=\'none\'">' +
-            '<div class="xsell-info"><b>' + esc(c.name) + '</b><span>' + dp + ' ج.م <s>' + c.price + ' ج.م</s></span></div>' +
+        box.innerHTML = '<h4>أضف لطلبك أيضاً</h4>' + offers.map(c => {
+          let img = ''; try { img = JSON.parse(c.images || '[]')[0] || ''; } catch (e) {}
+          return '<div class="xsell-row" data-id="' + c.rel_id + '" data-name="' + esc(c.name) + '" data-price="' + c.price + '">' +
+            (img ? '<img src="' + esc(img) + '" alt="" onerror="this.style.display=\'none\'">' : '') +
+            '<div class="xsell-info"><b>' + esc(c.name) + '</b><span>' + c.price + ' ج.م' + (c.compare_at_price && c.compare_at_price > c.price ? ' <s>' + c.compare_at_price + ' ج.م</s>' : '') + '</span></div>' +
             '<button type="button" class="xsell-add">أضف</button></div>';
         }).join('');
         const coForm = document.getElementById('coForm');
