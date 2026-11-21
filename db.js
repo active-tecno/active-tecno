@@ -220,6 +220,14 @@ const migrations = [
     UPDATE themes SET config = REPLACE(REPLACE(config, '#12213E', '#141924'), '#00BFAF', '#27cd27');
     UPDATE stores SET theme_settings = REPLACE(REPLACE(theme_settings, '#12213E', '#141924'), '#00BFAF', '#27cd27');
     `
+  },
+  {
+    id: '005_brand_rename',
+    sql: `
+    UPDATE users SET name = REPLACE(name, 'اكتف تكنو', 'اكتف اوردر');
+    UPDATE stores SET name = REPLACE(name, 'اكتف تكنو', 'اكتف اوردر'), description = REPLACE(description, 'اكتف تكنو', 'اكتف اوردر');
+    UPDATE themes SET name_ar = REPLACE(name_ar, 'اكتف تكنو', 'اكتف اوردر');
+    `
   }
 ];
 

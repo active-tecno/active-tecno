@@ -699,6 +699,9 @@ const server = http.createServer(async (req, res) => {
     // pages
     if (req.method !== 'GET') { res.writeHead(405); return res.end('Method not allowed'); }
     if (pathname === '/') return html(res, 200, views.landing());
+    if (pathname === '/pricing' || pathname === '/pricing/') { res.writeHead(302, { Location: '/#pricing' }); return res.end(); }
+    if (pathname === '/themes' || pathname === '/themes/') { res.writeHead(302, { Location: '/#themes' }); return res.end(); }
+    if (pathname === '/blog' || pathname.startsWith('/blog/')) { res.writeHead(302, { Location: '/#faq' }); return res.end(); }
     if (pathname === '/login') return html(res, 200, views.login());
     if (pathname === '/register') return html(res, 200, views.register());
     if (pathname === '/app' || pathname.startsWith('/app/')) return html(res, 200, views.appShell());

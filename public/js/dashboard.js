@@ -75,7 +75,7 @@ function shell(content) {
   const hash = location.hash.replace('#/', '') || 'overview';
   return `<div class="d-layout">
   <aside class="d-side" id="dSide">
-    <a class="brand" href="/"><svg viewBox="0 0 32 32" width="28" height="28"><rect width="32" height="32" rx="8" fill="rgba(255,255,255,.12)"/><path d="M9 20l7-11 7 11" stroke="#27cd27" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="brand-name">اكتف <b>تكنو</b></span></a>
+    <a class="brand" href="/"><svg viewBox="0 0 32 32" width="28" height="28"><rect width="32" height="32" rx="8" fill="rgba(255,255,255,.12)"/><path d="M9 20l7-11 7 11" stroke="#27cd27" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="brand-name">اكتف <b>اوردر</b></span></a>
     ${NAV.map(([k, ic, l]) => `<button class="d-link ${hash === k ? 'on' : ''}" onclick="go('${k}')"><span class="ic">${I(ic)}</span>${l}${k === 'orders' && ME?.newOrders ? `<span class="badge">${ME.newOrders}</span>` : ''}</button>`).join('')}
     <div class="d-side-foot">
       <a class="d-viewstore" href="/s/${esc(STORE.slug)}" target="_blank">${I('eye')} معاينة المتجر <span style="margin-inline-start:auto">↗</span></a>
@@ -106,7 +106,7 @@ function openActivation() {
   openModal('تفعيل نشر المتجر', `
     <div class="card" style="background:var(--bg);margin-bottom:16px">
       <b>خطة النشر الشهرية — 50 ج.م / 30 يوم</b>
-      <p class="muted small" style="margin-top:6px">حوّل 50 ج.م إلى حساب اكتف تكنو ثم أدخل رقم المرجع. فريقنا يراجع ويفعّل خلال ساعات.</p>
+      <p class="muted small" style="margin-top:6px">حوّل 50 ج.م إلى حساب اكتف اوردر ثم أدخل رقم المرجع. فريقنا يراجع ويفعّل خلال ساعات.</p>
     </div>
     <div class="f-grid">
       <div class="f-field full"><label>طريقة الدفع</label>

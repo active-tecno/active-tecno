@@ -43,7 +43,7 @@ function seed() {
 
   // Admin + demo merchant
   const admin = db.prepare(`INSERT INTO users (email, password_hash, name, is_admin) VALUES (?, ?, ?, 1)`)
-    .run('admin@activetecno.software', hashPassword('admin1234'), 'إدارة اكتف تكنو');
+    .run('admin@activetecno.software', hashPassword('admin1234'), 'إدارة اكتف اوردر');
   const merchant = db.prepare(`INSERT INTO users (email, password_hash, name, phone) VALUES (?, ?, ?, ?)`)
     .run('demo@activetecno.software', hashPassword('demo1234'), 'نورا محمود', '01011206670');
 

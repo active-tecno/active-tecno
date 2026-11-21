@@ -133,7 +133,7 @@ async function sendVerificationEmail({ to, code }) {
   try {
     const r = await postJSON(`${E.base}/emails`, {
       from: cred('EMAIL_FROM'), to: [to],
-      subject: 'رمز التحقق — اكتف تكنو',
+      subject: 'رمز التحقق — اكتف اوردر',
       html: `<div dir="rtl" style="font-family:sans-serif;padding:24px"><h2>رمز التحقق الخاص بك</h2><p style="font-size:32px;letter-spacing:8px;font-weight:700;color:#00BFAF;direction:ltr">${code}</p><p>صالح لمدة 10 دقائق.</p></div>`,
     }, { Authorization: `Bearer ${cred('RESEND_API_KEY')}` });
     if (!r.ok) throw new Error(`send failed (${r.status})`);

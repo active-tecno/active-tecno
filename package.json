@@ -1,7 +1,7 @@
 {
   "name": "active-tecno",
   "version": "1.0.0",
-  "description": "اكتف تكنو — منصة المتاجر الإلكترونية العربية (Active Tecno store-builder SaaS)",
+  "description": "اكتف اوردر — منصة المتاجر الإلكترونية العربية (Active Tecno store-builder SaaS)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
