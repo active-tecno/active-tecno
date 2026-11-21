@@ -5,11 +5,12 @@ const fs = require('fs');
 const path = require('path');
 const { db } = require('./db');
 const { seed, hashPassword } = require('./seed');
+const PROD = (process.env.ACTIVE_TECNO_ENV || '').toLowerCase() === 'production';
 const views = require('./views');
 const { APP_VERSION } = require('./version');
 const integ = require('./integrations');
 
-seed();
+seed({ demo: !PROD });
 
 const REFERRAL_PROGRAM_ENABLED = false; // referral accruals + payouts paused pending owner terms (reversible)
 const ORDER_STATUSES = ['new', 'confirmed', 'pending_payment', 'paid', 'payment_failed', 'preparing', 'awaiting_shipping', 'shipped', 'delivered', 'cancelled', 'returned_from_shipping', 'return_requested', 'returning', 'returned'];
@@ -76,6 +77,26 @@ function hashPasswordVerify(password, stored) {
   return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(check, 'hex'));
 }
 const newToken = () => crypto.randomBytes(32).toString('hex');
+const SECRET_MASK = '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022';
+
+function clientIp(req) {
+  const fwd = req.headers['x-forwarded-for'];
+  return (fwd ? String(fwd).split(',')[0].trim() : req.socket.remoteAddress) || 'unknown';
+}
+// login/register abuse controls: in-memory buckets per ip+email
+const loginFails = new Map();
+const LOGIN_WINDOW_MS = 15 * 60 * 1000, LOGIN_MAX_FAILS = 10;
+function loginBlocked(key) { const r = loginFails.get(key); return !!(r && r.resetAt > Date.now() && r.count >= LOGIN_MAX_FAILS); }
+function loginFailed(key) {
+  const now = Date.now(); const r = loginFails.get(key);
+  if (!r || r.resetAt < now) loginFails.set(key, { count: 1, resetAt: now + LOGIN_WINDOW_MS }); else r.count++;
+}
+const regHits = new Map();
+function tooManyHits(map, key, max, windowMs) {
+  const now = Date.now(); const r = map.get(key);
+  if (!r || r.resetAt < now) { map.set(key, { count: 1, resetAt: now + windowMs }); return false; }
+  r.count++; return r.count > max;
+}
 
 function parseCookies(req) {
   const out = {};
@@ -91,11 +112,12 @@ function getUser(req) {
   if (!s || s.expires_at < new Date().toISOString()) return null;
   return db.prepare('SELECT * FROM users WHERE id = ?').get(s.user_id);
 }
-function createSession(res, userId) {
+function createSession(req, res, userId) {
   const token = newToken();
   const exp = new Date(Date.now() + 30 * 86400000).toISOString();
   db.prepare('INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)').run(token, userId, exp);
-  res.setHeader('Set-Cookie', `at_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${30 * 86400}`);
+  const secure = !!req.socket.encrypted || req.headers['x-forwarded-proto'] === 'https';
+  res.setHeader('Set-Cookie', `at_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${30 * 86400}${secure ? '; Secure' : ''}`);
 }
 function clearSession(res, req) {
   const token = parseCookies(req).at_session;
@@ -137,10 +159,21 @@ const EG_PHONE = /^01[0125][0-9]{8}$/;
 const normalizePhone = p => String(p || '').replace(/[\s\-\+\(\)]/g, '').replace(/^20/, '').replace(/^2/, '');
 
 // ---------- static ----------
-function serveStatic(res, filePath) {
+function safeJoin(baseDir, rel) {
+  const p = path.normalize(path.join(baseDir, rel));
+  return p.startsWith(baseDir + path.sep) ? p : null;
+}
+function serveStatic(res, filePath, isUpload) {
+  if (!filePath) { res.writeHead(404); res.end('Not found'); return; }
   fs.readFile(filePath, (err, data) => {
     if (err) { res.writeHead(404); res.end('Not found'); return; }
-    res.writeHead(200, { 'Content-Type': MIME[path.extname(filePath).toLowerCase()] || 'application/octet-stream', 'Cache-Control': 'public, max-age=300' });
+    const ext = path.extname(filePath).toLowerCase();
+    const headers = { 'Content-Type': MIME[ext] || 'application/octet-stream', 'Cache-Control': 'public, max-age=300', 'X-Content-Type-Options': 'nosniff' };
+    if (isUpload && ext === '.svg') {
+      // user-supplied SVG: never let it run script in our origin
+      headers['Content-Security-Policy'] = "script-src 'none'; object-src 'none'; base-uri 'none'";
+    }
+    res.writeHead(200, headers);
     res.end(data);
   });
 }
@@ -173,6 +206,7 @@ function seedDefaultPages(storeId) {
 const api = {
   // auth
   'POST /api/auth/register': async (req, res) => {
+    if (tooManyHits(regHits, clientIp(req), 20, 60 * 60 * 1000)) return json(res, 429, { error: 'محاولات كثيرة — جرّب لاحقاً' });
     const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
     const { email, password, name, storeName, slug, phone, currency } = b;
     if (!email || !password || !name || !storeName) return json(res, 400, { error: 'كل الحقول مطلوبة' });
@@ -205,15 +239,30 @@ const api = {
     if (!rec || rec.expires < Date.now()) return json(res, 400, { error: 'انتهت صلاحية الكود — أعد التسجيل' });
     if (String(b.code || '').trim() !== rec.code) return json(res, 400, { error: 'كود التحقق غير صحيح' });
     verifyCodes.delete(String(b.email).toLowerCase());
-    createSession(res, rec.userId);
+    createSession(req, res, rec.userId);
     json(res, 200, { ok: true });
   },
   'POST /api/auth/login': async (req, res) => {
     const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
+    const lk = clientIp(req) + '|' + String(b.email || '').toLowerCase();
+    if (loginBlocked(lk)) return json(res, 429, { error: 'محاولات كثيرة — جرّب بعد ربع ساعة' });
     const u = db.prepare('SELECT * FROM users WHERE email = ?').get(String(b.email || '').toLowerCase());
-    if (!u || !hashPasswordVerify(String(b.password || ''), u.password_hash)) return json(res, 401, { error: 'بيانات الدخول غير صحيحة' });
-    createSession(res, u.id);
+    if (!u || !hashPasswordVerify(String(b.password || ''), u.password_hash)) { loginFailed(lk); return json(res, 401, { error: 'بيانات الدخول غير صحيحة' }); }
+    loginFails.delete(lk);
+    createSession(req, res, u.id);
     json(res, 200, { ok: true, is_admin: !!u.is_admin });
+  },
+  'POST /api/setup': async (req, res) => {
+    if (!PROD || db.prepare('SELECT COUNT(*) c FROM users WHERE is_admin = 1').get().c > 0) return json(res, 403, { error: 'setup closed' });
+    if (tooManyHits(regHits, 'setup|' + clientIp(req), 10, 60 * 60 * 1000)) return json(res, 429, { error: 'محاولات كثيرة — جرّب لاحقاً' });
+    const b = await readJSON(req); if (!b) return json(res, 400, { error: 'بيانات غير صالحة' });
+    const email = String(b.email || '').toLowerCase().trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json(res, 400, { error: 'بريد غير صالح' });
+    if (String(b.password || '').length < 8) return json(res, 400, { error: 'كلمة المرور 8 أحرف على الأقل' });
+    if (!String(b.name || '').trim()) return json(res, 400, { error: 'الاسم مطلوب' });
+    const u = db.prepare('INSERT INTO users (email, password_hash, name, is_admin) VALUES (?, ?, ?, 1)').run(email, hashPassword(String(b.password)), String(b.name).trim());
+    createSession(req, res, u.lastInsertRowid);
+    json(res, 201, { ok: true });
   },
   'POST /api/auth/logout': (req, res) => { clearSession(res, req); json(res, 200, { ok: true }); },
   'GET /api/me': (req, res, user) => {
@@ -457,6 +506,24 @@ const api = {
     const sent = await integ.waSendTemplate({ to: order.customer_phone, storeName: store.name, orderNumber: order.number, totalText: `${order.total} ج.م` });
     db.prepare('UPDATE orders SET whatsapp_confirmed = 1 WHERE id = ?').run(order.id);
     json(res, 200, { ok: true, delivered: !sent.simulated && !sent.error, simulated: !!sent.simulated, error: sent.error || null });
+  },
+  'GET /api/admin/backup': (req, res, user) => {
+    const os = require('os');
+    const tmp = path.join(os.tmpdir(), `at-backup-${Date.now()}-${crypto.randomBytes(4).toString('hex')}.db`);
+    try {
+      db.exec(`VACUUM INTO '${tmp}'`);
+      const data = fs.readFileSync(tmp);
+      res.writeHead(200, {
+        'Content-Type': 'application/octet-stream',
+        'Content-Disposition': `attachment; filename="active-tecno-backup-${new Date().toISOString().slice(0, 10)}.db"`,
+        'Content-Length': data.length
+      });
+      res.end(data);
+    } catch (e) {
+      json(res, 500, { error: 'backup failed' });
+    } finally {
+      try { fs.unlinkSync(tmp); } catch (e) {}
+    }
   },
   'GET /api/orders-export.csv': (req, res, user, p, url) => {
     const store = getStoreForUser(user);
@@ -798,13 +865,18 @@ const api = {
     const store = getStoreForUser(user);
     const allowed = ['policies', 'head_code', 'seo', 'social', 'custom_domain', 'max_items', 'notify_email', 'notifications', 'digital_delivery', 'checkout_fields', 'thanks', 'ui_blocks', 'design_assets', 'notifications_read', 'webhook_url', 'webhook_secret'];
     const up = db.prepare('INSERT INTO store_settings (store_id, key, value, updated_at) VALUES (?, ?, ?, datetime(\'now\')) ON CONFLICT(store_id, key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at');
-    for (const k of allowed) if (k in b) up.run(store.id, k, typeof b[k] === 'string' ? b[k] : JSON.stringify(b[k]));
+    for (const k of allowed) {
+      if (!(k in b)) continue;
+      if (k === 'webhook_secret' && b[k] === SECRET_MASK) continue; // unchanged masked value — keep the stored secret
+      up.run(store.id, k, typeof b[k] === 'string' ? b[k] : JSON.stringify(b[k]));
+    }
     if ('phone' in b) db.prepare('UPDATE stores SET phone = ? WHERE id = ?').run(String(b.phone).trim(), store.id);
     json(res, 200, { ok: true });
   },
   'GET /api/store/settings': (req, res, user) => {
     const store = getStoreForUser(user);
     const s = Object.fromEntries(db.prepare('SELECT key, value FROM store_settings WHERE store_id = ?').all(store.id).map(r => [r.key, r.value]));
+    if (s.webhook_secret) { s.webhook_secret_set = '1'; s.webhook_secret = SECRET_MASK; }
     json(res, 200, { settings: s, api_key: store.api_key || null });
   },
   'POST /api/store/api-key': (req, res, user) => {
@@ -980,7 +1052,11 @@ const api = {
     const store = getStoreForUser(user);
     const allowed = ['min_order', 'sales_popup', 'downsell', 'wa_order_confirm', 'wa_cart_recovery', 'gmc_email', 'gmc_phone'];
     const up = db.prepare('INSERT INTO store_settings (store_id, key, value, updated_at) VALUES (?, ?, ?, datetime(\'now\')) ON CONFLICT(store_id, key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at');
-    for (const k of allowed) if (k in b) up.run(store.id, k, typeof b[k] === 'string' ? b[k] : JSON.stringify(b[k]));
+    for (const k of allowed) {
+      if (!(k in b)) continue;
+      if (k === 'webhook_secret' && b[k] === SECRET_MASK) continue; // unchanged masked value — keep the stored secret
+      up.run(store.id, k, typeof b[k] === 'string' ? b[k] : JSON.stringify(b[k]));
+    }
     json(res, 200, { ok: true });
   },
 
@@ -1567,19 +1643,34 @@ function runCartRecovery() {
 setInterval(runCartRecovery, 10 * 60 * 1000).unref();
 
 // ---------- router ----------
+// --- TEMPORARY CONTAINMENT: public preview disabled while security remediation ---
+// --- is in progress. This block is removed in the hardened release commit.    ---
+const MAINTENANCE_HTML = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>صيانة مؤقتة | اكتف اوردر</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0f1420;color:#e8eaf0;font-family:'IBM Plex Sans Arabic',system-ui,sans-serif;text-align:center;padding:24px}h1{font-size:24px;margin:0 0 12px}p{color:#9aa3b5;font-size:15px;line-height:1.9;margin:0;max-width:420px}</style></head><body><div><h1>المعاينة متوقفة مؤقتاً للصيانة</h1><p>نعمل على تحديثات أمان مهمة وسنعود خلال وقت قصير. شكراً لصبركم.</p></div></body></html>`;
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
     const pathname = decodeURIComponent(url.pathname);
+    if (!process.env.CONTAINMENT_OFF) {
+      res.writeHead(503, { 'Content-Type': 'text/html; charset=utf-8', 'Retry-After': '3600' });
+      return res.end(MAINTENANCE_HTML);
+    }
     const user = getUser(req);
 
     // static
-    if (pathname.startsWith('/public/')) return serveStatic(res, path.join(PUBLIC_DIR, pathname.slice(8)));
-    if (pathname.startsWith('/uploads/')) return serveStatic(res, path.join(UPLOAD_DIR, pathname.slice(9)));
+    if (pathname.startsWith('/public/')) return serveStatic(res, safeJoin(PUBLIC_DIR, pathname.slice(8)));
+    if (pathname.startsWith('/uploads/')) return serveStatic(res, safeJoin(UPLOAD_DIR, pathname.slice(9)), true);
 
     // API
     const m = pathname.match(/^\/api\/(.+)$/);
     if (m) {
+      if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
+        const origin = req.headers.origin;
+        if (origin) {
+          let oh = null;
+          try { oh = new URL(origin).host; } catch (e) { oh = null; }
+          if (!oh || oh !== req.headers.host) return json(res, 403, { error: 'forbidden origin' });
+        }
+      }
       const parts = m[1].split('/');
       let key = null, params = {};
       // try longest match with :param segments
@@ -1598,7 +1689,7 @@ const server = http.createServer(async (req, res) => {
       }
       if (!key) return json(res, 404, { error: 'Not found' });
       const isAdminRoute = key.includes('/api/admin/');
-      const isPublic = key.includes('/api/public/') || key.includes('/api/auth/') || key.includes('/api/webhooks/') || key.startsWith('GET /api/v1/');
+      const isPublic = key.includes('/api/public/') || key.includes('/api/auth/') || key.includes('/api/webhooks/') || key === 'POST /api/setup' || key.startsWith('GET /api/v1/');
       if (!isPublic && !user) return json(res, 401, { error: 'unauthenticated' });
       if (isAdminRoute && (!user || !user.is_admin)) return json(res, 403, { error: 'admin only' });
       if (!isPublic && !isAdminRoute && !getStoreForUser(user)) return json(res, 400, { error: 'لا يوجد متجر لهذا الحساب' });
@@ -1619,6 +1710,10 @@ const server = http.createServer(async (req, res) => {
       return html(res, 404, views.notFound('الصفحة غير موجودة', 'المقال الذي تبحث عنه غير موجود'));
     }
     if (pathname === '/login') return html(res, 200, views.login());
+    if (pathname === '/setup') {
+      if (!PROD || db.prepare('SELECT COUNT(*) c FROM users WHERE is_admin = 1').get().c > 0) { res.writeHead(302, { Location: '/login' }); return res.end(); }
+      return html(res, 200, views.setupPage());
+    }
     if (pathname === '/register') return html(res, 200, views.register());
     if (pathname === '/app' || pathname.startsWith('/app/')) return html(res, 200, views.appShell());
     if (pathname === '/onboarding') {

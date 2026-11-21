@@ -82,7 +82,8 @@ function productImage(name, hue) {
   return 'data:image/svg+xml;base64,' + Buffer.from(svg).toString('base64');
 }
 
-function seed() {
+function seed(opts = {}) {
+  const demo = opts.demo !== false;
   migrate();
   const hasUsers = db.prepare('SELECT COUNT(*) c FROM users').get().c > 0;
 
@@ -111,6 +112,7 @@ function seed() {
   }
 
   if (hasUsers) { console.log('Seed: users exist, themes synced, done.'); return; }
+  if (!demo) { console.log('Seed: production mode — themes synced, no demo accounts or demo data.'); return; }
 
   const now = () => new Date().toISOString().replace('T', ' ').slice(0, 19);
   const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString().replace('T', ' ').slice(0, 19);

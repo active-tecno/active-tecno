@@ -1906,4 +1906,38 @@ ${storeScripts(store)}
 </body></html>`;
 }
 
-module.exports = { landing, login: loginPage, register: registerPage, appShell, adminShell, storefront, productPage, checkoutPage, funnelPage, orderPage, verifiedPage, policiesPage, categoryPage, storeBlogIndex, storeBlogPost, comingSoon, notFound, onboarding, egp, esc, pricingPage, themesPage, blogIndex, blogPostPage, blogStaticPage, BLOG_POSTS, builderRender, simplePage };
+
+function setupPage() {
+  return base('الإعداد الأول | اكتف اوردر', `
+<div class="min-h-screen bg-background flex items-center justify-center px-4 py-14">
+  <div class="w-full max-w-sm">
+    <div class="flex justify-center mb-8">${logo}</div>
+    <div class="rounded-3xl border border-border bg-surface p-8 shadow-soft">
+      <h1 class="text-[22px] font-bold mb-1">الإعداد الأول للمنصة</h1>
+      <p class="text-[13.5px] text-muted mb-6">أنشئ حساب المدير الرئيسي. لا توجد حسابات افتراضية في وضع الإنتاج — هذه الخطوة تتم مرة واحدة فقط.</p>
+      <form id="setupForm" class="space-y-4">
+        <div><label class="block text-[13px] font-semibold mb-1.5">الاسم</label><input id="suName" required class="w-full rounded-xl border border-border bg-background px-4 py-3 text-[14px] outline-none focus:border-primary"></div>
+        <div><label class="block text-[13px] font-semibold mb-1.5">البريد الإلكتروني</label><input id="suEmail" type="email" required dir="ltr" class="w-full rounded-xl border border-border bg-background px-4 py-3 text-[14px] outline-none focus:border-primary"></div>
+        <div><label class="block text-[13px] font-semibold mb-1.5">كلمة المرور (8 أحرف على الأقل)</label><input id="suPass" type="password" required minlength="8" dir="ltr" class="w-full rounded-xl border border-border bg-background px-4 py-3 text-[14px] outline-none focus:border-primary"></div>
+        <div id="suErr" class="hidden rounded-xl bg-red-50 text-red-700 text-[13px] px-4 py-3"></div>
+        <button class="w-full rounded-xl bg-primary text-white font-bold py-3.5 text-[15px] hover:opacity-90 transition">إنشاء حساب المدير</button>
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+document.getElementById('setupForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const err = document.getElementById('suErr');
+  err.classList.add('hidden');
+  const r = await fetch('/api/setup', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: document.getElementById('suName').value, email: document.getElementById('suEmail').value, password: document.getElementById('suPass').value }) });
+  const d = await r.json().catch(() => ({}));
+  if (r.ok && d.ok) { location.href = '/admin'; return; }
+  err.textContent = d.error || 'تعذر الإنشاء';
+  err.classList.remove('hidden');
+});
+</script>`);
+}
+
+module.exports = { setupPage, landing, login: loginPage, register: registerPage, appShell, adminShell, storefront, productPage, checkoutPage, funnelPage, orderPage, verifiedPage, policiesPage, categoryPage, storeBlogIndex, storeBlogPost, comingSoon, notFound, onboarding, egp, esc, pricingPage, themesPage, blogIndex, blogPostPage, blogStaticPage, BLOG_POSTS, builderRender, simplePage };
